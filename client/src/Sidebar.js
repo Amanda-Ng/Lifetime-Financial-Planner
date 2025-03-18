@@ -1,17 +1,18 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./App.css";
 
 function Sidebar() {
   return (
     <div className="sidebar">
       <ul>
-        <li><a href="#profile">Profile</a></li>
-        <li><a href="#dashboard">Dashboard</a></li>
-        <li><a href="#scenario">Scenario</a></li>
-        <li><a href="#investment">Investment</a></li>
-        <li><a href="#event">Event</a></li>
-        <li><a href="#simulation">Simulation</a></li>
-        <li><a href="#logout">Logout</a></li>
+        <li><Link to="#profile">Profile</Link></li>
+        <li><Link to="#dashboard">Dashboard</Link></li>
+        <li><Link to="#scenario">Scenario</Link></li>
+        <li><Link to="/investment">Investment</Link></li>
+        <li><Link to="#event">Event</Link></li>
+        <li><Link to="#simulation">Simulation</Link></li>
+        <li><Link to="#logout">Logout</Link></li>
       </ul>
     </div>
   );
