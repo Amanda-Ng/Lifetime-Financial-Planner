@@ -38,3 +38,64 @@
   padding: 20px;
   width: 100%;
 }
+
+.main-content {
+  margin-left: 200px;
+  /* This will ensure content starts after the sidebar */
+  padding: 20px;
+  width: calc(100% - 200px);
+  /* Ensures that the content fills the remaining width */
+  box-sizing: border-box;
+  /* Ensures padding does not affect the width calculation */
+}
+
+.investment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.investment-form label {
+  font-weight: bold;
+}
+
+.investment-form input,
+.investment-form select,
+.investment-form textarea {
+  width: 50%;
+  padding: 8px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.investment-form .button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.investment-form button {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.radio-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radio-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.radio-group input[type="radio"] {
+  margin-right: 10px;
+}
+
+.required {
+  color: red;
+}

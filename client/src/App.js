@@ -1,17 +1,22 @@
 import React from "react";
-import "./App.css";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import InvestmentForm from "./InvestmentForm";
+import "./App.css";
 
 function App() {
   return (
-    <div className="App">
-      <Sidebar />
-      <div className="App-content">
-        <header className="App-header">
-          <p>Welcome to the Financial Planner App!</p>
-        </header>
+    <Router>
+      <div className="App">
+        <Sidebar />
+        <div className="main-content">
+          <Routes>
+            <Route path="/investment" element={<InvestmentForm />} />
+            {/* Add more Routes here */}
+          </Routes>
+        </div>
       </div>
-    </div>
+    </Router>
   );
 }
 
