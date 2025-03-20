@@ -5,7 +5,7 @@ puppeteer.use(StealthPlugin());
 const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
-async function run() {
+async function scrape_federal_income_taxes() {
     const browser = await puppeteer.launch({
         headless: false,
         ignoreHTTPSErrors: true,
@@ -29,7 +29,7 @@ async function run() {
         if (!table_head) return null;
 
         // traverse HTML to find sibling element that is the table corresponding to the heading
-        let table = table_head.nextElementSibling;
+        let table = table_head;
         let found_table = false;
         while (!table.matches(".table")) {
             table = table.nextElementSibling;
@@ -51,7 +51,7 @@ async function run() {
         if (!table_head) return null;
 
         // go back up until overarching parent element (that includes the table) is found
-        let parent = table_head.parentElement;
+        let parent = table_head;
         let parent_found = false;
         while (!parent.querySelector("table")) {
             parent = parent.parentElement;
@@ -74,4 +74,50 @@ async function run() {
     await browser.close();
 }
 
-run();
+async function scrape_standard_deductions() {
+    const browser = await puppeteer.launch({
+        headless: false,
+        ignoreHTTPSErrors: true,
+    });
+
+    const page = await browser.newPage();
+    await page.goto("https://www.irs.gov/publications/p17", {
+        waitUntil: "domcontentloaded",
+    });
+
+    await page.waitForSelector("table");
+
+    const standard_deductions_post_1960 = await page.evaluate(() => {
+        const table_head = Array.from(document.querySelectorAll("p")).find(
+            (t) =>
+                t.innerText
+                    .toLowerCase()
+                    .includes(
+                        "table 10-1.standard deduction chart for most people"
+                    )
+        );
+        if (!table_head) return null;
+
+        let surrounding_div = table_head;
+        let div_found = false;
+        while (!surrounding_div.querySelector("table")) {
+            surrounding_div = surrounding_div.nextElementSibling;
+            if (surrounding_div.querySelector("table")) div_found = true;
+        }
+        if (!div_found) return "not found";
+
+        const table = surrounding_div.querySelector("table");
+        return Array.from(table.querySelectorAll("tr")).map((row) =>
+            Array.from(row.querySelectorAll("td")).map((cell) =>
+                cell.innerText.trim()
+            )
+        );
+    });
+
+    console.log("Standard Deductions Post 1960", standard_deductions_post_1960);
+
+    await browser.close();
+}
+
+scrape_federal_income_taxes();
+scrape_standard_deductions();
