@@ -7,7 +7,7 @@ puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 async function scrape_federal_income_taxes() {
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         ignoreHTTPSErrors: true,
     });
 
@@ -32,6 +32,7 @@ async function scrape_federal_income_taxes() {
         }
         if (!found_table) return null; // ensure that table was found
 
+        table = table.querySelector("tbody");
         return Array.from(table.querySelectorAll("tr")).map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim()));
     });
 
@@ -48,8 +49,7 @@ async function scrape_federal_income_taxes() {
         }
         if (!parent_found) return null;
 
-        // now found the table element with querySelector
-        const table = parent.querySelector("table");
+        const table = parent.querySelector("table").querySelectorAll("tbody")[1];
         return Array.from(table.querySelectorAll("tr")).map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim()));
     });
 
@@ -61,7 +61,7 @@ async function scrape_federal_income_taxes() {
 
 async function scrape_standard_deductions() {
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         ignoreHTTPSErrors: true,
     });
 
@@ -86,30 +86,26 @@ async function scrape_standard_deductions() {
         }
         if (!div_found) return "not found";
 
-        const table = surrounding_div.querySelector("table");
-        return Array.from(table.querySelectorAll("tr")).map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim()));
+        const table = Array.from(surrounding_div.querySelector("table").querySelector("tbody").querySelectorAll("tr")).slice(1, 3);
+        return table.map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim()));
     });
-
-    const standard_deductions_trimmed = standard_deductions.slice(1, standard_deductions.length - 1); // only take middle elements in the table
 
     const standard_deductions_map = {};
-    Array.from(standard_deductions_trimmed).forEach((element) => {
+    Array.from(standard_deductions).forEach((element) => {
         if (element[0].toLowerCase().includes("single")) {
-            console.log("Single Standard Deductions", element);
-            standard_deductions_map["single"] = element[1];
+            standard_deductions_map["single"] = Number(element[1].trim().replaceAll(/[$%,]/g, ""));
         } else if (element[0].toLowerCase().includes("married filing jointly")) {
-            console.log("Married Standard Deductions", element);
-            standard_deductions_map["married"] = element[1];
+            standard_deductions_map["married"] = Number(element[1].trim().replaceAll(/[$%,]/g, ""));
         }
     });
-    console.log("Standard Deductions Post 1960", standard_deductions_map);
+    console.log("Standard Deductions: ", standard_deductions_map);
 
     await browser.close();
 }
 
 async function scrape_capital_gains_tax() {
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         ignoreHTTPSErrors: true,
     });
 
