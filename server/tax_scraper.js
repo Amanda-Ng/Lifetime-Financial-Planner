@@ -31,9 +31,9 @@ async function scrape_federal_income_taxes() {
         // traverse HTML to find sibling element that is the table corresponding to the heading
         let table = table_head;
         let found_table = false;
-        while (!table.matches(".table")) {
+        while (!table.matches("table")) {
             table = table.nextElementSibling;
-            if (table.matches(".table")) found_table = true;
+            if (table.matches("table")) found_table = true;
         }
         if (!found_table) return null; // ensure that table was found
 
@@ -87,7 +87,7 @@ async function scrape_standard_deductions() {
 
     await page.waitForSelector("table");
 
-    const standard_deductions_post_1960 = await page.evaluate(() => {
+    const standard_deductions = await page.evaluate(() => {
         const table_head = Array.from(document.querySelectorAll("p")).find(
             (t) =>
                 t.innerText
@@ -114,10 +114,61 @@ async function scrape_standard_deductions() {
         );
     });
 
-    console.log("Standard Deductions Post 1960", standard_deductions_post_1960);
+    console.log("Standard Deductions Post 1960", standard_deductions);
+
+    await browser.close();
+}
+
+async function scrape_capital_gains_tax() {
+    const browser = await puppeteer.launch({
+        headless: false,
+        ignoreHTTPSErrors: true,
+    });
+
+    const page = await browser.newPage();
+    await page.goto("https://www.irs.gov/taxtopics/tc409", {
+        waitUntil: "domcontentloaded",
+    });
+
+    await page.waitForSelector("div");
+
+    const capital_gains_taxes = await page.evaluate(() => {
+        const heading = Array.from(document.querySelectorAll("h2")).find((h) =>
+            h.innerText.toLowerCase().includes("capital gains tax rates")
+        );
+
+        let items = [];
+        let body_contents = heading;
+        while (
+            !body_contents.innerText
+                .toLowerCase()
+                .includes("limit on the deduction and carryover of losses")
+        ) {
+            if (body_contents.matches("p")) {
+                // console.log("Tax rate");
+                // console.log(body_contents.innerText.trim());
+                items.push(body_contents.innerText.trim());
+            } else if (
+                body_contents.matches("ul") ||
+                body_contents.matches("ol")
+            ) {
+                console.log("Amounts");
+                let amounts = Array.from(
+                    body_contents.querySelectorAll("li")
+                ).map((li) => li.innerText.trim());
+                items.push(amounts);
+            }
+            body_contents = body_contents.nextElementSibling;
+        }
+
+        return items;
+    });
+
+    console.log("Capital Gains Taxes", capital_gains_taxes);
 
     await browser.close();
 }
 
 scrape_federal_income_taxes();
 scrape_standard_deductions();
+scrape_capital_gains_tax();
