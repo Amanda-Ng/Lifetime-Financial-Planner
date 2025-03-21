@@ -1,38 +1,101 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
+.sidebar {
+  width: 200px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
   background-color: #282c34;
-  min-height: 100vh;
+  padding-top: 20px;
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  padding: 15px;
+}
+
+.sidebar ul li a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding-left: 20px;
+}
+
+.sidebar ul li:hover {
+  background-color: #444;
+}
+
+.App {
+  display: flex;
+}
+
+.App-content {
+  margin-left: 200px;
+  /* Push content right */
+  padding: 20px;
+  width: 100%;
+}
+
+.main-content {
+  margin-left: 200px;
+  /* This will ensure content starts after the sidebar */
+  padding: 20px;
+  width: calc(100% - 200px);
+  /* Ensures that the content fills the remaining width */
+  box-sizing: border-box;
+  /* Ensures padding does not affect the width calculation */
+}
+
+.investment-form {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.investment-form label {
+  font-weight: bold;
+}
+
+.investment-form input,
+.investment-form select,
+.investment-form textarea {
+  width: 50%;
+  padding: 8px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.investment-form .button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.investment-form button {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.radio-group {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 10px;
 }
 
-.App-link {
-  color: #61dafb;
+.radio-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.radio-group input[type="radio"] {
+  margin-right: 10px;
+}
+
+.required {
+  color: red;
 }
