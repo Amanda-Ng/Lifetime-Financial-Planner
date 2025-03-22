@@ -3,7 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
@@ -14,14 +14,14 @@ let db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
 
 process.on("SIGINT", () => {
-  if (db) {
-    db.close()
-      .then(() => console.log("Database connection closed"))
-      .catch((error) => console.log(error));
-  }
-  console.log("Process terminated");
+    if (db) {
+        db.close()
+            .then(() => console.log("Database connection closed"))
+            .catch((error) => console.log(error));
+    }
+    console.log("Process terminated");
 });
