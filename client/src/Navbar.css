@@ -1,0 +1,44 @@
+.navbar {
+    background: linear-gradient(to bottom, rgb(196, 242, 209), rgb(237,241,171)) ;
+    color: black;
+    display: flex;
+    position: fixed;
+    height: 40px;
+    width:100%;
+    align-items:center;
+    padding:1rem; 
+    gap:1rem;
+}
+
+.navbar button{
+    position: fixed;
+    display:flex;
+    align-items:center;
+    right:3rem;
+    background-color:rgb(95, 162, 102);
+    border-radius:25px;  
+    border:none
+}
+.navbar button span{
+    margin-right:30px;
+    align-self: center;
+    color:white;
+    font-size:1rem; 
+}
+
+.navbar p{ 
+    font-weight:bold;
+    font-size:2rem
+}
+
+#headerIcon{
+     width:40px;
+     height:auto; 
+     margin:none
+}
+
+.userPfp_small{
+    width:40px;
+    height:auto; 
+    margin: 5px 10px;
+}

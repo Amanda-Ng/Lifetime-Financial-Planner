@@ -1,0 +1,53 @@
+ 
+#scenario-container{
+    display: grid;
+    height:90vh;
+    width:90vh; 
+    margin:10px;
+    margin-bottom: 40px;
+
+    grid-template-columns: 1fr;
+    grid-template-rows: 2fr 1fr;
+    justify-items: center; 
+    gap:2rem;
+}
+
+.scenario-container div{ 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height:100%;
+    width:100%; 
+    padding: 10px;
+    border-radius: 15px;
+}
+
+.scenario1{ 
+    grid-column: 1;
+    grid-row: 1;
+    height:100%;
+    width:100%; 
+    background-color: #F0F1ED; 
+    padding: 10px;
+    border-radius: 15px;
+}
+.scenario1 div{
+    display: flex;
+    align-items: center;
+}
+
+.scenario2{
+    grid-column: 1;
+    grid-row: 2;
+    height:100%;
+    width:100%; 
+    background-color: #F0F1ED; 
+    padding: 10px;
+    border-radius: 15px;
+}
+
+.scenario2 div{
+    display: flex;
+    align-items: center;
+    margin-top:10px;
+}
