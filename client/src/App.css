@@ -4,8 +4,8 @@
   position: fixed;
   left: 0;
   top: 0;
-  background-color: #282c34;
-  padding-top: 20px;
+  background-color: #282c34; 
+  margin-top: 70px;
 }
 
 .sidebar ul {
@@ -13,7 +13,7 @@
   padding: 0;
 }
 
-.sidebar ul li {
+.sidebar ul li { 
   padding: 15px;
 }
 
@@ -40,14 +40,42 @@
 }
 
 .main-content {
-  margin-left: 200px;
+  /* centers content*/
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* This will ensure content starts after the header */
+  margin-top: 70px;
+  background-color: #D9D9D9; 
   /* This will ensure content starts after the sidebar */
+  margin-left: 200px;
   padding: 20px;
   width: calc(100% - 200px);
   /* Ensures that the content fills the remaining width */
   box-sizing: border-box;
   /* Ensures padding does not affect the width calculation */
 }
+
+.section_header{
+  font-size:2rem;
+}
+
+.subsub_header{
+  font-size:1.3rem;
+}
+
+
+.small_icon{
+  width:20px; 
+  height:auto; 
+  margin:10px;
+} 
+
+.big_icon{
+  width:60px; 
+  height:auto; 
+  margin:10px;
+} 
 
 .investment-form {
   display: flex;
