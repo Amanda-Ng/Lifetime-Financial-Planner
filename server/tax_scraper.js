@@ -53,8 +53,25 @@ async function scrape_federal_income_taxes() {
         return Array.from(table.querySelectorAll("tr")).map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim()));
     });
 
-    console.log("Single Federal Income Tax", single_federal_income_tax);
-    console.log("Married Federal Income Tax", married_federal_income_tax);
+    const single_federal_income_tax_map = {};
+    single_federal_income_tax.forEach((row) => {
+        let percentage = Number(row[0].replaceAll(/[$%,]/g, ""));
+        let lower_bound = Number(row[1].replaceAll(/[$%,]/g, ""));
+        let upper_bound = Number(row[2].replaceAll(/[$%,]/g, ""));
+        if (Number.isNaN(upper_bound)) upper_bound = Infinity;
+        single_federal_income_tax_map[["single", lower_bound, upper_bound]] = percentage;
+    });
+    const married_federal_income_tax_map = {};
+    married_federal_income_tax.forEach((row) => {
+        let percentage = Number(row[0].replaceAll(/[$%,]/g, ""));
+        let lower_bound = Number(row[1].replaceAll(/[$%,]/g, ""));
+        let upper_bound = Number(row[2].replaceAll(/[$%,]/g, ""));
+        if (Number.isNaN(upper_bound)) upper_bound = Infinity;
+        married_federal_income_tax_map[["married", lower_bound, upper_bound]] = percentage;
+    });
+
+    console.log("Single Federal Income Tax: ", single_federal_income_tax_map);
+    console.log("Married Federal Income Tax: ", married_federal_income_tax_map);
 
     await browser.close();
 }
