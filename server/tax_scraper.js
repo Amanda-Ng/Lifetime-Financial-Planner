@@ -134,22 +134,53 @@ async function scrape_capital_gains_tax() {
     await page.waitForSelector("div");
 
     const capital_gains_taxes = await page.evaluate(() => {
-        const heading = Array.from(document.querySelectorAll("h2")).find((h) => h.innerText.toLowerCase().includes("capital gains tax rates"));
+        const tax_rate_paragraphs = Array.from(document.querySelectorAll("p")).filter((p) => p.innerText.toLowerCase().includes("a capital gains rate of"));
+        // const heading = Array.from(document.querySelectorAll("h2")).find((h) => h.innerText.toLowerCase().includes("capital gains tax rates"));
+        console.log(tax_rate_paragraphs);
+        const items = {};
+        let max_single_bound = 0; // used for the highest capital gains tax bracket
+        let max_married_bound = 0;
+        tax_rate_paragraphs.forEach((rate) => {
+            // extract rate from paragraph element
+            const line = rate.innerText.toLowerCase().match(/a capital gains rate of\s+\d+\s*%/i)[0];
+            const rate_extracted = Number(line.match(/\d+/)[0]);
+            if (rate.nextElementSibling.matches("ul") || rate.nextElementSibling.matches("ol")) {
+                const brackets = Array.from(rate.nextElementSibling.querySelectorAll("li"));
+                brackets.forEach((bracket) => {
+                    // find dollar bounds for the tax bracket
+                    const bracket_text = bracket.innerText.trim().toLowerCase();
+                    let amount = bracket_text.indexOf("$");
+                    let bounds = [];
+                    while (amount !== -1) {
+                        const next_space = bracket_text.indexOf(" ", amount);
+                        const bound = Number(bracket_text.slice(amount, next_space).replaceAll(/[$,]/g, "")); // find bound by finding occurrence of $ and the closest space
+                        bounds.push(bound);
+                        amount = bracket_text.indexOf("$", next_space);
+                    }
 
-        let items = [];
-        let body_contents = heading;
-        while (!body_contents.innerText.toLowerCase().includes("limit on the deduction and carryover of losses")) {
-            if (body_contents.matches("p")) {
-                // console.log("Tax rate");
-                // console.log(body_contents.innerText.trim());
-                items.push(body_contents.innerText.trim());
-            } else if (body_contents.matches("ul") || body_contents.matches("ol")) {
-                console.log("Amounts");
-                let amounts = Array.from(body_contents.querySelectorAll("li")).map((li) => li.innerText.trim());
-                items.push(amounts);
+                    if (bounds.length === 1) {
+                        bounds = [0, ...bounds];
+                    } else {
+                        bounds[0] += 1; // add 1 to lower bound to avoid double counting for all elements but the first tax bracket
+                    }
+                    if (bracket_text.includes("single")) {
+                        // determine if single or married filing jointly
+                        items[["single", ...bounds]] = rate_extracted;
+                        max_single_bound = Math.max(max_single_bound, Math.max(...bounds));
+                    } else if (bracket_text.includes("married filing jointly")) {
+                        items[["married", ...bounds]] = rate_extracted;
+                        max_married_bound = Math.max(max_married_bound, Math.max(...bounds));
+                    }
+                });
+            } else {
+                items[Infinity] = rate_extracted; // highest tax rate will not have a list element - just set to Infinity and calculate later
             }
-            body_contents = body_contents.nextElementSibling;
-        }
+        });
+
+        const highest_tax_bracket = items[Infinity];
+        delete items[Infinity];
+        items[["single", max_single_bound + 1, Infinity]] = highest_tax_bracket;
+        items[["married", max_married_bound + 1, Infinity]] = highest_tax_bracket;
 
         return items;
     });
