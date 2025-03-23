@@ -1,9 +1,37 @@
 const puppeteer = require("puppeteer-extra");
+const mongoose = require("mongoose");
+const Taxes = require("./models/Taxes");
 
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());
 const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
+
+const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
+mongoose.connect(mongodb, { useNewUrlParser: true, useUnifiedTopology: true });
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "Error with MongoDB connection"));
+
+function saveTaxes(
+    year,
+    single_federal_income_tax,
+    married_federal_income_tax,
+    single_standard_deductions,
+    married_standard_deductions,
+    single_capital_gains_tax,
+    married_capital_gains_tax
+) {
+    const taxes = new Taxes({
+        year: year,
+        single_federal_income_tax: single_federal_income_tax,
+        married_federal_income_tax: married_federal_income_tax,
+        single_standard_deductions: single_standard_deductions,
+        married_standard_deductions: married_standard_deductions,
+        single_capital_gains_tax: single_capital_gains_tax,
+        married_capital_gains_tax: married_capital_gains_tax,
+    });
+    return taxes.save();
+}
 
 async function scrape_federal_income_taxes() {
     const browser = await puppeteer.launch({
@@ -59,7 +87,7 @@ async function scrape_federal_income_taxes() {
         let lower_bound = Number(row[1].replaceAll(/[$%,]/g, ""));
         let upper_bound = Number(row[2].replaceAll(/[$%,]/g, ""));
         if (Number.isNaN(upper_bound)) upper_bound = Infinity;
-        single_federal_income_tax_map[["single", lower_bound, upper_bound]] = percentage;
+        single_federal_income_tax_map[[lower_bound, upper_bound]] = percentage;
     });
     const married_federal_income_tax_map = {};
     married_federal_income_tax.forEach((row) => {
@@ -67,13 +95,12 @@ async function scrape_federal_income_taxes() {
         let lower_bound = Number(row[1].replaceAll(/[$%,]/g, ""));
         let upper_bound = Number(row[2].replaceAll(/[$%,]/g, ""));
         if (Number.isNaN(upper_bound)) upper_bound = Infinity;
-        married_federal_income_tax_map[["married", lower_bound, upper_bound]] = percentage;
+        married_federal_income_tax_map[[lower_bound, upper_bound]] = percentage;
     });
 
-    console.log("Single Federal Income Tax: ", single_federal_income_tax_map);
-    console.log("Married Federal Income Tax: ", married_federal_income_tax_map);
-
     await browser.close();
+
+    return [single_federal_income_tax_map, married_federal_income_tax_map];
 }
 
 async function scrape_standard_deductions() {
@@ -107,17 +134,19 @@ async function scrape_standard_deductions() {
         return table.map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim()));
     });
 
-    const standard_deductions_map = {};
+    let single_standard_deductions = 0;
+    let married_standard_deductions = 0;
     Array.from(standard_deductions).forEach((element) => {
         if (element[0].toLowerCase().includes("single")) {
-            standard_deductions_map["single"] = Number(element[1].trim().replaceAll(/[$%,]/g, ""));
+            single_standard_deductions = Number(element[1].trim().replaceAll(/[$%,]/g, ""));
         } else if (element[0].toLowerCase().includes("married filing jointly")) {
-            standard_deductions_map["married"] = Number(element[1].trim().replaceAll(/[$%,]/g, ""));
+            married_standard_deductions = Number(element[1].trim().replaceAll(/[$%,]/g, ""));
         }
     });
-    console.log("Standard Deductions: ", standard_deductions_map);
 
     await browser.close();
+
+    return [single_standard_deductions, married_standard_deductions];
 }
 
 async function scrape_capital_gains_tax() {
@@ -185,11 +214,45 @@ async function scrape_capital_gains_tax() {
         return items;
     });
 
-    console.log("Capital Gains Taxes", capital_gains_taxes);
+    // separate capital gains tax into single and married status
+    const single_capital_gains_taxes = {};
+    const married_capital_gains_taxes = {};
+    Object.keys(capital_gains_taxes).forEach((key) => {
+        const status = key.split(",")[0];
+        const lower_bound = key.split(",")[1];
+        const upper_bound = key.split(",")[2];
+        if (status === "single") {
+            single_capital_gains_taxes[[lower_bound, upper_bound]] = capital_gains_taxes[key];
+        } else if (status === "married") {
+            married_capital_gains_taxes[[lower_bound, upper_bound]] = capital_gains_taxes[key];
+        }
+    });
 
     await browser.close();
+
+    return [single_capital_gains_taxes, married_capital_gains_taxes];
 }
 
-scrape_federal_income_taxes();
-scrape_standard_deductions();
-scrape_capital_gains_tax();
+async function scrape_and_store_taxes() {
+    const federal_income_tax_maps = await scrape_federal_income_taxes();
+    const standard_deductions = await scrape_standard_deductions();
+    const capital_gains_taxes = await scrape_capital_gains_tax();
+
+    await saveTaxes(
+        2024,
+        federal_income_tax_maps[0],
+        federal_income_tax_maps[1],
+        standard_deductions[0],
+        standard_deductions[1],
+        capital_gains_taxes[0],
+        capital_gains_taxes[1]
+    );
+
+    if (db) db.close();
+    console.log("Taxes added");
+}
+
+scrape_and_store_taxes().catch((error) => {
+    console.error("ERROR: " + error);
+    if (db) db.close();
+});
