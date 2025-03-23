@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require('./passport/passport');
 const passport = require('passport');
-const configs = require('./configs');
+const configs = require('./configs/config.js');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 dotenv.config();

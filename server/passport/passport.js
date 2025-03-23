@@ -1,6 +1,6 @@
 // TP Entire File (+ edits) from Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 
-const configs = require('../configs');
+const configs = require('../configs/config.js');
 const User = require('../models/User');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
@@ -15,7 +15,9 @@ passport.deserializeUser((id, done) => {
     done(err, user);
   });
 });
-
+console.log('Google Client ID:', configs.googleAuthClientId);
+console.log('Google Client Secret:', configs.googleAuthClientSecret);
+console.log('Google Callback URL:', configs.googleAuthServerCallbackURL);
 // Use GoogleStrategy for OAuth 2.0 authentication
 passport.use(
   new GoogleStrategy(

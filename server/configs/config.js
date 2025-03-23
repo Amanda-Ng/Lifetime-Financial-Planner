@@ -1,4 +1,6 @@
 // TP Entire File (+ edits) from Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
+const dotenv = require('dotenv');
+dotenv.config();
 
 const configs = {
     dbURL: process.env.MONGODB_URL || "mongodb://127.0.0.1:27017/citrifi-db",

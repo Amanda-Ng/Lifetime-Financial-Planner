@@ -6,7 +6,7 @@ const User = require('../models/User');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const { verifyToken } = require('../middlewares/jwt');
-const configs = require('../configs');
+const configs = require('../configs/config.js');
 
 // Signup Route
 router.post('/signup', async (req, res) => {

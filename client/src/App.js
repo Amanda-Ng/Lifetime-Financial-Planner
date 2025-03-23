@@ -9,6 +9,13 @@ import Scenario from "./Scenario.js";
 import Simulation from "./Simulation.js";
 import Dashboard from "./Dashboard.js";
 
+// TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
+import Login from './Login.jsx';
+import Home from './Home.jsx';
+// import Success from './Success.jsx';
+import PrivateRoute from './PrivateRoute.jsx';
+// End TP
+
 function App() {
   return (
     <Router>
@@ -17,11 +24,17 @@ function App() {
         <Sidebar />
         <div className="main-content"> 
           <Routes>
-            <Route path="/investment" element={<InvestmentForm />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/scenario" element={<Scenario />} />
-            <Route path="/simulation" element={<Simulation />} />
+            {/* Public Routes */}
+            <Route path="/" element={<Login />} />
+            {/* <Route path="/success" element={<Success />} /> */}
+
+            {/* Protected Routes */}
+            <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+            <Route path="/investment" element={<PrivateRoute><InvestmentForm /></PrivateRoute>} />
+            <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+            <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+            <Route path="/scenario" element={<PrivateRoute><Scenario /></PrivateRoute>} />
+            <Route path="/simulation" element={<PrivateRoute><Simulation /></PrivateRoute>} />
             {/* Add more Routes here */}
           </Routes>
         </div>
