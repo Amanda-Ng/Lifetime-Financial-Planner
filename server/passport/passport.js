@@ -15,9 +15,7 @@ passport.deserializeUser((id, done) => {
     done(err, user);
   });
 });
-console.log('Google Client ID:', configs.googleAuthClientId);
-console.log('Google Client Secret:', configs.googleAuthClientSecret);
-console.log('Google Callback URL:', configs.googleAuthServerCallbackURL);
+
 // Use GoogleStrategy for OAuth 2.0 authentication
 passport.use(
   new GoogleStrategy(
