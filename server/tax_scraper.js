@@ -12,27 +12,6 @@ mongoose.connect(mongodb, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 
-function saveTaxes(
-    year,
-    single_federal_income_tax,
-    married_federal_income_tax,
-    single_standard_deductions,
-    married_standard_deductions,
-    single_capital_gains_tax,
-    married_capital_gains_tax
-) {
-    const taxes = new Taxes({
-        year: year,
-        single_federal_income_tax: single_federal_income_tax,
-        married_federal_income_tax: married_federal_income_tax,
-        single_standard_deductions: single_standard_deductions,
-        married_standard_deductions: married_standard_deductions,
-        single_capital_gains_tax: single_capital_gains_tax,
-        married_capital_gains_tax: married_capital_gains_tax,
-    });
-    return taxes.save();
-}
-
 async function scrape_federal_income_taxes() {
     const browser = await puppeteer.launch({
         headless: true,
@@ -233,23 +212,77 @@ async function scrape_capital_gains_tax() {
     return [single_capital_gains_taxes, married_capital_gains_taxes];
 }
 
+async function checkMissingTaxData(year) {
+    const taxData = await Taxes.findOne({ year });
+    if (!taxData) {
+        // if no data at all for current year --> all fields missing
+        return {
+            single_federal_income_tax: true,
+            married_federal_income_tax: true,
+            single_standard_deductions: true,
+            married_standard_deductions: true,
+            single_capital_gains_tax: true,
+            married_capital_gains_tax: true,
+        };
+    }
+
+    // if an object is returned, check the various fields for any missing data
+    return {
+        single_federal_income_tax: !taxData.single_federal_income_tax,
+        married_federal_income_tax: !taxData.married_federal_income_tax,
+        single_standard_deductions: !taxData.single_standard_deductions,
+        married_standard_deductions: !taxData.married_standard_deductions,
+        single_capital_gains_tax: !taxData.single_capital_gains_tax,
+        married_capital_gains_tax: !taxData.married_capital_gains_tax,
+    };
+}
+
 async function scrape_and_store_taxes() {
-    const federal_income_tax_maps = await scrape_federal_income_taxes();
-    const standard_deductions = await scrape_standard_deductions();
-    const capital_gains_taxes = await scrape_capital_gains_tax();
+    const year = 2024; // Define the year for which tax data is being processed
+    const missingData = await checkMissingTaxData(year);
 
-    await saveTaxes(
-        2024,
-        federal_income_tax_maps[0],
-        federal_income_tax_maps[1],
-        standard_deductions[0],
-        standard_deductions[1],
-        capital_gains_taxes[0],
-        capital_gains_taxes[1]
-    );
+    // check federal income tax for missing data and scrape if necessary
+    let single_federal_income_tax, married_federal_income_tax;
+    if (missingData.single_federal_income_tax || missingData.married_federal_income_tax) {
+        const federal_income_tax_maps = await scrape_federal_income_taxes();
+        if (missingData.single_federal_income_tax) single_federal_income_tax = federal_income_tax_maps[0];
+        if (missingData.married_federal_income_tax) married_federal_income_tax = federal_income_tax_maps[1];
+    }
 
-    if (db) db.close();
-    console.log("Taxes added");
+    // check standard deductions tax
+    let single_standard_deductions, married_standard_deductions;
+    if (missingData.single_standard_deductions || missingData.married_standard_deductions) {
+        const standard_deductions = await scrape_standard_deductions();
+        if (missingData.single_standard_deductions) single_standard_deductions = standard_deductions[0];
+        if (missingData.married_standard_deductions) married_standard_deductions = standard_deductions[1];
+    }
+
+    // check capital gains tax
+    let single_capital_gains_tax, married_capital_gains_tax;
+    if (missingData.single_capital_gains_tax || missingData.married_capital_gains_tax) {
+        const capital_gains_taxes = await scrape_capital_gains_tax();
+        if (missingData.single_capital_gains_tax) single_capital_gains_tax = capital_gains_taxes[0];
+        if (missingData.married_capital_gains_tax) married_capital_gains_tax = capital_gains_taxes[1];
+    }
+
+    // create object with updated data fields to be stored into the database
+    const updateData = {};
+    if (single_federal_income_tax) updateData.single_federal_income_tax = single_federal_income_tax;
+    if (married_federal_income_tax) updateData.married_federal_income_tax = married_federal_income_tax;
+    if (single_standard_deductions) updateData.single_standard_deductions = single_standard_deductions;
+    if (married_standard_deductions) updateData.married_standard_deductions = married_standard_deductions;
+    if (single_capital_gains_tax) updateData.single_capital_gains_tax = single_capital_gains_tax;
+    if (married_capital_gains_tax) updateData.married_capital_gains_tax = married_capital_gains_tax;
+
+    if (Object.keys(updateData).length > 0) {
+        // update database with new data or initialize it if needed
+        await Taxes.updateOne({ year }, { $set: updateData }, { upsert: true });
+        console.log("Taxes updated");
+    } else {
+        console.log("All tax data is already present for the year", year);
+    }
+
+    if (db) db.close(); // Close the database connection
 }
 
 scrape_and_store_taxes().catch((error) => {
