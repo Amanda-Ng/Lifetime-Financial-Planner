@@ -6,8 +6,14 @@ const UserSchema = new Schema(
     {
         username: { type: String, required: true },
         email: { type: String, required: true },
-        passwordHash: { type: String, required: true },
+        password: { type: String, required: true }, // Renamed from passwordHash to password
         age: { type: Number, required: true },
+
+        // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
+        googleId: { type: String, unique: true },
+        profilePicture: { type: String },
+        //
+        
         createdAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
         isAdmin: { type: Boolean, default: false },
