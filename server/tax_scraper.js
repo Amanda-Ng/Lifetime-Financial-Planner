@@ -238,7 +238,7 @@ async function checkMissingTaxData(year) {
 }
 
 async function scrape_and_store_taxes() {
-    const year = 2024; // Define the year for which tax data is being processed
+    const year = 2024;
     const missingData = await checkMissingTaxData(year);
 
     // check federal income tax for missing data and scrape if necessary
