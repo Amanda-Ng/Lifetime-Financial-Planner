@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 const schema = mongoose.Schema;
 const TaxesSchema = new schema(
     {
-        _id: { type: mongoose.Schema.Types.ObjectId, required: true },
         year: { type: Number, required: true },
         single_federal_income_tax: { type: Map, required: true },
         married_federal_income_tax: { type: Map, required: true },
