@@ -54,6 +54,7 @@
   /* Ensures that the content fills the remaining width */
   box-sizing: border-box;
   /* Ensures padding does not affect the width calculation */
+  height: 100%;
 }
 
 .section_header {
