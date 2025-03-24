@@ -6,10 +6,13 @@
 import { useEffect, useState, React } from "react";
 import useApp from "./hooks/useApp";
 import { axiosClient } from "./services/apiClient";
+import "./Home.css";
 
 function Home() {
     const { token, logout } = useApp();
     const [user, setUser] = useState(null);
+    const [age, setAge] = useState(""); // State to store the user's age
+    const [showPopup, setShowPopup] = useState(true); // State to control popup visibility
 
     useEffect(() => {
         (async () => {
@@ -22,13 +25,33 @@ function Home() {
         })();
     }, [token]);
 
+    const handleAgeSubmit = () => {
+        if (age.trim() === "" || isNaN(age) || age <= 0) {
+            alert("Please enter a valid age.");
+            return;
+        }
+        setShowPopup(false); // Close the popup after valid input
+        console.log("User's age:", age); // You can send this to the server if needed
+    };
+
     return (
         <div className="p-4">
+            {showPopup && (
+                <div className="popup_container">
+                    <div>
+                        <h2>Please Enter Your Age</h2>
+                        <input className="age_input" type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="Enter your age" />
+                        <br />
+                        <button className="submit_age_button" onClick={handleAgeSubmit}>
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            )}
             <h1 className="text-2x1"> {user?.username} </h1>
             <p className="text-zinc-500"> This is a protected page. </p>
             <button onClick={logout} className="mt-4">
-                {" "}
-                Logout{" "}
+                Logout
             </button>
         </div>
     );
