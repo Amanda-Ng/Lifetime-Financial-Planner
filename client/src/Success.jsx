@@ -14,7 +14,6 @@ function Success() {
     // Extract the token from the URL query parameters
     const queryParams = new URLSearchParams(window.location.search);
     const token = queryParams.get('token');
-    console.log('token:', token);
     if (token) {
       // Store the token in the AppContext and localStorage
       setToken(token);

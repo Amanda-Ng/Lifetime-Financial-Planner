@@ -67,7 +67,10 @@ router.get("/google", passport.authenticate("google", { scope: ["profile", "emai
 
 // Google callback route
 router.get("/google/callback", passport.authenticate("google", { session: false, failureRedirect: "/" }), (req, res) => {
-    // Successful authentication, send a token
+    // store Google auth token as session secret
+    req.session.googleId = req.user.googleId; // google ID stored in session data to be accessed later to get user info
+    req.session.secret = req.user.googleToken;
+
     const token = jwt.sign({ userId: req.user._id, username: req.user.username }, "secretKey");
     res.redirect(`${configs.googleAuthClientSuccessURL}/success?token=${token}`);
 });
