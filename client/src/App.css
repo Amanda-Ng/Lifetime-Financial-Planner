@@ -4,7 +4,7 @@
   position: fixed;
   left: 0;
   top: 0;
-  background-color: #282c34; 
+  background-color: #282c34;
   margin-top: 70px;
 }
 
@@ -13,7 +13,7 @@
   padding: 0;
 }
 
-.sidebar ul li { 
+.sidebar ul li {
   padding: 15px;
 }
 
@@ -46,7 +46,7 @@
   justify-content: center;
   /* This will ensure content starts after the header */
   margin-top: 70px;
-  background-color: #D9D9D9; 
+  background-color: #D9D9D9;
   /* This will ensure content starts after the sidebar */
   margin-left: 200px;
   padding: 20px;
@@ -56,53 +56,59 @@
   /* Ensures padding does not affect the width calculation */
 }
 
-.section_header{
-  font-size:2rem;
+.section_header {
+  font-size: 2rem;
 }
 
-.subsub_header{
-  font-size:1.3rem;
+.subsub_header {
+  font-size: 1.3rem;
 }
 
 
-.small_icon{
-  width:20px; 
-  height:auto; 
-  margin:10px;
-} 
+.small_icon {
+  width: 20px;
+  height: auto;
+  margin: 10px;
+}
 
-.big_icon{
-  width:60px; 
-  height:auto; 
-  margin:10px;
-} 
+.big_icon {
+  width: 60px;
+  height: auto;
+  margin: 10px;
+}
 
-.investment-form {
+.investment-form,
+.event-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.investment-form label {
+.investment-form label,
+.event-form label {
   font-weight: bold;
 }
 
 .investment-form input,
 .investment-form select,
-.investment-form textarea {
+.investment-form textarea,
+.event-form input,
+.event-form select,
+.event-form textarea {
   width: 50%;
   padding: 8px;
   margin-top: 5px;
   margin-bottom: 10px;
 }
 
-.investment-form .button-group {
+.button-group {
   display: flex;
   gap: 10px;
   justify-content: flex-start;
 }
 
-.investment-form button {
+.investment-form button,
+.event-form button {
   padding: 10px 20px;
   cursor: pointer;
   font-size: 16px;
@@ -120,6 +126,7 @@
   gap: 5px;
 }
 
+.radio-group input[type="checkbox"],
 .radio-group input[type="radio"] {
   margin-right: 10px;
 }
