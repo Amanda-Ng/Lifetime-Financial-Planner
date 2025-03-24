@@ -1,0 +1,47 @@
+
+#scenario-form{
+    display: flex;
+    flex-wrap: wrap; 
+}
+
+h2{
+    width:100%;
+}
+
+#scenario-form div{
+    display: flex;
+    flex-direction: column; /* Keeps label and input stacked vertically */
+    flex: 1 1 50%; /* Take up 45% of the container width */
+    box-sizing: border-box;
+    align-items: left;
+    margin-bottom: 5px;
+} 
+ 
+input{
+    margin-right: 7rem; 
+}
+
+select{
+    margin-right: 7rem; 
+}
+
+.radioOpt{ /*for div containing radio label and extra opts*/ 
+    display: inline !important; 
+
+}  
+ 
+
+.radioInput{
+    margin-right: 1rem;
+}
+.radioInput input{
+    margin-right: 1rem;
+}
+
+.radioOpt label{
+    margin-right: 1rem;
+} 
+label{
+    margin-bottom: 10px;
+}
+ 

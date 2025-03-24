@@ -8,6 +8,7 @@ import ProfilePage from "./ProfilePage.js";
 import Scenario from "./Scenario.js";
 import Simulation from "./Simulation.js";
 import Dashboard from "./Dashboard.js";
+import ScenarioForm from "./ScenarioForm.js"; 
 
 function App() {
   return (
@@ -20,7 +21,8 @@ function App() {
             <Route path="/investment" element={<InvestmentForm />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/scenario" element={<Scenario />} />
+            <Route path="/scenario" element={<Scenario />} /> 
+            <Route path="/scenarioForm" element={<ScenarioForm />} />
             <Route path="/simulation" element={<Simulation />} />
             {/* Add more Routes here */}
           </Routes>
