@@ -4,15 +4,17 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useApp from './hooks/useApp'; // Custom hook to access AppContext
 
-const Success = () => {
+function Success() {
   const navigate = useNavigate();
   const { setToken } = useApp(); // Access the setToken function from AppContext
 
   useEffect(() => {
+    
+    console.log('Call');
     // Extract the token from the URL query parameters
     const queryParams = new URLSearchParams(window.location.search);
     const token = queryParams.get('token');
-
+    console.log('token:', token);
     if (token) {
       // Store the token in the AppContext and localStorage
       setToken(token);
@@ -20,13 +22,15 @@ const Success = () => {
 
       // Redirect to the protected home page
       navigate('/home');
-    } else {
-      // If no token is found, redirect to the login page
-      navigate('/');
-    }
+    } 
+    // commented this part out until a fix is found
+    // else {
+    //   // If no token is found, redirect to the login page
+    //   navigate('/');
+    // }
   }, [navigate, setToken]);
 
   return <p>Processing login...</p>;
 };
 
-export default Success;
+export default React.memo(Success);
