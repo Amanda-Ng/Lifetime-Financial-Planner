@@ -1,6 +1,6 @@
 const puppeteer = require("puppeteer-extra");
 const mongoose = require("mongoose");
-const Taxes = require("./models/Taxes");
+const Taxes = require("./models/FederalTaxes");
 
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());

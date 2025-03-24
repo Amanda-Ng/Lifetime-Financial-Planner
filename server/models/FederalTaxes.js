@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const schema = mongoose.Schema;
-const TaxesSchema = new schema(
+const FederalTaxesSchema = new schema(
     {
         year: { type: Number, required: true },
         single_federal_income_tax: { type: Map, required: true },
@@ -14,4 +14,4 @@ const TaxesSchema = new schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model("Taxes", TaxesSchema);
+module.exports = mongoose.model("FederalTaxes", FederalTaxesSchema);
