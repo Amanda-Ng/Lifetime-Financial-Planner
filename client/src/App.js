@@ -9,6 +9,7 @@ import ProfilePage from "./ProfilePage.js";
 import Scenario from "./Scenario.js";
 import Simulation from "./Simulation.js";
 import Dashboard from "./Dashboard.js";
+import ScenarioForm from "./ScenarioForm.js"; 
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 import Login from "./Login.jsx";
@@ -17,7 +18,7 @@ import Success from "./Success.jsx";
 import PrivateRoute from "./PrivateRoute.jsx";
 // End TP
 
-function App() {
+function App() { 
     return (
         <Router>
             <div className="App">
@@ -69,6 +70,14 @@ function App() {
                                     <Scenario />
                                 </PrivateRoute>
                             }
+                        />      
+                        <Route
+                            path="/scenarioForm"
+                            element={
+                                <PrivateRoute>
+                                    <ScenarioForm />
+                                </PrivateRoute>
+                            }
                         />
                         <Route
                             path="/simulation"
@@ -83,7 +92,7 @@ function App() {
                 </div>
             </div>
         </Router>
-    );
+    ); 
 }
 
 export default App;

@@ -1,5 +1,6 @@
 import React from "react"; 
 import "./Scenario.css"; 
+import { Link } from "react-router-dom";
  
 
 function Scenario(){
@@ -16,8 +17,8 @@ function Scenario(){
         <div class="scenario2">
             <div>
                 <img src="add.png" alt="add_icon" className="big_icon"/>
-                <span className="subsub_header">Create New Scenario</span>
-            </div>
+                <Link to="/scenarioForm" className="subsub_header">Create New Scenario</Link>
+            </div> 
             <div>
                 <img src="import.png" alt="import_icon" className="big_icon"/>
                 <span className="subsub_header">Import Scenario</span>
