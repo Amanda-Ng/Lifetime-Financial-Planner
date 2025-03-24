@@ -2,6 +2,7 @@
 // Proof of concept for Google OAuth and using apiClient to make authenticated requests
 // isAuthenticated route is protected by JWT token
 // apiClient is a wrapper around axios to make authenticated requests
+// modified slightly to be a JS file instead of JSX
 
 import { useEffect, useState, React } from "react";
 import useApp from "./hooks/useApp";
@@ -11,8 +12,8 @@ import "./Home.css";
 function Home() {
     const { token, logout } = useApp();
     const [user, setUser] = useState(null);
-    const [age, setAge] = useState(""); // State to store the user's age
-    const [showPopup, setShowPopup] = useState(true); // State to control popup visibility
+    const [age, setAge] = useState(""); // store user's age
+    const [showPopup, setShowPopup] = useState(true); // control visibility of popup based on the age input
 
     useEffect(() => {
         (async () => {
@@ -30,8 +31,8 @@ function Home() {
             alert("Please enter a valid age.");
             return;
         }
-        setShowPopup(false); // Close the popup after valid input
-        console.log("User's age:", age); // You can send this to the server if needed
+        setShowPopup(false); // close popup
+        console.log("User's age:", age);
     };
 
     return (
