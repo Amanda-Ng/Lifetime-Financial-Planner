@@ -4,10 +4,16 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals'
 
+// TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
+import AppContextProvider from './context/AppContext.jsx';
+// END TP
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <AppContextProvider>
+     <App />
+    </AppContextProvider>
   </React.StrictMode>
 );
 
