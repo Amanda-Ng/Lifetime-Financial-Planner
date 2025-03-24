@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { axiosClient } from "./services/apiClient";
 
 const InvestmentForm = () => {
-  const navigate = useNavigate();
   const [investment, setInvestment] = useState({
     name: "",
     description: "",
@@ -99,19 +98,9 @@ const InvestmentForm = () => {
     };
 
     try {
-      const responseType = await fetch("http://localhost:8000/api/investmentTypes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(investmentTypeData),
-      });
+      const responseType = await axiosClient.post("/api/investmentTypes", investmentTypeData);
 
-      if (!responseType.ok) {
-        throw new Error("Error creating InvestmentType");
-      }
-
-      const newInvestmentType = await responseType.json();
+      const newInvestmentType = responseType.data;
 
       const investmentData = {
         investmentType: newInvestmentType._id,
@@ -119,43 +108,33 @@ const InvestmentForm = () => {
         tax_status: investment.taxStatus,
       };
 
-      const responseInvestment = await fetch("http://localhost:8000/api/investments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(investmentData),
+      await axiosClient.post("/api/investments", investmentData);
+
+      alert("Investment added successfully!");
+
+      // Reset the form after success
+      setInvestment({
+        name: "",
+        description: "",
+        returnType: "fixed",
+        fixedReturnAmount: "",
+        meanReturnAmount: "",
+        stdDevReturnAmount: "",
+        fixedReturnPercentage: "",
+        meanReturnPercentage: "",
+        stdDevReturnPercentage: "",
+        expenseRatio: "",
+        incomeType: "fixed",
+        fixedIncomeAmount: "",
+        meanIncomeAmount: "",
+        stdDevIncomeAmount: "",
+        fixedIncomePercentage: "",
+        meanIncomePercentage: "",
+        stdDevIncomePercentage: "",
+        taxability: "taxable",
+        value: "",
+        taxStatus: "non-retirement",
       });
-
-      if (responseInvestment.ok) {
-        alert("Investment added successfully!");
-
-        // Reset the form after success
-        setInvestment({
-          name: "",
-          description: "",
-          returnType: "fixed",
-          fixedReturnAmount: "",
-          meanReturnAmount: "",
-          stdDevReturnAmount: "",
-          fixedReturnPercentage: "",
-          meanReturnPercentage: "",
-          stdDevReturnPercentage: "",
-          expenseRatio: "",
-          incomeType: "fixed",
-          fixedIncomeAmount: "",
-          meanIncomeAmount: "",
-          stdDevIncomeAmount: "",
-          fixedIncomePercentage: "",
-          meanIncomePercentage: "",
-          stdDevIncomePercentage: "",
-          taxability: "taxable",
-          value: "",
-          taxStatus: "non-retirement",
-        });
-      } else {
-        alert("Error adding investment.");
-      }
     } catch (error) {
       alert("Error submitting the form.");
       console.error("Error submitting form:", error);
