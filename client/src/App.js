@@ -13,7 +13,7 @@ import ScenarioForm from "./ScenarioForm.js";
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 import Login from "./Login.jsx";
-import Home from "./Home.jsx";
+import Home from "./Home.js";
 import Success from "./Success.jsx";
 import PrivateRoute from "./PrivateRoute.jsx";
 // End TP
