@@ -8,7 +8,7 @@ const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
-mongoose.connect(mongodb, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(mongodb);
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 
