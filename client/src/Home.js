@@ -26,13 +26,21 @@ function Home() {
         })();
     }, [token]);
 
-    const handleAgeSubmit = () => {
+    const handleAgeSubmit = async () => {
         if (age.trim() === "" || isNaN(age) || age <= 0) {
             alert("Please enter a valid age.");
             return;
         }
-        setShowPopup(false); // close popup
-        console.log("User's age:", age);
+
+        try {
+            // Send the age to the backend
+            await axiosClient.post("/updateAge", { age });
+            console.log("User's age saved to the database:", age);
+            setShowPopup(false); // close popup
+        } catch (error) {
+            console.error("Error saving age to the database:", error);
+            alert("Failed to save age. Please try again.");
+        }
     };
 
     return (
