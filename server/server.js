@@ -1,6 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+
+// TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
+require("./passport/passport");
+const passport = require("passport");
+const configs = require("./configs/config.js");
+const morgan = require("morgan");
+const dotenv = require("dotenv");
+dotenv.config();
+//
 const { spawn } = require("child_process"); // Import child_process
 
 const app = express();
@@ -8,11 +17,22 @@ const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
+app.use(morgan("dev"));
+app.use(passport.initialize());
 
-const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
-mongoose.connect(mongodb);
+// const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
+// mongoose.connect(mongodb);
+
+mongoose.connect(configs.dbURL, { useNewUrlParser: true, useUnifiedTopology: true });
+
 let db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
+db.once("open", () => console.log("Connected to MongoDB"));
+
+// Auth routes
+// TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
+app.use("/auth", require("./routes/auth"));
+//
 
 // spawn tax_scraper.js as separate process
 const taxScraperProcess = spawn("node", ["federal_tax_scraper.js"]);
