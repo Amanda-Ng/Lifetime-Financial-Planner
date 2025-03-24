@@ -12,7 +12,7 @@ import Dashboard from "./Dashboard.js";
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 import Login from './Login.jsx';
 import Home from './Home.jsx';
-// import Success from './Success.jsx';
+import Success from './Success.jsx';
 import PrivateRoute from './PrivateRoute.jsx';
 // End TP
 
@@ -26,7 +26,7 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Login />} />
-            {/* <Route path="/success" element={<Success />} /> */}
+            <Route path="/success" element={<Success />} />
 
             {/* Protected Routes */}
             <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />

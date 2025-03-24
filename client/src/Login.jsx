@@ -11,7 +11,7 @@ function Login() {
   return (
     <>
       <h1>Welcome to Citrifi</h1>
-      <Link to='/home'>Home</Link>
+      {/* <Link to='/home'>Home</Link> */}
       <br />
 
       <button onClick={loginWithGoogle} className='mt-4'>
