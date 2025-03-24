@@ -64,16 +64,7 @@ parseStateYamlProcess.on("close", (code) => {
 // POST: Create InvestmentType
 app.post("/api/investmentTypes", async (req, res) => {
     try {
-        const {
-            name,
-            description,
-            returnType,
-            incomeType,
-            expected_annual_return,
-            expected_annual_income,
-            expense_ratio,
-            taxability,
-        } = req.body;
+        const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
 
         const investmentType = new InvestmentType({
             name,
