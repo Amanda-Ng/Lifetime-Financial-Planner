@@ -3,6 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const InvestmentType = require("./models/InvestmentType");
 const Investment = require("./models/Investment");
+const EventSeries = require("./models/EventSeries");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
@@ -111,6 +112,86 @@ app.post("/api/investments", async (req, res) => {
     }
 });
 
+// GET: Gets Investments
+app.get("/api/investments", async (req, res) => {
+    try {
+        const investments = await Investment.find().exec();
+
+        res.json(investments);
+    } catch (error) {
+        console.error("Error fetching investments:", error);
+        res.status(500).json({ error: "Failed to fetch investments" });
+    }
+});
+
+// POST /api/event-series - Create a new EventSeries
+app.post("/api/event-series", async (req, res) => {
+    try {
+        const {
+            name,
+            description,
+            startYearType,
+            startYear,
+            durationType,
+            duration,
+            eventType,
+            initialAmount,
+            expectedChangeType,
+            expectedChange,
+            inflationAdjustment,
+            isMarried,
+            userPercentage,
+            isSocialSecurity,
+            isDiscretionary,
+            assetAllocationType,
+            maxCash,
+            fixedAllocation,
+            initialAllocation,
+            finalAllocation,
+        } = req.body;
+
+        const newEventSeries = new EventSeries({
+            name,
+            description,
+            startYearType,
+            startYear,
+            durationType,
+            duration,
+            eventType,
+            initialAmount,
+            expectedChangeType,
+            expectedChange,
+            inflationAdjustment,
+            isMarried,
+            userPercentage,
+            isSocialSecurity,
+            isDiscretionary,
+            assetAllocationType,
+            maxCash,
+            fixedAllocation,
+            initialAllocation,
+            finalAllocation,
+        });
+
+        await newEventSeries.save();
+
+        res.status(201).json({ message: "EventSeries created successfully", eventSeries: newEventSeries });
+    } catch (error) {
+        console.error("Error creating EventSeries:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// GET: Gets Event Series
+app.get("/api/event-series", async (req, res) => {
+    try {
+        const eventSeries = await EventSeries.find();
+        res.json(eventSeries);
+    } catch (error) {
+        console.error("Error fetching event series:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
