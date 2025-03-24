@@ -5,8 +5,8 @@ const StateTaxesSchema = new schema(
     {
         year: { type: Number, required: true },
         state: { type: String, required: true },
-        status: { type: String, required: true },
-        brackets: { type: Map, required: true },
+        single_tax_brackets: { type: Array, required: true },
+        married_tax_brackets: { type: Array, required: true },
     },
     { timestamps: true }
 );

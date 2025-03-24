@@ -1,7 +1,15 @@
 const fs = require("fs").promises;
 const yaml = require("js-yaml");
 
-async function parseTaxData(filePath) {
+const mongoose = require("mongoose");
+const StateTaxes = require("./models/StateTaxes");
+
+const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
+mongoose.connect(mongodb, { useNewUrlParser: true, useUnifiedTopology: true });
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "Error with MongoDB connection"));
+
+async function read_tax_data_from_yaml(filePath) {
     try {
         const fileContents = await fs.readFile(filePath, "utf8");
         const taxData = yaml.load(fileContents); // load yaml file as JS object
@@ -27,19 +35,29 @@ async function parseTaxData(filePath) {
     }
 }
 
-async function writeTaxDataToFile(data, outputPath) {
-    try {
-        const jsonData = JSON.stringify(data, null, 2);
-        await fs.writeFile(outputPath, jsonData, "utf8");
-        console.log(`Tax data successfully written to ${outputPath}`);
-    } catch (error) {
-        console.error("Error writing tax data to file:", error);
+async function store_tax_data(data) {
+    const parsed_data = JSON.parse(data);
+    for (const state in parsed_data) {
+        const filing_statuses = parsed_data[state];
+        const state_taxes = new StateTaxes({
+            year: 2024,
+            state: state,
+            single_tax_brackets: filing_statuses["single"] || null,
+            married_tax_brackets: filing_statuses["married"] || null,
+        });
+        await state_taxes.save();
     }
 }
 
-(async () => {
-    const taxData = await parseTaxData("init.yaml");
+async function parse_and_store_yaml_data(filePath) {
+    const taxData = await read_tax_data_from_yaml(filePath);
     if (taxData) {
-        await writeTaxDataToFile(taxData, "parsed_tax_data.txt");
+        await store_tax_data(JSON.stringify(taxData, null, 2));
     }
-})();
+    if (db) db.close();
+}
+
+parse_and_store_yaml_data("init.yaml").catch((error) => {
+    console.error("ERROR: " + error);
+    if (db) db.close();
+});
