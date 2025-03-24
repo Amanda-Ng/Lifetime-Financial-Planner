@@ -19,17 +19,10 @@ function ProfilePage() {
                 {/* !!Add action to text above */}
             </div>
             <div className="profile2">
-                <div className="section_header">Profile Info</div>
+                <div className="section_header">Personal Profile Info</div>
                 <img src="editPage.png" alt="editProfile" className="editPage_icon" />
-                <div>Username, email, age</div>
+                <div>Name, age, profile photo</div>
                 <div className="update_info_option">UPDATE INFO &gt;</div>
-            </div>{" "}
-            {/* !!Add action to text above */}
-            <div className="profile3">
-                <div className="section_header">Password</div>
-                <img src="key.png" alt="key_icon" className="key_icon" />
-                <div>Keep your account secure</div>
-                <div className="change_password_option">CHANGE PASSWORD &gt;</div>
             </div>{" "}
             {/* !!Add action to text above */}
             <div className="profile4">
