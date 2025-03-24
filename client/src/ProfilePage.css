@@ -5,8 +5,8 @@
     margin:10px;
     margin-bottom: 40px;
     
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr; 
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr; 
     justify-items: center; 
     gap:2rem;
 }
@@ -16,7 +16,7 @@
     height:100%;
     width:100%;
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 1 / span 2;
     padding: 10px;
     justify-items: center;
     align-items:center; 
@@ -45,9 +45,11 @@
     border-top: 2px solid #D9D9D9;
     margin-top: 10px;
     padding-top: 10px;
+    color: blue;
 }
 
 .profile2{
+    grid-row: 1;
     grid-column: 2;
     background-color: #F0F1ED;  
     height:100%;
@@ -61,14 +63,31 @@
     margin:15px;
 }
 
-.editPage_icon{
+.editPage_icon, .key_icon {
     margin-top: 15px;
     width:70px;
     height:auto; 
 }
 
 .profile3{
-    grid-column: span 2;
+    grid-row: 1;
+    grid-column: 3;
+    height: 100%;
+    width:100%;
+    background-color: #F0F1ED; 
+    padding: 10px;
+    justify-items: center;
+    align-items:center; 
+    border-radius: 15px;
+}
+
+.profile3 div{
+    margin:15px;
+}
+
+.profile4{
+    grid-column: 2 / span 2;
+    height: 100%;
     width:100%;
     background-color: #F0F1ED; 
     padding: 10px;
@@ -96,4 +115,8 @@
 .description{
     font-size: 15px;;
     margin: 10px;
+}
+
+.update_info_option, .change_password_option{
+    color: blue;
 }
