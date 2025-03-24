@@ -27,7 +27,7 @@ function App() {
                 <div className="main-content">
                     <Routes>
                         {/* Public Routes */}
-                        <Route path="/" element={<Login />} />
+                        <Route path="/login" element={<Login />} />
                         <Route path="/success" element={<Success />} />
 
                         {/* Protected Routes */}
@@ -48,7 +48,7 @@ function App() {
                             }
                         />
                         <Route
-                            path="/dashboard"
+                            path="/"
                             element={
                                 <PrivateRoute>
                                     <Dashboard />

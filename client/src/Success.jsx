@@ -23,7 +23,7 @@ function Success() {
       navigate('/home');
     } else {
       // If no token is found, redirect to the login page
-      navigate('/');
+      navigate('/login');
     }
   }, [navigate, setToken]);
 

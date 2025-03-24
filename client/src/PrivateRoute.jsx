@@ -10,7 +10,7 @@ const PrivateRoute = ({ children }) => {
 
   return (
     <Suspense fallback={<p>Loading...</p>}>
-      {token ? children : <Navigate to={'/'} />}
+      {token ? children : <Navigate to={'/login'} />}
     </Suspense>
   );
 };
