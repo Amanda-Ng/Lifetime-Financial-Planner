@@ -1,0 +1,443 @@
+{
+  "new_york_state_tax_rates": {
+    "single": [
+      {
+        "range": [
+          0,
+          8500
+        ],
+        "rate": 0.04,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          8500,
+          11700
+        ],
+        "rate": 0.045,
+        "adjustment": 340,
+        "excess_over": 8500
+      },
+      {
+        "range": [
+          11700,
+          13900
+        ],
+        "rate": 0.0525,
+        "adjustment": 484,
+        "excess_over": 11700
+      },
+      {
+        "range": [
+          13900,
+          80650
+        ],
+        "rate": 0.055,
+        "adjustment": 600,
+        "excess_over": 13900
+      },
+      {
+        "range": [
+          80650,
+          215400
+        ],
+        "rate": 0.06,
+        "adjustment": 4271,
+        "excess_over": 80650
+      },
+      {
+        "range": [
+          215400,
+          1077550
+        ],
+        "rate": 0.0685,
+        "adjustment": 12356,
+        "excess_over": 215400
+      },
+      {
+        "range": [
+          1077550,
+          5000000
+        ],
+        "rate": 0.0965,
+        "adjustment": 71413,
+        "excess_over": 1077550
+      },
+      {
+        "range": [
+          5000000,
+          25000000
+        ],
+        "rate": 0.103,
+        "adjustment": 449929,
+        "excess_over": 5000000
+      },
+      {
+        "range": [
+          25000000,
+          "Infinity"
+        ],
+        "rate": 0.109,
+        "adjustment": 2509929,
+        "excess_over": 25000000
+      }
+    ],
+    "married": [
+      {
+        "range": [
+          0,
+          17150
+        ],
+        "rate": 0.04,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          17150,
+          23600
+        ],
+        "rate": 0.045,
+        "adjustment": 686,
+        "excess_over": 17150
+      },
+      {
+        "range": [
+          23600,
+          27900
+        ],
+        "rate": 0.0525,
+        "adjustment": 976,
+        "excess_over": 23600
+      },
+      {
+        "range": [
+          27900,
+          161550
+        ],
+        "rate": 0.055,
+        "adjustment": 1202,
+        "excess_over": 27900
+      },
+      {
+        "range": [
+          161550,
+          323200
+        ],
+        "rate": 0.06,
+        "adjustment": 8553,
+        "excess_over": 161550
+      },
+      {
+        "range": [
+          323200,
+          2155350
+        ],
+        "rate": 0.0685,
+        "adjustment": 18252,
+        "excess_over": 323200
+      },
+      {
+        "range": [
+          2155350,
+          5000000
+        ],
+        "rate": 0.0965,
+        "adjustment": 143754,
+        "excess_over": 2155350
+      },
+      {
+        "range": [
+          5000000,
+          25000000
+        ],
+        "rate": 0.103,
+        "adjustment": 418263,
+        "excess_over": 5000000
+      },
+      {
+        "range": [
+          25000000,
+          "Infinity"
+        ],
+        "rate": 0.109,
+        "adjustment": 2478263,
+        "excess_over": 25000000
+      }
+    ]
+  },
+  "new_jersey_tax_rates": {
+    "single": [
+      {
+        "range": [
+          0,
+          20000
+        ],
+        "rate": 0.014,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          20001,
+          35000
+        ],
+        "rate": 0.0175,
+        "adjustment": -70,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          35001,
+          40000
+        ],
+        "rate": 0.035,
+        "adjustment": -682.5,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          40001,
+          75000
+        ],
+        "rate": 0.05525,
+        "adjustment": -1492.5,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          75001,
+          500000
+        ],
+        "rate": 0.0637,
+        "adjustment": -2126.25,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          500001,
+          1000000
+        ],
+        "rate": 0.0897,
+        "adjustment": -15126.25,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          1000001,
+          "Infinity"
+        ],
+        "rate": 0.1075,
+        "adjustment": -32926.25,
+        "excess_over": 0
+      }
+    ],
+    "married": [
+      {
+        "range": [
+          0,
+          20000
+        ],
+        "rate": 0.014,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          20001,
+          50000
+        ],
+        "rate": 0.0175,
+        "adjustment": -70,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          50001,
+          70000
+        ],
+        "rate": 0.0245,
+        "adjustment": -420,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          70001,
+          80000
+        ],
+        "rate": 0.035,
+        "adjustment": -1154.5,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          80001,
+          150000
+        ],
+        "rate": 0.05525,
+        "adjustment": -2775,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          150001,
+          500000
+        ],
+        "rate": 0.0637,
+        "adjustment": -4042.5,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          500001,
+          1000000
+        ],
+        "rate": 0.0897,
+        "adjustment": -17042.5,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          1000001,
+          "Infinity"
+        ],
+        "rate": 0.1075,
+        "adjustment": -34842.5,
+        "excess_over": 0
+      }
+    ]
+  },
+  "conneticut_tax_rates": {
+    "single": [
+      {
+        "range": [
+          0,
+          10000
+        ],
+        "rate": 0.02,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          10001,
+          50000
+        ],
+        "rate": 0.045,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          50001,
+          100000
+        ],
+        "rate": 0.055,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          100001,
+          200000
+        ],
+        "rate": 0.06,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          200001,
+          250000
+        ],
+        "rate": 0.065,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          250001,
+          500000
+        ],
+        "rate": 0.069,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          500001,
+          "Infinity"
+        ],
+        "rate": 0.0699,
+        "adjustment": 0,
+        "excess_over": 0
+      }
+    ],
+    "married": [
+      {
+        "range": [
+          0,
+          20000
+        ],
+        "rate": 0.02,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          20001,
+          100000
+        ],
+        "rate": 0.045,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          100001,
+          200000
+        ],
+        "rate": 0.055,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          200001,
+          400000
+        ],
+        "rate": 0.06,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          400001,
+          500000
+        ],
+        "rate": 0.065,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          500001,
+          1000000
+        ],
+        "rate": 0.069,
+        "adjustment": 0,
+        "excess_over": 0
+      },
+      {
+        "range": [
+          1000001,
+          "Infinity"
+        ],
+        "rate": 0.0699,
+        "adjustment": 0,
+        "excess_over": 0
+      }
+    ]
+  }
+}
