@@ -21,9 +21,7 @@ function Success() {
 
       // Redirect to the protected home page
       navigate('/home');
-    } 
-    
-    else {
+    } else {
       // If no token is found, redirect to the login page
       navigate('/');
     }
