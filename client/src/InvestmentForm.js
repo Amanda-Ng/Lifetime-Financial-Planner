@@ -7,17 +7,23 @@ const InvestmentForm = () => {
     name: "",
     description: "",
     returnType: "fixed",
-    fixedReturn: "",
-    meanReturn: "",
-    stdDevReturn: "",
+    fixedReturnAmount: "",
+    meanReturnAmount: "",
+    stdDevReturnAmount: "",
+    fixedReturnPercentage: "",
+    meanReturnPercentage: "",
+    stdDevReturnPercentage: "",
     expenseRatio: "",
     incomeType: "fixed",
-    fixedIncome: "",
-    meanIncome: "",
-    stdDevIncome: "",
+    fixedIncomeAmount: "",
+    meanIncomeAmount: "",
+    stdDevIncomeAmount: "",
+    fixedIncomePercentage: "",
+    meanIncomePercentage: "",
+    stdDevIncomePercentage: "",
     taxability: "taxable",
     value: "",
-    accountStatus: "non-retirement",
+    taxStatus: "non-retirement",
   });
 
   const handleChange = (e) => {
@@ -26,11 +32,145 @@ const InvestmentForm = () => {
   };
 
   const handleCancel = () => {
-    navigate("/");  // Redirect to homepage when canceled
+    // Clear form when canceled
+    setInvestment({
+      name: "",
+      description: "",
+      returnType: "fixed",
+      fixedReturnAmount: "",
+      meanReturnAmount: "",
+      stdDevReturnAmount: "",
+      fixedReturnPercentage: "",
+      meanReturnPercentage: "",
+      stdDevReturnPercentage: "",
+      expenseRatio: "",
+      incomeType: "fixed",
+      fixedIncomeAmount: "",
+      meanIncomeAmount: "",
+      stdDevIncomeAmount: "",
+      fixedIncomePercentage: "",
+      meanIncomePercentage: "",
+      stdDevIncomePercentage: "",
+      taxability: "taxable",
+      value: "",
+      taxStatus: "non-retirement",
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    let expectedAnnualReturn = 0;
+    let expectedAnnualIncome = 0;
+
+    // Calculate Expected Annual Return
+    if (investment.returnType === "fixedAmount") {
+      expectedAnnualReturn = investment.fixedReturnAmount;
+    } else if (investment.returnType === "fixedPercentage") {
+      expectedAnnualReturn = investment.value * (investment.fixedReturnPercentage / 100);
+    } else if (investment.returnType === "randomAmount") {
+      expectedAnnualReturn = generateRandomFromNormal(investment.meanReturnAmount, investment.stdDevReturnAmount);
+    } else if (investment.returnType === "randomPercentage") {
+      const randomPercentage = generateRandomFromNormal(investment.meanReturnPercentage, investment.stdDevReturnPercentage);
+      expectedAnnualReturn = investment.value * (randomPercentage / 100);
+    }
+
+    // Calculate Expected Annual Income
+    if (investment.incomeType === "fixedAmount") {
+      expectedAnnualIncome = investment.fixedIncomeAmount;
+    } else if (investment.incomeType === "fixedPercentage") {
+      expectedAnnualIncome = investment.value * (investment.fixedIncomePercentage / 100);
+    } else if (investment.incomeType === "randomAmount") {
+      expectedAnnualIncome = generateRandomFromNormal(investment.meanIncomeAmount, investment.stdDevIncomeAmount);
+    } else if (investment.incomeType === "randomPercentage") {
+      const randomPercentage = generateRandomFromNormal(investment.meanIncomePercentage, investment.stdDevIncomePercentage);
+      expectedAnnualIncome = investment.value * (randomPercentage / 100);
+    }
+
+    const investmentTypeData = {
+      name: investment.name,
+      description: investment.description,
+      expected_annual_return: expectedAnnualReturn,
+      expected_annual_income: expectedAnnualIncome,
+      returnType: investment.returnType,
+      incomeType: investment.incomeType,
+      expense_ratio: investment.expenseRatio,
+      taxability: investment.taxability,
+    };
+
+    try {
+      const responseType = await fetch("http://localhost:8000/api/investmentTypes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(investmentTypeData),
+      });
+
+      if (!responseType.ok) {
+        throw new Error("Error creating InvestmentType");
+      }
+
+      const newInvestmentType = await responseType.json();
+
+      const investmentData = {
+        investmentType: newInvestmentType._id,
+        value: investment.value,
+        tax_status: investment.taxStatus,
+      };
+
+      const responseInvestment = await fetch("http://localhost:8000/api/investments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(investmentData),
+      });
+
+      if (responseInvestment.ok) {
+        alert("Investment added successfully!");
+
+        // Reset the form after success
+        setInvestment({
+          name: "",
+          description: "",
+          returnType: "fixed",
+          fixedReturnAmount: "",
+          meanReturnAmount: "",
+          stdDevReturnAmount: "",
+          fixedReturnPercentage: "",
+          meanReturnPercentage: "",
+          stdDevReturnPercentage: "",
+          expenseRatio: "",
+          incomeType: "fixed",
+          fixedIncomeAmount: "",
+          meanIncomeAmount: "",
+          stdDevIncomeAmount: "",
+          fixedIncomePercentage: "",
+          meanIncomePercentage: "",
+          stdDevIncomePercentage: "",
+          taxability: "taxable",
+          value: "",
+          taxStatus: "non-retirement",
+        });
+      } else {
+        alert("Error adding investment.");
+      }
+    } catch (error) {
+      alert("Error submitting the form.");
+      console.error("Error submitting form:", error);
+    }
+  };
+
+  const generateRandomFromNormal = (mean, stdDev) => {
+    const u1 = Math.random();
+    const u2 = Math.random();
+    const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    return Number(mean) + z0 * stdDev;
   };
 
   return (
-    <form className="investment-form">
+    <form className="investment-form" onSubmit={handleSubmit}>
       <h2>Add Investment</h2>
 
       {/* Name */}
@@ -58,17 +198,18 @@ const InvestmentForm = () => {
           <input
             type="radio"
             name="returnType"
-            value="fixed"
-            checked={investment.returnType === "fixed"}
+            value="fixedAmount"
+            checked={investment.returnType === "fixedAmount"}
             onChange={handleChange}
           />
-          Fixed Value
+          Fixed Amount
         </label>
-        {investment.returnType === "fixed" && (
+        {investment.returnType === "fixedAmount" && (
           <input
             type="number"
-            name="fixedReturn"
-            value={investment.fixedReturn}
+            name="fixedReturnAmount"
+            placeholder="Enter fixed amount"
+            value={investment.fixedReturnAmount}
             onChange={handleChange}
             required
           />
@@ -79,27 +220,83 @@ const InvestmentForm = () => {
           <input
             type="radio"
             name="returnType"
-            value="random"
-            checked={investment.returnType === "random"}
+            value="fixedPercentage"
+            checked={investment.returnType === "fixedPercentage"}
             onChange={handleChange}
           />
-          Random (Normal Distribution)
+          Fixed Percentage
         </label>
-        {investment.returnType === "random" && (
+        {investment.returnType === "fixedPercentage" && (
+          <input
+            type="number"
+            name="fixedReturnPercentage"
+            placeholder="Enter percentage"
+            value={investment.fixedReturnPercentage}
+            onChange={handleChange}
+            required
+          />
+        )}
+      </div>
+
+      <div className="radio-group">
+        <label>
+          <input
+            type="radio"
+            name="returnType"
+            value="randomAmount"
+            checked={investment.returnType === "randomAmount"}
+            onChange={handleChange}
+          />
+          Random (Amount from Normal Distribution)
+        </label>
+        {investment.returnType === "randomAmount" && (
           <>
             <input
               type="number"
-              name="meanReturn"
-              placeholder="Mean"
-              value={investment.meanReturn}
+              name="meanReturnAmount"
+              placeholder="Mean Amount"
+              value={investment.meanReturnAmount}
               onChange={handleChange}
               required
             />
             <input
               type="number"
-              name="stdDevReturn"
+              name="stdDevReturnAmount"
               placeholder="Standard Deviation"
-              value={investment.stdDevReturn}
+              value={investment.stdDevReturnAmount}
+              onChange={handleChange}
+              required
+            />
+          </>
+        )}
+      </div>
+
+      <div className="radio-group">
+        <label>
+          <input
+            type="radio"
+            name="returnType"
+            value="randomPercentage"
+            checked={investment.returnType === "randomPercentage"}
+            onChange={handleChange}
+          />
+          Random (Percentage from Normal Distribution)
+        </label>
+        {investment.returnType === "randomPercentage" && (
+          <>
+            <input
+              type="number"
+              name="meanReturnPercentage"
+              placeholder="Mean Percentage"
+              value={investment.meanReturnPercentage}
+              onChange={handleChange}
+              required
+            />
+            <input
+              type="number"
+              name="stdDevReturnPercentage"
+              placeholder="Standard Deviation"
+              value={investment.stdDevReturnPercentage}
               onChange={handleChange}
               required
             />
@@ -124,20 +321,77 @@ const InvestmentForm = () => {
           <input
             type="radio"
             name="incomeType"
-            value="fixed"
-            checked={investment.incomeType === "fixed"}
+            value="fixedAmount"
+            checked={investment.incomeType === "fixedAmount"}
             onChange={handleChange}
           />
-          Fixed Value
+          Fixed Amount
         </label>
-        {investment.incomeType === "fixed" && (
+        {investment.incomeType === "fixedAmount" && (
           <input
             type="number"
-            name="fixedIncome"
-            value={investment.fixedIncome}
+            name="fixedIncomeAmount"
+            placeholder="Enter fixed amount"
+            value={investment.fixedIncomeAmount}
             onChange={handleChange}
             required
           />
+        )}
+      </div>
+
+      <div className="radio-group">
+        <label>
+          <input
+            type="radio"
+            name="incomeType"
+            value="fixedPercentage"
+            checked={investment.incomeType === "fixedPercentage"}
+            onChange={handleChange}
+          />
+          Fixed Percentage
+        </label>
+        {investment.incomeType === "fixedPercentage" && (
+          <input
+            type="number"
+            name="fixedIncomePercentage"
+            placeholder="Enter percentage"
+            value={investment.fixedIncomePercentage}
+            onChange={handleChange}
+            required
+          />
+        )}
+      </div>
+
+      <div className="radio-group">
+        <label>
+          <input
+            type="radio"
+            name="incomeType"
+            value="randomAmount"
+            checked={investment.incomeType === "randomAmount"}
+            onChange={handleChange}
+          />
+          Random (Amount from Normal Distribution)
+        </label>
+        {investment.incomeType === "randomAmount" && (
+          <>
+            <input
+              type="number"
+              name="meanIncomeAmount"
+              placeholder="Mean Amount"
+              value={investment.meanIncomeAmount}
+              onChange={handleChange}
+              required
+            />
+            <input
+              type="number"
+              name="stdDevIncomeAmount"
+              placeholder="Standard Deviation"
+              value={investment.stdDevIncomeAmount}
+              onChange={handleChange}
+              required
+            />
+          </>
         )}
       </div>
       <div className="radio-group">
@@ -145,27 +399,27 @@ const InvestmentForm = () => {
           <input
             type="radio"
             name="incomeType"
-            value="random"
-            checked={investment.incomeType === "random"}
+            value="randomPercentage"
+            checked={investment.incomeType === "randomPercentage"}
             onChange={handleChange}
           />
-          Random (Normal Distribution)
+          Random (Percentage from Normal Distribution)
         </label>
-        {investment.incomeType === "random" && (
+        {investment.incomeType === "randomPercentage" && (
           <>
             <input
               type="number"
-              name="meanIncome"
-              placeholder="Mean"
-              value={investment.meanIncome}
+              name="meanIncomePercentage"
+              placeholder="Mean Percentage"
+              value={investment.meanIncomePercentage}
               onChange={handleChange}
               required
             />
             <input
               type="number"
-              name="stdDevIncome"
+              name="stdDevIncomePercentage"
               placeholder="Standard Deviation"
-              value={investment.stdDevIncome}
+              value={investment.stdDevIncomePercentage}
               onChange={handleChange}
               required
             />
@@ -192,7 +446,7 @@ const InvestmentForm = () => {
 
       {/* Account Status */}
       <label>Account Status <span className="required">*</span></label>
-      <select name="accountStatus" value={investment.accountStatus} onChange={handleChange} required>
+      <select name="taxStatus" value={investment.taxStatus} onChange={handleChange} required>
         <option value="non-retirement">Non-Retirement</option>
         <option value="pre-tax retirement">Pre-Tax Retirement</option>
         <option value="after-tax retirement">After-Tax Retirement</option>

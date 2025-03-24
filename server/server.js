@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const InvestmentType = require("./models/InvestmentType");
+const Investment = require("./models/Investment");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
@@ -57,6 +59,58 @@ parseStateYamlProcess.stderr.on("data", (data) => {
 parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
+
+// POST: Create InvestmentType
+app.post("/api/investmentTypes", async (req, res) => {
+    try {
+        const {
+            name,
+            description,
+            returnType,
+            incomeType,
+            expected_annual_return,
+            expected_annual_income,
+            expense_ratio,
+            taxability,
+        } = req.body;
+
+        const investmentType = new InvestmentType({
+            name,
+            description,
+            returnType,
+            incomeType,
+            expected_annual_return,
+            expected_annual_income,
+            expense_ratio,
+            taxability,
+        });
+
+        await investmentType.save();
+
+        return res.status(201).json(investmentType); // Return the created InvestmentType
+    } catch (error) {
+        console.error("Error creating InvestmentType:", error); // Log the error to the server console
+        return res.status(500).json({ message: "Error creating InvestmentType", error });
+    }
+});
+
+// POST: Create Investment
+app.post("/api/investments", async (req, res) => {
+    try {
+        // Create Investment document referencing the InvestmentType
+        const investment = new Investment({
+            investmentType: req.body.investmentType, // ObjectId of InvestmentType
+            value: req.body.value,
+            tax_status: req.body.tax_status,
+        });
+
+        await investment.save();
+        res.status(201).json(investment);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
