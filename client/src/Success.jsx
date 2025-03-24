@@ -22,12 +22,10 @@ function Success() {
 
       // Redirect to the protected home page
       navigate('/home');
-    } 
-    // commented this part out until a fix is found
-    // else {
-    //   // If no token is found, redirect to the login page
-    //   navigate('/');
-    // }
+    } else {
+      // If no token is found, redirect to the login page
+      navigate('/');
+    }
   }, [navigate, setToken]);
 
   return <p>Processing login...</p>;
