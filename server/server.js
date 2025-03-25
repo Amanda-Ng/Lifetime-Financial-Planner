@@ -57,7 +57,99 @@ parseStateYamlProcess.stderr.on("data", (data) => {
 parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
+app.post("/api/investmentTypes", async (req, res) => {
+    try {
+        const {
+            name,
+            description,
+            returnType,
+            incomeType,
+            expected_annual_return,
+            expected_annual_income,
+            expense_ratio,
+            taxability,
+        } = req.body;
 
+        const investmentType = new InvestmentType({
+            name,
+            description,
+            returnType,
+            incomeType,
+            expected_annual_return,
+            expected_annual_income,
+            expense_ratio,
+            taxability,
+        });
+
+        await investmentType.save();
+
+        return res.status(201).json(investmentType); // Return the created InvestmentType
+    } catch (error) {
+        console.error("Error creating InvestmentType:", error); // Log the error to the server console
+        return res.status(500).json({ message: "Error creating InvestmentType", error });
+    }
+});
+
+// POST: Create Investment
+app.post("/api/investments", async (req, res) => {
+    try {
+        // Create Investment document referencing the InvestmentType
+        const investment = new Investment({
+            investmentType: req.body.investmentType, // ObjectId of InvestmentType
+            value: req.body.value,
+            tax_status: req.body.tax_status,
+        });
+
+        await investment.save();
+        res.status(201).json(investment);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// POST: Create scenario
+app.post("/api/scenario", async (req, res) => {
+    try {
+        // Create Investment document referencing the InvestmentType
+        const scenario = new Scenario({
+            name: req.body.name, 
+            marital_status: req.body.maritialStatus,
+            birth_year: req.body.birthYear,
+            birth_year_spouse: req.body.birthYear_spouse, 
+
+            life_expectancy: req.body.lifeExpectancy_value,
+            life_expectancy_mean: req.body.life_expectancy_mean,
+            life_expectancy_stdv: req.body.life_expectancy_stdv, 
+
+            life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
+            life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
+            life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+
+            investments: req.body.investmentList,
+            event_series: req.body.event_series,
+            inflation_assumption: req.body.inflation,
+            init_limit_pretax: req.body.pre_contribLimit,
+            init_limit_aftertax: req.body.after_contribLimit,
+            spending_strategy: req.body.spendingStrat, 
+            expense_withdrawal_strategy: req.body.withdrawStrat,
+            roth_conversion_strategy: [req.body.roth_startYr, req.body.roth_endYr],
+            rmd_strategy: req.body.rmd_strategy,
+            roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
+            sharing_settings: null,
+            financial_goal: req.body.financialGoal,
+            state_of_residence: req.body.stateResidence,
+            taxes: null,        /*!!need algorithm*/
+            totalTaxedIncome: null, /*!!need algorithm*/
+            totalInvestmentValue: null, /*!!need algorithm*/ 
+        });
+
+        await scenario.save(); 
+        res.status(201).json(scenario);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+ 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
