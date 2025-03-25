@@ -143,6 +143,7 @@ app.post("/api/investments", async (req, res) => {
             investmentType: req.body.investmentType, // ObjectId of InvestmentType
             value: req.body.value,
             tax_status: req.body.tax_status,
+            userId: "Guest",
         });
 
         await investment.save();
@@ -197,6 +198,8 @@ app.post("/api/scenarioForm", async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+
+module.exports = app;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -15,7 +15,26 @@ function Home() {
     const { token, logout } = useApp();
     const [user, setUser] = useState(null);
     const [age, setAge] = useState(""); // store user's age
-    const [showPopup, setShowPopup] = useState(true); // control visibility of popup based on the age input
+    const [showPopup, setShowPopup] = useState(false); // control visibility of popup based on the age input
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const { data: user } = await axiosClient.get("/api/profile", {
+                    withCredentials: true,
+                });
+                // setUser(user);
+                // setAge(user.age);
+                if (user.age) {
+                    navigate("/");
+                } else {
+                    setShowPopup(true);
+                }
+            } catch (error) {
+                console.error(error.response);
+            }
+        })();
+    }, [navigate]);
 
     useEffect(() => {
         (async () => {
