@@ -8,7 +8,9 @@ const ScenarioSchema = new Schema(
         marital_status: { type: String, required: true },
         birth_year: { type: Number, required: true }, // Changed from List<Integer> on 9. Persistence
         birth_year_spouse: { type: Number, required: true }, // Changed from List<Integer> on 9. Persistence
-        life_expectancy: { type: Number, required: true },
+        life_expectancy: { type: Number, required: false },
+        life_expectancy_mean: { type: Number, required: false },
+        life_expectancy_stdv: { type: Number, required: false },
         life_expectancy_spouse: { type: Number, required: true },
         investments: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         event_series: { type: [mongoose.Schema.Types.ObjectId], ref: "EventSeries", required: true },

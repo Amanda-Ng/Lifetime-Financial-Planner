@@ -10,15 +10,21 @@ function ScenarioForm(){
         birthYear: "",
         lifeExpectancy_opt: "fixed",
         lifeExpectancy_value: "",
+        life_expectancy_mean:"",
+        life_expectancy_stdv:"",
         financialGoal: "",
         stateResidence: "",
         maritialStatus: "single",
         birthYear_spouse: "",
         lifeExpectancy_opt_spouse: "fixed",
         lifeExpectancy_value_spouse: "",
+        life_expectancy_mean_spouse:"",
+        life_expectancy_stdv_spouse:"",
         
         spendingStrat: "",  /*list, should load discretionary expenses dynamically*/
         withdrawStrat: "",   /*list, should load investments dynamically*/
+        roth_conversion_strategy:"",
+        rmd_strategy:"",
         inflation: "",
         pre_contribLimit: "",
         /*Roth conversion*/
@@ -117,18 +123,43 @@ function ScenarioForm(){
                     
                     )}  
                 </div>
-                {/*opt: normDistri*/}
-                <label className="radioInput">
-                    <input 
-                        type="radio"
-                        name="lifeExpectancy_opt"
-                        value="normDistri"
-                        checked={scenario.lifeExpectancy_opt === "normDistri"}
-                        onChange={handleChange}
-                    />Sample from normal distribution
-                </label> 
-            </div> 
-        </div>
+                {/*opt: normDistri*/} 
+                    <label className="radioInput">
+                        <input 
+                            type="radio"
+                            name="lifeExpectancy_opt"
+                            value="normDistri"
+                            checked={scenario.lifeExpectancy_opt === "normDistri"}
+                            onChange={handleChange}
+                        />Sample from normal distribution
+                    </label> 
+                    {scenario.lifeExpectancy_opt === "normDistri" && (
+                        <> 
+                            <div className="radioOpt">
+                                <label className="radioInput">Mean</label>
+                                    <input
+                                        type="number"
+                                        name="life_expectancy_mean" 
+                                        value={scenario.life_expectancy_mean}
+                                        onChange={handleChange}
+                                        required
+                                    />  
+                                 
+                            </div>
+                            <div className="radioOpt">
+                                <label className="radioInput">Standard Deviation</label>  
+                                    <input
+                                        type="number"
+                                        name="life_expectancy_stdv" 
+                                        value={scenario.life_expectancy_stdv}
+                                        onChange={handleChange}
+                                        required
+                                /> 
+                            </div>
+                        </> 
+                    )} 
+                </div>
+            </div>  
         {/*financialGoal: */}
         <div> 
             <label>Financial Goal<span className="required">*</span></label>
@@ -213,6 +244,31 @@ function ScenarioForm(){
                                 onChange={handleChange}
                             />Sample from normal distribution
                         </label> 
+                        {scenario.lifeExpectancy_opt_spouse === "normDistri" && (
+                            <> 
+                                <div className="radioOpt">
+                                    <label className="radioInput">Mean</label>
+                                        <input
+                                            type="number"
+                                            name="life_expectancy_mean_spouse" 
+                                            value={scenario.life_expectancy_mean_spouse}
+                                            onChange={handleChange}
+                                            required
+                                        />  
+                                    
+                                </div>
+                                <div className="radioOpt">
+                                    <label className="radioInput">Standard Deviation</label>  
+                                        <input
+                                            type="number"
+                                            name="life_expectancy_stdv_spouse" 
+                                            value={scenario.life_expectancy_stdv_spouse}
+                                            onChange={handleChange}
+                                            required
+                                    /> 
+                                </div>
+                            </> 
+                        )}
                     </div>
                 </div>
             </> )} 
@@ -235,7 +291,7 @@ function ScenarioForm(){
             </select>
         </div>
 
-        {/*spending strategy: */}
+        {/*spending strategy: */} 
         <div>
             <label>Spending Strategy<span className="required"> *</span></label>
             <select name="spendingStrat" value={scenario.spendingStrat} onChange={handleChange} required>
@@ -279,6 +335,16 @@ function ScenarioForm(){
         <div>
             <label>Roth conversion optimizer</label>
             <div> 
+                {/*opt: disable*/}
+                <label className="radioInput">
+                        <input 
+                            type="radio"
+                            name="has_rothOptimizer"
+                            value="None"
+                            checked={scenario.has_rothOptimizer === "None"}
+                            onChange={handleChange}
+                        />None
+                </label>
                 <label className="radioInput">
                     <input 
                         type="radio"
@@ -318,22 +384,26 @@ function ScenarioForm(){
                                 required
                             />  
                         </div>
-                    </>
-                
-                )}  
-                {/*opt: disable*/}
-                <label className="radioInput">
-                        <input 
-                            type="radio"
-                            name="has_rothOptimizer"
-                            value="None"
-                            checked={scenario.has_rothOptimizer === "None"}
-                            onChange={handleChange}
-                        />None
-                </label>
+                        <div className="radioOpt"> 
+                            <label className="radioInput">Roth Conversion Strategy</label>
+                            <select name="roth_conversion_strategy" value={scenario.roth_conversion_strategy} onChange={handleChange} required>
+                                <option value="investmentName">investment 1</option> 
+                            </select>
+                            {/*!!load options dynamically from chosen investments*/}
+                        </div>    
+                    </> 
+                )}   
             </div>
         </div>
-         
+        {/*rmd_strategy */}
+        <div > 
+            <label >RMD Strategy</label>
+            <select name="rmd_strategy " value={scenario.rmd_strategy } onChange={handleChange} required>
+                <option value="investmentID">investment 1</option>   
+            </select>
+            {/*!!load options dynamically from chosen investments that're pre-tax retirement acc*/}
+        </div>   
+
         {/*after-tax retirement account contribution limit*/}
         <div> 
             <label>After-tax retirement account contribution limit<span className="required"> *</span></label>
