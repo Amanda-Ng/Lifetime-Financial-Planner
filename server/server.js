@@ -17,6 +17,7 @@ const { spawn } = require("child_process"); // Import child_process
 
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
+const FederalTaxes = require("./models/FederalTaxes.js");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -108,6 +109,32 @@ parseStateYamlProcess.stderr.on("data", (data) => {
 });
 parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
+});
+
+app.get("/api/federalTaxes", async (req, res) => {
+    console.log("Year: ", req.query.year);
+    try {
+        const {
+            year,
+            single_federal_income_tax,
+            married_federal_income_tax,
+            single_standard_deductions,
+            married_standard_deductions,
+            single_capital_gains_tax,
+            married_capital_gains_tax,
+        } = await FederalTaxes.findOne({ year: req.query.year });
+        res.status(200).json({
+            year,
+            single_federal_income_tax,
+            married_federal_income_tax,
+            single_standard_deductions,
+            married_standard_deductions,
+            single_capital_gains_tax,
+            married_capital_gains_tax,
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Failed to fetch tax data", error });
+    }
 });
 
 // POST: Create InvestmentType
