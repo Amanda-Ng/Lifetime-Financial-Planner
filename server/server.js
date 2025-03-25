@@ -57,6 +57,8 @@ parseStateYamlProcess.stderr.on("data", (data) => {
 parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
+ 
+// POST: Create InvestmentType
 app.post("/api/investmentTypes", async (req, res) => {
     try {
         const {
