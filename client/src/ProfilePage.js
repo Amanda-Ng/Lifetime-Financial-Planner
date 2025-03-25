@@ -1,16 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import "./ProfilePage.css";
 import "./App.css";
 
 function ProfilePage() {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const fetch_user_profile = async () => {
+            try {
+                const { data } = await axios.get("http://localhost:8000/auth/api/profile", {
+                    withCredentials: true, // include session cookie in the request
+                });
+                setUser(data.user);
+            } catch (error) {
+                console.error("Error fetching user profile: ", error);
+            }
+        };
+        fetch_user_profile();
+    });
+
+    if (!user) {
+        return <p>Loading profile...</p>;
+    }
+
     return (
         <div id="profileContainer">
             <div className="profile1">
                 <img src="userPfp.png" alt="userPfp" className="userPfp_large" />
-                <div className="section_header">John Doe</div>
+                <div className="section_header">{user.name || "John Doe"}</div>
                 <div>
                     <img src="mail.png" alt="mail_icon" className="small_icon" />
-                    johndoe@gmail.com
+                    {user.email || "johndoe@gmail.com"}
                 </div>
                 <div className="profile_lower">
                     <img src="file.png" alt="file_icon" className="small_icon" />

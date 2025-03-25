@@ -33,28 +33,38 @@ db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 db.once("open", () => console.log("Connected to MongoDB"));
 
 // add express-session middleware
+const sessionStore = MongoStore.create({
+    mongoUrl: configs.dbURL,
+});
+
+sessionStore.on("error", (error) => {
+    console.error("Session store error:", error);
+});
+
 app.use(
     session({
         secret: (req) => req.session.secret || genuuid(), // if no Google auth token, then generate a random ID
         resave: false, // prevent resaving session if nothing has changed
         saveUninitialized: false, // prevent saving uninitialized sessions
-        store: MongoStore.create({
-            mongoUrl: configs.dbURL,
-        }),
+        store: sessionStore,
         cookie: {
             maxAge: 60 * 60 * 1000, // 1 hour
-            sessionId: (req) => req.session.googleId,
         },
     })
 );
 
 // dynamically set the session secret when Google authentication is triggered
-app.use((req, res, next) => {
-    if (req.session && req.session.googleToken) {
-        req.session.secret = req.session.googleToken;
-    }
-    next();
-});
+// app.use((req, res, next) => {
+//     if (req.session && req.session.googleToken) {
+//         req.session.secret = req.session.googleToken;
+//     }
+//     next();
+// });
+
+// app.use((req, res, next) => {
+//     console.log("Session data:", req.session);
+//     next();
+// });
 
 app.use(passport.initialize());
 app.use(passport.session());
