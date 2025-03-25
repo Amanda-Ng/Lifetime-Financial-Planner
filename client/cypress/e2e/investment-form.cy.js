@@ -8,6 +8,12 @@ describe('Investment Form', () => {
       win.localStorage.setItem('token', 'mocked-token');
     });
 
+    // Intercept API GET request for isAuthenticated
+    cy.intercept('GET', '/auth/isAuthenticated', {
+      statusCode: 200,
+      body: { user: { username: 'mocked-user' } },
+    }).as('getIsAuthenticated');
+
     // Intercept API POST requests to prevent 401 errors
     cy.intercept('POST', '/auth/api/investmentTypes', {
       statusCode: 200,
