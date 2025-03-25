@@ -9,16 +9,16 @@ import ProfilePage from "./ProfilePage.js";
 import Scenario from "./Scenario.js";
 import Simulation from "./Simulation.js";
 import Dashboard from "./Dashboard.js";
-import ScenarioForm from "./ScenarioForm.js"; 
+import ScenarioForm from "./ScenarioForm.js";
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
-import Login from "./Login.jsx";
-import Home from "./Home.jsx";
+import Login from "./Login.js";
+import Home from "./Home.js";
 import Success from "./Success.jsx";
 import PrivateRoute from "./PrivateRoute.jsx";
 // End TP
 
-function App() { 
+function App() {
     return (
         <Router>
             <div className="App">
@@ -27,7 +27,7 @@ function App() {
                 <div className="main-content">
                     <Routes>
                         {/* Public Routes */}
-                        <Route path="/" element={<Login />} />
+                        <Route path="/login" element={<Login />} />
                         <Route path="/success" element={<Success />} />
 
                         {/* Protected Routes */}
@@ -48,7 +48,7 @@ function App() {
                             }
                         />
                         <Route
-                            path="/dashboard"
+                            path="/"
                             element={
                                 <PrivateRoute>
                                     <Dashboard />
@@ -70,7 +70,7 @@ function App() {
                                     <Scenario />
                                 </PrivateRoute>
                             }
-                        />      
+                        />
                         <Route
                             path="/scenarioForm"
                             element={
@@ -87,12 +87,20 @@ function App() {
                                 </PrivateRoute>
                             }
                         />
+                        <Route
+                            path="/event"
+                            element={
+                                <PrivateRoute>
+                                    <EventForm />
+                                </PrivateRoute>
+                            }
+                        />
                         {/* Add more Routes here */}
                     </Routes>
                 </div>
             </div>
         </Router>
-    ); 
+    );
 }
 
 export default App;

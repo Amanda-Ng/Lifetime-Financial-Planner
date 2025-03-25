@@ -8,6 +8,7 @@ const InvestmentSchema = new Schema(
         investmentType: { type: mongoose.Schema.Types.ObjectId, ref: "InvestmentType", required: true },
         value: { type: mongoose.Schema.Types.Decimal128, required: true },
         tax_status: { type: String, required: true },
+        userId: { type: String, required: true },
     },
     { timestamps: true }
 );

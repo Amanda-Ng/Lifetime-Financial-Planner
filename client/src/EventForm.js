@@ -1,29 +1,63 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { axiosClient } from "./services/apiClient";
 
 const EventForm = () => {
-    const navigate = useNavigate();
     const [event, setEvent] = useState({
         name: "",
         description: "",
         startYearType: "fixed", // default to fixed
         startYear: "",
+        meanStartYear: "",
+        stdDevStartYear: "",
+        minStartYear: "",
+        maxStartYear: "",
+        anotherEventSeries: "",
         durationType: "fixed", // default to fixed
         duration: "",
+        meanDuration: "",
+        stdDevDuration: "",
+        minDuration: "",
+        maxDuration: "",
         eventType: "income", // default to income
         initialAmount: "",
         expectedChangeType: "fixed", // default to fixed
         expectedChange: "",
+        expectedChangeAmount: "",
+        expectedChangePercentage: "",
+        meanChange: "",
+        stdDevChange: "",
+        minChange: "",
+        maxChange: "",
         inflationAdjustment: false,
         isMarried: false,
-        spousePercentage: "",
+        userPercentage: "",
         isSocialSecurity: false,
-        isWages: false,
         isDiscretionary: false,
-        assetAllocation: "",
+        assetAllocationType: "",
         maxCash: "",
-        rebalanceAllocation: "",
+        fixedAllocation: [], // Array to store fixed percentages
+        initialAllocation: [], // Array for initial percentages (glide path)
+        finalAllocation: [], // Array for final percentages (glide path)
     });
+
+    const [investments, setInvestments] = useState([]); // All available investments
+    const [eventSeries, setEventSeries] = useState([]); // All available event series
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const investmentsResponse = await axiosClient.get("/api/investments");
+                setInvestments(investmentsResponse.data);
+
+                const eventSeriesResponse = await axiosClient.get("/api/event-series");
+                setEventSeries(eventSeriesResponse.data);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -41,12 +75,264 @@ const EventForm = () => {
         }));
     };
 
+    const handleAllocationChange = (e, index) => {
+        const { value } = e.target;
+        const newAllocation = [...event.fixedAllocation];
+
+        // Ensure the value is a valid number
+        newAllocation[index] = parseFloat(value) || 0;
+
+        // Update the event state with the new fixed allocation
+        setEvent((prevState) => ({
+            ...prevState,
+            fixedAllocation: newAllocation
+        }));
+    };
+
+    const handleGlidePathChange = (e, index, type) => {
+        const { value } = e.target;
+        let updatedAllocations;
+
+        if (type === "initial") {
+            updatedAllocations = [...event.initialAllocation];
+            updatedAllocations[index] = parseFloat(value) || 0; // Parse to float, fallback to 0 if invalid input
+        } else if (type === "final") {
+            updatedAllocations = [...event.finalAllocation];
+            updatedAllocations[index] = parseFloat(value) || 0;
+        }
+
+        // Update the event state with the new allocation
+        setEvent((prevState) => ({
+            ...prevState,
+            [type === "initial" ? "initialAllocation" : "finalAllocation"]: updatedAllocations
+        }));
+    };
+
     const handleCancel = () => {
-        navigate("/");  // Redirect to homepage when canceled
+        // Clear form when canceled
+        setEvent({
+            name: "",
+            description: "",
+            startYearType: "fixed", // default to fixed
+            startYear: "",
+            meanStartYear: "",
+            stdDevStartYear: "",
+            minStartYear: "",
+            maxStartYear: "",
+            anotherEventSeries: "",
+            durationType: "fixed", // default to fixed
+            duration: "",
+            meanDuration: "",
+            stdDevDuration: "",
+            minDuration: "",
+            maxDuration: "",
+            eventType: "income", // default to income
+            initialAmount: "",
+            expectedChangeType: "fixed", // default to fixed
+            expectedChange: "",
+            expectedChangeAmount: "",
+            expectedChangePercentage: "",
+            meanChange: "",
+            stdDevChange: "",
+            minChange: "",
+            maxChange: "",
+            inflationAdjustment: false,
+            isMarried: false,
+            userPercentage: "",
+            isSocialSecurity: false,
+            isDiscretionary: false,
+            assetAllocationType: "",
+            maxCash: "",
+            fixedAllocation: [],
+            initialAllocation: [],
+            finalAllocation: [],
+        });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        let calculatedStartYear;
+        let calculatedDuration;
+        let calculatedExpectedChange = 0;
+
+        // Determine the start year based on the selected type
+        switch (event.startYearType) {
+            case "fixed":
+                calculatedStartYear = event.startYear;
+                break;
+            case "normal":
+                calculatedStartYear = Math.round(
+                    generateRandomFromNormal(event.meanStartYear, event.stdDevStartYear)
+                );
+                break;
+            case "uniform":
+                calculatedStartYear = Math.round(
+                    generateRandomFromUniform(event.minStartYear, event.maxStartYear)
+                );
+                break;
+            case "sameAsAnotherEvent": {
+                // Find the referenced EventSeries from the eventSeries
+                const referencedEventSame = eventSeries.find(series => series.name === event.anotherEventSeries);
+                calculatedStartYear = referencedEventSame.startYear;
+                break;
+            }
+            case "yearAfterAnotherEvent": {
+                // Find the referenced EventSeries from the already fetched eventSeries
+                const referencedEventAfter = eventSeries.find(series => series.name === event.anotherEventSeries);
+                calculatedStartYear = referencedEventAfter.startYear + referencedEventAfter.duration;
+                break;
+            }
+            default:
+                console.error("Invalid startYearType");
+                return;
+        }
+
+        // Determine the duration based on the selected type
+        switch (event.durationType) {
+            case "fixed":
+                calculatedDuration = event.duration;
+                break;
+            case "normal":
+                calculatedDuration = Math.max(
+                    1,
+                    Math.round(generateRandomFromNormal(event.meanDuration, event.stdDevDuration))
+                ); // Ensure duration is at least 1
+                break;
+            case "uniform":
+                calculatedDuration = Math.max(
+                    1,
+                    Math.round(generateRandomFromUniform(event.minDuration, event.maxDuration))
+                );
+                break;
+            default:
+                console.error("Invalid durationType");
+                return;
+        }
+
+        // Create base event object
+        let eventData = {
+            name: event.name,
+            description: event.description,
+            startYearType: event.startYearType,
+            startYear: calculatedStartYear,
+            durationType: event.durationType,
+            duration: calculatedDuration,
+            eventType: event.eventType,
+        };
+
+        // Handle event type-specific data
+        if (event.eventType === "income" || event.eventType === "expense") {
+            // Determine the expected annual change
+            switch (event.expectedChangeType) {
+                case "fixedAmount":
+                    calculatedExpectedChange = event.expectedChangeAmount || 0;
+                    break;
+                case "fixedPercentage":
+                    calculatedExpectedChange = event.expectedChangePercentage || 0;
+                    break;
+                case "randomAmount":
+                    calculatedExpectedChange = generateRandomFromNormal(event.meanChange, event.stdDevChange);
+                    break;
+                case "uniformAmount":
+                    calculatedExpectedChange = generateRandomFromUniform(event.minChange, event.maxChange);
+                    break;
+                case "randomPercentage":
+                    calculatedExpectedChange = generateRandomFromNormal(event.meanChange, event.stdDevChange);
+                    break;
+                case "uniformPercentage":
+                    calculatedExpectedChange = generateRandomFromUniform(event.minChange, event.maxChange);
+                    break;
+                default:
+                    console.error("Invalid expectedChangeType");
+                    return;
+            }
+
+            eventData = {
+                ...eventData,
+                initialAmount: event.initialAmount,
+                expectedChangeType: event.expectedChangeType,
+                expectedChange: calculatedExpectedChange,
+                inflationAdjustment: event.inflationAdjustment,
+                isMarried: event.isMarried,
+                userPercentage: event.userPercentage || 0,
+                isSocialSecurity: event.isSocialSecurity,
+                isDiscretionary: event.isDiscretionary,
+            };
+        }
+
+        if (event.eventType === "invest" || event.eventType === "rebalance") {
+            eventData = {
+                ...eventData,
+                assetAllocationType: event.assetAllocationType,
+                fixedAllocation: event.fixedAllocation || [],
+                initialAllocation: event.initialAllocation || [],
+                finalAllocation: event.finalAllocation || [],
+                maxCash: event.maxCash || 0,
+            };
+        }
+
+        try {
+            await axiosClient.post("/api/event-series", eventData);
+
+            alert("Event submitted successfully!");
+
+            // Clear the form after successful submission
+            setEvent({
+                name: "",
+                description: "",
+                startYearType: "fixed", // default to fixed
+                startYear: "",
+                meanStartYear: "",
+                stdDevStartYear: "",
+                minStartYear: "",
+                maxStartYear: "",
+                anotherEventSeries: "",
+                durationType: "fixed", // default to fixed
+                duration: "",
+                meanDuration: "",
+                stdDevDuration: "",
+                minDuration: "",
+                maxDuration: "",
+                eventType: "income", // default to income
+                initialAmount: "",
+                expectedChangeType: "fixed", // default to fixed
+                expectedChange: "",
+                expectedChangeAmount: "",
+                expectedChangePercentage: "",
+                meanChange: "",
+                stdDevChange: "",
+                minChange: "",
+                maxChange: "",
+                inflationAdjustment: false,
+                isMarried: false,
+                userPercentage: "",
+                isSocialSecurity: false,
+                isDiscretionary: false,
+                assetAllocationType: "",
+                maxCash: "",
+                fixedAllocation: [],
+                initialAllocation: [],
+                finalAllocation: [],
+            });
+        } catch (error) {
+            console.error("Error submitting event:", error);
+        }
+    };
+
+    const generateRandomFromNormal = (mean, stdDev) => {
+        const u1 = Math.random();
+        const u2 = Math.random();
+        const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        return Number(mean) + z0 * stdDev;
+    };
+
+    const generateRandomFromUniform = (min, max) => {
+        return Math.random() * (max - min) + Number(min);
     };
 
     return (
-        <form className="event-form">
+        <form className="event-form" onSubmit={handleSubmit}>
             <h2>Add Event Series</h2>
             <label>
                 Name <span className="required">*</span>
@@ -176,18 +462,17 @@ const EventForm = () => {
                     </label>
                     {event.startYearType === "sameAsAnotherEvent" && (
                         <select
-                            name="eventSeriesStart"
-                            value={event.eventSeriesStart}
+                            name="anotherEventSeries"
+                            value={event.anotherEventSeries}
                             onChange={handleChange}
                             required
                         >
                             <option value="">Select Event Series</option>
-                            {/* TODO */}
-                            {/* {eventSeries.map((series, index) => (
-          <option key={index} value={series.id}>
-            {series.name}
-          </option>
-        ))} */}
+                            {eventSeries.map((series) => (
+                                <option key={series._id} value={series.name}>
+                                    {series.name}
+                                </option>
+                            ))}
                         </select>
                     )}
                 </div>
@@ -206,18 +491,17 @@ const EventForm = () => {
                     </label>
                     {event.startYearType === "yearAfterAnotherEvent" && (
                         <select
-                            name="eventSeriesEnd"
-                            value={event.eventSeriesEnd}
+                            name="anotherEventSeries"
+                            value={event.anotherEventSeries}
                             onChange={handleChange}
                             required
                         >
                             <option value="">Select Event Series</option>
-                            {/* TODO */}
-                            {/* {eventSeries.map((series, index) => (
-          <option key={index} value={series.id}>
-            {series.name}
-          </option>
-        ))} */}
+                            {eventSeries.map((series) => (
+                                <option key={series._id} value={series.name}>
+                                    {series.name}
+                                </option>
+                            ))}
                         </select>
                     )}
                 </div>
@@ -363,17 +647,17 @@ const EventForm = () => {
                                     <input
                                         type="radio"
                                         name="expectedChangeType"
-                                        value="fixed"
-                                        checked={event.expectedChangeType === "fixed"}
+                                        value="fixedAmount"
+                                        checked={event.expectedChangeType === "fixedAmount"}
                                         onChange={handleRadioChange}
                                     />
-                                    Fixed Amount or Percentage
+                                    Fixed Amount
                                 </label>
-                                {event.expectedChangeType === "fixed" && (
+                                {event.expectedChangeType === "fixedAmount" && (
                                     <input
                                         type="number"
-                                        name="expectedChange"
-                                        value={event.expectedChange}
+                                        name="expectedChangeAmount"
+                                        value={event.expectedChangeAmount}
                                         onChange={handleChange}
                                         required
                                     />
@@ -385,27 +669,49 @@ const EventForm = () => {
                                     <input
                                         type="radio"
                                         name="expectedChangeType"
-                                        value="uniform"
-                                        checked={event.expectedChangeType === "uniform"}
+                                        value="fixedPercentage"
+                                        checked={event.expectedChangeType === "fixedPercentage"}
                                         onChange={handleRadioChange}
                                     />
-                                    Random (Uniform Distribution)
+                                    Fixed Percentage
                                 </label>
-                                {event.expectedChangeType === "uniform" && (
+                                {event.expectedChangeType === "fixedPercentage" && (
+                                    <input
+                                        type="number"
+                                        name="expectedChangePercentage"
+                                        value={event.expectedChangePercentage}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                )}
+                            </div>
+
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="expectedChangeType"
+                                        value="randomAmount"
+                                        checked={event.expectedChangeType === "randomAmount"}
+                                        onChange={handleRadioChange}
+                                    />
+                                    Random Amount (Normal Distribution)
+                                </label>
+                                {event.expectedChangeType === "randomAmount" && (
                                     <>
                                         <input
                                             type="number"
-                                            name="minExpectedChange"
-                                            placeholder="Minimum Expected Change"
-                                            value={event.minExpectedChange}
+                                            name="meanChange"
+                                            placeholder="Mean"
+                                            value={event.meanChange}
                                             onChange={handleChange}
                                             required
                                         />
                                         <input
                                             type="number"
-                                            name="maxExpectedChange"
-                                            placeholder="Maximum Expected Change"
-                                            value={event.maxExpectedChange}
+                                            name="stdDevChange"
+                                            placeholder="Standard Deviation"
+                                            value={event.stdDevChange}
                                             onChange={handleChange}
                                             required
                                         />
@@ -418,27 +724,93 @@ const EventForm = () => {
                                     <input
                                         type="radio"
                                         name="expectedChangeType"
-                                        value="normal"
-                                        checked={event.expectedChangeType === "normal"}
+                                        value="uniformAmount"
+                                        checked={event.expectedChangeType === "uniformAmount"}
                                         onChange={handleRadioChange}
                                     />
-                                    Random (Normal Distribution)
+                                    Random Amount (Uniform Distribution)
                                 </label>
-                                {event.expectedChangeType === "normal" && (
+                                {event.expectedChangeType === "uniformAmount" && (
                                     <>
                                         <input
                                             type="number"
-                                            name="meanExpectedChange"
-                                            placeholder="Mean"
-                                            value={event.meanExpectedChange}
+                                            name="minChange"
+                                            placeholder="Minimum Uniform Amount"
+                                            value={event.minChange}
                                             onChange={handleChange}
                                             required
                                         />
                                         <input
                                             type="number"
-                                            name="stdDevExpectedChange"
+                                            name="maxChange"
+                                            placeholder="Maximum Uniform Amount"
+                                            value={event.maxChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="expectedChangeType"
+                                        value="randomPercentage"
+                                        checked={event.expectedChangeType === "randomPercentage"}
+                                        onChange={handleRadioChange}
+                                    />
+                                    Random Percentage (Normal Distribution)
+                                </label>
+                                {event.expectedChangeType === "randomPercentage" && (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="meanChange"
+                                            placeholder="Mean"
+                                            value={event.meanChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        <input
+                                            type="number"
+                                            name="stdDevChange"
                                             placeholder="Standard Deviation"
-                                            value={event.stdDevExpectedChange}
+                                            value={event.stdDevChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="expectedChangeType"
+                                        value="uniformPercentage"
+                                        checked={event.expectedChangeType === "uniformPercentage"}
+                                        onChange={handleRadioChange}
+                                    />
+                                    Random Percentage (Uniform Distribution)
+                                </label>
+                                {event.expectedChangeType === "uniformPercentage" && (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="minChange"
+                                            placeholder="Minimum Uniform Percentage"
+                                            value={event.minChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        <input
+                                            type="number"
+                                            name="maxChange"
+                                            placeholder="Maximum Uniform Percentage"
+                                            value={event.maxChange}
                                             onChange={handleChange}
                                             required
                                         />
@@ -462,7 +834,7 @@ const EventForm = () => {
 
                     <div className="radio-group">
                         <label>
-                            Married? <span className="required">*</span>
+                            Married?
                         </label>
                         <input
                             type="checkbox"
@@ -527,17 +899,17 @@ const EventForm = () => {
                                     <input
                                         type="radio"
                                         name="expectedChangeType"
-                                        value="fixed"
-                                        checked={event.expectedChangeType === "fixed"}
+                                        value="fixedAmount"
+                                        checked={event.expectedChangeType === "fixedAmount"}
                                         onChange={handleRadioChange}
                                     />
-                                    Fixed Amount or Percentage
+                                    Fixed Amount
                                 </label>
-                                {event.expectedChangeType === "fixed" && (
+                                {event.expectedChangeType === "fixedAmount" && (
                                     <input
                                         type="number"
-                                        name="expectedChange"
-                                        value={event.expectedChange}
+                                        name="expectedChangeAmount"
+                                        value={event.expectedChangeAmount}
                                         onChange={handleChange}
                                         required
                                     />
@@ -549,27 +921,49 @@ const EventForm = () => {
                                     <input
                                         type="radio"
                                         name="expectedChangeType"
-                                        value="uniform"
-                                        checked={event.expectedChangeType === "uniform"}
+                                        value="fixedPercentage"
+                                        checked={event.expectedChangeType === "fixedPercentage"}
                                         onChange={handleRadioChange}
                                     />
-                                    Random (Uniform Distribution)
+                                    Fixed Percentage
                                 </label>
-                                {event.expectedChangeType === "uniform" && (
+                                {event.expectedChangeType === "fixedPercentage" && (
+                                    <input
+                                        type="number"
+                                        name="expectedChangePercentage"
+                                        value={event.expectedChangePercentage}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                )}
+                            </div>
+
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="expectedChangeType"
+                                        value="randomAmount"
+                                        checked={event.expectedChangeType === "randomAmount"}
+                                        onChange={handleRadioChange}
+                                    />
+                                    Random Amount (Normal Distribution)
+                                </label>
+                                {event.expectedChangeType === "randomAmount" && (
                                     <>
                                         <input
                                             type="number"
-                                            name="minExpectedChange"
-                                            placeholder="Minimum Expected Change"
-                                            value={event.minExpectedChange}
+                                            name="meanChange"
+                                            placeholder="Mean"
+                                            value={event.meanChange}
                                             onChange={handleChange}
                                             required
                                         />
                                         <input
                                             type="number"
-                                            name="maxExpectedChange"
-                                            placeholder="Maximum Expected Change"
-                                            value={event.maxExpectedChange}
+                                            name="stdDevChange"
+                                            placeholder="Standard Deviation"
+                                            value={event.stdDevChange}
                                             onChange={handleChange}
                                             required
                                         />
@@ -582,27 +976,93 @@ const EventForm = () => {
                                     <input
                                         type="radio"
                                         name="expectedChangeType"
-                                        value="normal"
-                                        checked={event.expectedChangeType === "normal"}
+                                        value="uniformAmount"
+                                        checked={event.expectedChangeType === "uniformAmount"}
                                         onChange={handleRadioChange}
                                     />
-                                    Random (Normal Distribution)
+                                    Random Amount (Uniform Distribution)
                                 </label>
-                                {event.expectedChangeType === "normal" && (
+                                {event.expectedChangeType === "uniformAmount" && (
                                     <>
                                         <input
                                             type="number"
-                                            name="meanExpectedChange"
-                                            placeholder="Mean"
-                                            value={event.meanExpectedChange}
+                                            name="minChange"
+                                            placeholder="Minimum Uniform Amount"
+                                            value={event.minChange}
                                             onChange={handleChange}
                                             required
                                         />
                                         <input
                                             type="number"
-                                            name="stdDevExpectedChange"
+                                            name="maxChange"
+                                            placeholder="Maximum Uniform Amount"
+                                            value={event.maxChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="expectedChangeType"
+                                        value="randomPercentage"
+                                        checked={event.expectedChangeType === "randomPercentage"}
+                                        onChange={handleRadioChange}
+                                    />
+                                    Random Percentage (Normal Distribution)
+                                </label>
+                                {event.expectedChangeType === "randomPercentage" && (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="meanChange"
+                                            placeholder="Mean"
+                                            value={event.meanChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        <input
+                                            type="number"
+                                            name="stdDevChange"
                                             placeholder="Standard Deviation"
-                                            value={event.stdDevExpectedChange}
+                                            value={event.stdDevChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="radio-group">
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="expectedChangeType"
+                                        value="uniformPercentage"
+                                        checked={event.expectedChangeType === "uniformPercentage"}
+                                        onChange={handleRadioChange}
+                                    />
+                                    Random Percentage (Uniform Distribution)
+                                </label>
+                                {event.expectedChangeType === "uniformPercentage" && (
+                                    <>
+                                        <input
+                                            type="number"
+                                            name="minChange"
+                                            placeholder="Minimum Uniform Percentage"
+                                            value={event.minChange}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        <input
+                                            type="number"
+                                            name="maxChange"
+                                            placeholder="Maximum Uniform Percentage"
+                                            value={event.maxChange}
                                             onChange={handleChange}
                                             required
                                         />
@@ -626,7 +1086,7 @@ const EventForm = () => {
 
                     <div className="radio-group">
                         <label>
-                            Married? <span className="required">*</span>
+                            Married?
                         </label>
                         <input
                             type="checkbox"
@@ -687,21 +1147,20 @@ const EventForm = () => {
                                     Fixed Allocation
                                 </label>
                                 {event.assetAllocationType === "fixed" && (
-                                    // TODO
                                     <div>
                                         <label>Enter Fixed Percentages for Each Investment (Sum must equal 100%)</label>
-                                        {/* {event.investments.map((investment, index) => (
-                                        <div key={index} className="radio-group">
-                                            <label>{investment.name}</label>
-                                            <input
-                                                type="number"
-                                                name={`allocation_${index}`}
-                                                value={investment.percentage}
-                                                onChange={(e) => handleAllocationChange(e, index)}
-                                                required
-                                            />
-                                        </div>
-                                    ))} */}
+                                        {investments.map((investment, index) => (
+                                            <div key={index} className="radio-group">
+                                                <label>{investment.name}</label>
+                                                <input
+                                                    type="number"
+                                                    name={`allocation_${index}`}
+                                                    value={investment.percentage}
+                                                    onChange={(e) => handleAllocationChange(e, index)}
+                                                    required
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -722,7 +1181,7 @@ const EventForm = () => {
                                     <div>
                                         <label>Initial Percentages (Sum must equal 100%)</label>
                                         <div className="radio-group">
-                                            {/* {event.investments.map((investment, index) => (
+                                            {investments.map((investment, index) => (
                                                 <div key={index}>
                                                     <label>{investment.name}</label>
                                                     <input
@@ -733,22 +1192,22 @@ const EventForm = () => {
                                                         required
                                                     />
                                                 </div>
-                                            ))} */}
+                                            ))}
                                         </div>
                                         <label>Final Percentages (Sum must equal 100%)</label>
                                         <div className="radio-group">
-                                            {/* {event.investments.map((investment, index) => (
-                                            <div key={index}>
-                                                <label>{investment.name}</label>
-                                                <input
-                                                    type="number"
-                                                    name={`finalAllocation_${index}`}
-                                                    value={investment.finalPercentage}
-                                                    onChange={(e) => handleGlidePathChange(e, index, "final")}
-                                                    required
-                                                />
-                                            </div>
-                                        ))} */}
+                                            {investments.map((investment, index) => (
+                                                <div key={index}>
+                                                    <label>{investment.name}</label>
+                                                    <input
+                                                        type="number"
+                                                        name={`finalAllocation_${index}`}
+                                                        value={investment.finalPercentage}
+                                                        onChange={(e) => handleGlidePathChange(e, index, "final")}
+                                                        required
+                                                    />
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
@@ -785,30 +1244,29 @@ const EventForm = () => {
                                 <label>
                                     <input
                                         type="radio"
-                                        name="rebalanceType"
+                                        name="assetAllocationType"
                                         value="fixed"
-                                        checked={event.rebalanceType === "fixed"}
+                                        checked={event.assetAllocationType === "fixed"}
                                         onChange={handleRadioChange}
                                     />
-                                    Fixed Percentages
+                                    Fixed Allocation
                                 </label>
-                                {event.rebalanceType === "fixed" && (
-                                    // TODO
+                                {event.assetAllocationType === "fixed" && (
                                     <div>
                                         <label>Enter Fixed Percentages for Each Investment (Sum must equal 100%)</label>
                                         {/* Add input fields for investments here */}
-                                        {/* {event.investments.map((investment, index) => (
+                                        {investments.map((investment, index) => (
                                             <div key={index} className="radio-group">
                                                 <label>{investment.name}</label>
                                                 <input
                                                     type="number"
                                                     name={`rebalanceAllocation_${index}`}
                                                     value={investment.rebalancePercentage}
-                                                    onChange={(e) => handleRebalanceChange(e, index)}
+                                                    onChange={(e) => handleAllocationChange(e, index)}
                                                     required
                                                 />
                                             </div>
-                                        ))} */}
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -818,44 +1276,44 @@ const EventForm = () => {
                                 <label>
                                     <input
                                         type="radio"
-                                        name="rebalanceType"
+                                        name="assetAllocationType"
                                         value="glidepath"
-                                        checked={event.rebalanceType === "glidepath"}
+                                        checked={event.assetAllocationType === "glidepath"}
                                         onChange={handleRadioChange}
                                     />
-                                    Glide Path (Initial and Final Percentages)
+                                    Glide Path Allocation
                                 </label>
-                                {event.rebalanceType === "glidepath" && (
+                                {event.assetAllocationType === "glidepath" && (
                                     <div>
                                         <label>Initial Percentages (Sum must equal 100%)</label>
                                         <div className="radio-group">
-                                            {/* {event.investments.map((investment, index) => (
+                                            {investments.map((investment, index) => (
                                                 <div key={index}>
                                                     <label>{investment.name}</label>
                                                     <input
                                                         type="number"
                                                         name={`rebalanceInitialAllocation_${index}`}
                                                         value={investment.rebalanceInitialPercentage}
-                                                        onChange={(e) => handleRebalanceGlidePathChange(e, index, "initial")}
+                                                        onChange={(e) => handleGlidePathChange(e, index, "initial")}
                                                         required
                                                     />
                                                 </div>
-                                            ))} */}
+                                            ))}
                                         </div>
                                         <label>Final Percentages (Sum must equal 100%)</label>
                                         <div className="radio-group">
-                                            {/* {event.investments.map((investment, index) => (
+                                            {investments.map((investment, index) => (
                                                 <div key={index}>
                                                     <label>{investment.name}</label>
                                                     <input
                                                         type="number"
                                                         name={`rebalanceFinalAllocation_${index}`}
                                                         value={investment.rebalanceFinalPercentage}
-                                                        onChange={(e) => handleRebalanceGlidePathChange(e, index, "final")}
+                                                        onChange={(e) => handleGlidePathChange(e, index, "final")}
                                                         required
                                                     />
                                                 </div>
-                                            ))} */}
+                                            ))}
                                         </div>
                                     </div>
                                 )}

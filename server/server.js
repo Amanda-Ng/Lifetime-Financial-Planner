@@ -12,13 +12,16 @@ dotenv.config();
 //
 const { spawn } = require("child_process"); // Import child_process
 
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const { v4: genuuid } = require("uuid");
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors());
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
 app.use(morgan("dev"));
-app.use(passport.initialize());
 
 // const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
 // mongoose.connect(mongodb);
@@ -29,6 +32,32 @@ let db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 db.once("open", () => console.log("Connected to MongoDB"));
 
+// add express-session middleware
+app.use(
+    session({
+        secret: (req) => req.session.secret || genuuid(), // if no Google auth token, then generate a random ID
+        resave: false, // prevent resaving session if nothing has changed
+        saveUninitialized: false, // prevent saving uninitialized sessions
+        store: MongoStore.create({
+            mongoUrl: configs.dbURL,
+        }),
+        cookie: {
+            maxAge: 60 * 60 * 1000, // 1 hour
+            sessionId: (req) => req.session.googleId,
+        },
+    })
+);
+
+// dynamically set the session secret when Google authentication is triggered
+app.use((req, res, next) => {
+    if (req.session && req.session.googleToken) {
+        req.session.secret = req.session.googleToken;
+    }
+    next();
+});
+
+app.use(passport.initialize());
+app.use(passport.session());
 // Auth routes
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 app.use("/auth", require("./routes/auth"));

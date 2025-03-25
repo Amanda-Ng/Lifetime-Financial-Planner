@@ -5,12 +5,32 @@ const Schema = mongoose.Schema;
 const EventSeriesSchema = new Schema(
     {
         name: { type: String, required: true },
-        description: { type: String, required: true },
-        start_year: { type: Number, required: true },
+        description: { type: String },
+        startYearType: { type: String, required: true },
+        startYear: { type: Number, required: true },
+
+        durationType: { type: String, required: true },
         duration: { type: Number, required: true },
-        // Differed from 9. Persistence on Design Docs to allow populating data of the "event" from the corresponding "eventType"
-        event: { type: mongoose.Schema.Types.ObjectId, refPath: "eventType", required: true },
-        eventType: { type: String, required: true, enum: ["IncomeEvent", "ExpenseEvent", "InvestEvent", "RebalanceEvent"] },
+
+        eventType: { type: String, required: true },
+        userId: { type: String, required: true },
+
+        // Optional fields depending on event type
+        initialAmount: { type: Number },
+        expectedChangeType: { type: String },
+        expectedChange: { type: Number },
+
+        inflationAdjustment: { type: Boolean },
+        isMarried: { type: Boolean },
+        userPercentage: { type: Number },
+        isSocialSecurity: { type: Boolean },
+        isDiscretionary: { type: Boolean },
+
+        assetAllocationType: { type: String },
+        maxCash: { type: Number },
+        fixedAllocation: { type: [Number] },
+        initialAllocation: { type: [Number] },
+        finalAllocation: { type: [Number] },
     },
     { timestamps: true }
 );

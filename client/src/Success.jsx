@@ -4,15 +4,15 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useApp from './hooks/useApp'; // Custom hook to access AppContext
 
-const Success = () => {
+function Success() {
   const navigate = useNavigate();
   const { setToken } = useApp(); // Access the setToken function from AppContext
 
   useEffect(() => {
+    
     // Extract the token from the URL query parameters
     const queryParams = new URLSearchParams(window.location.search);
     const token = queryParams.get('token');
-
     if (token) {
       // Store the token in the AppContext and localStorage
       setToken(token);
@@ -22,11 +22,11 @@ const Success = () => {
       navigate('/home');
     } else {
       // If no token is found, redirect to the login page
-      navigate('/');
+      navigate('/login');
     }
   }, [navigate, setToken]);
 
   return <p>Processing login...</p>;
 };
 
-export default Success;
+export default React.memo(Success);
