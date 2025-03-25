@@ -74,6 +74,13 @@ router.get("/google/callback", passport.authenticate("google", { session: false,
     req.session.googleId = req.user.googleId; // google ID stored in session data to be accessed later to get user info
     req.session.secret = req.user.googleToken;
 
+    req.session.save((error) => {
+        if (error) {
+            console.error("Error saving session:", error);
+        } else {
+            console.log("Session saved successfully:");
+        }
+    });
     const token = jwt.sign({ userId: req.user._id, username: req.user.username }, "secretKey");
     res.redirect(`${configs.googleAuthClientSuccessURL}/success?token=${token}`);
 });
@@ -97,6 +104,7 @@ router.post("/updateAge", verifyToken, async (req, res) => {
     try {
         const { age } = req.body;
 
+        console.log("Update");
         // Update the user's age in the database
         const updatedUser = await User.findByIdAndUpdate(
             req.user.userId, // Extracted from the JWT token
@@ -104,10 +112,11 @@ router.post("/updateAge", verifyToken, async (req, res) => {
             { new: true } // Return the updated document
         );
 
+        console.log("Check");
         if (!updatedUser) {
             return res.status(404).json({ message: "User not found" });
         }
-
+        console.log("Done");
         res.status(200).json({ message: "Age updated successfully", user: updatedUser });
     } catch (error) {
         console.error("Error updating age:", error);
@@ -187,6 +196,35 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
+    }
+});
+
+router.get("/api/profile", async (req, res) => {
+    console.log("Request:", req.session);
+    try {
+        if (!req.session || !req.session.googleId) {
+            // if no session for current user, then do not get the data
+            return res.status(401).json({ message: "Unauthorized: No session found" });
+        }
+
+        // retrieve user
+        const user = await User.findOne({ googleId: req.session.googleId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({ user });
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+router.get("/check-session", (req, res) => {
+    if (req.session) {
+        res.status(200).json({ session: req.session });
+    } else {
+        res.status(404).json({ message: "No session found" });
     }
 });
 
