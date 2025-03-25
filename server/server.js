@@ -188,8 +188,8 @@ app.post("/api/scenarioForm", async (req, res) => {
             financial_goal: req.body.financialGoal,
             state_of_residence: req.body.stateResidence, 
             taxes: new Map(),        /*!!need algorithm*/
-            totalTaxedIncome: Decimal128.fromString("0.00"),  /*!!need algorithm*/
-            totalInvestmentValue: Decimal128.fromString("0.00"), /*!!need algorithm*/ 
+            totalTaxedIncome: 0,  /*!!need algorithm*/
+            totalInvestmentValue: 0, /*!!need algorithm*/ 
         }); 
         await scenario.save();  
         res.status(201).json(scenario);
