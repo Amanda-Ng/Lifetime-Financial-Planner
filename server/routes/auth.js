@@ -7,10 +7,10 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../middlewares/jwt");
 const configs = require("../configs/config.js");
-const InvestmentType = require("../models/InvestmentType");
-const Investment = require("../models/Investment");
-const EventSeries = require("../models/EventSeries");
-const Scenario = require("../models/Scenario");
+const InvestmentType = require("../models/InvestmentType.js");
+const Investment = require("../models/Investment.js");
+const EventSeries = require("../models/EventSeries.js");
+const Scenario = require("../models/Scenario.js");
 
 // Signup Route
 router.post("/signup", async (req, res) => {
@@ -220,24 +220,23 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
             life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
 
-            investments: req.body.investmentList,
-            event_series: req.body.event_series,
+            investments: ["60b8d295f1b2c34d88f5e3b1"],
+            event_series: ["60b8d295f1b2c34d88f5e3b1"],
             inflation_assumption: req.body.inflation,
             init_limit_pretax: req.body.pre_contribLimit,
             init_limit_aftertax: req.body.after_contribLimit,
-            spending_strategy: req.body.spendingStrat,
-            expense_withdrawal_strategy: req.body.withdrawStrat,
-            roth_conversion_strategy: [req.body.roth_startYr, req.body.roth_endYr],
+            spending_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            expense_withdrawal_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
             rmd_strategy: req.body.rmd_strategy,
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
             state_of_residence: req.body.stateResidence,
-            taxes: null /*!!need algorithm*/,
-            totalTaxedIncome: null /*!!need algorithm*/,
-            totalInvestmentValue: null /*!!need algorithm*/,
+            taxes: new Map() /*!!need algorithm*/,
+            totalTaxedIncome: 0 /*!!need algorithm*/,
+            totalInvestmentValue: 0 /*!!need algorithm*/,
         });
-
         await scenario.save();
         res.status(201).json(scenario);
     } catch (error) {
