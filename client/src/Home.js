@@ -2,14 +2,16 @@
 // Proof of concept for Google OAuth and using apiClient to make authenticated requests
 // isAuthenticated route is protected by JWT token
 // apiClient is a wrapper around axios to make authenticated requests
-// modified slightly to be a JS file instead of JSX
+// modified slightly to be a JS file instead of JSX and add popup window
 
 import { useEffect, useState, React } from "react";
 import useApp from "./hooks/useApp";
 import { axiosClient } from "./services/apiClient";
+import { useNavigate } from "react-router-dom";
 import "./Home.css";
 
 function Home() {
+    const navigate = useNavigate(); // Move useNavigate inside the component
     const { token, logout } = useApp();
     const [user, setUser] = useState(null);
     const [age, setAge] = useState(""); // store user's age
@@ -37,6 +39,7 @@ function Home() {
             await axiosClient.post("/updateAge", { age });
             console.log("User's age saved to the database:", age);
             setShowPopup(false); // close popup
+            navigate("/dashboard");
         } catch (error) {
             console.error("Error saving age to the database:", error);
             alert("Failed to save age. Please try again.");

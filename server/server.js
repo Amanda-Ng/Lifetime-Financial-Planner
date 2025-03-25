@@ -42,8 +42,8 @@ app.use(
             mongoUrl: configs.dbURL,
         }),
         cookie: {
-            maxAge: 1000 * 60 * 60 * 24, // 1 day
-            secure: process.env.NODE_ENV === "production",
+            maxAge: 60 * 60 * 1000, // 1 hour
+            sessionId: (req) => req.session.googleId,
         },
     })
 );
