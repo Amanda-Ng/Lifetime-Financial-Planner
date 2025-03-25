@@ -17,6 +17,7 @@ const { spawn } = require("child_process"); // Import child_process
 
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
+const FederalTaxes = require("./models/FederalTaxes.js");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -110,6 +111,32 @@ parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
 
+app.get("/api/federalTaxes", async (req, res) => {
+    console.log("Year: ", req.query.year);
+    try {
+        const {
+            year,
+            single_federal_income_tax,
+            married_federal_income_tax,
+            single_standard_deductions,
+            married_standard_deductions,
+            single_capital_gains_tax,
+            married_capital_gains_tax,
+        } = await FederalTaxes.findOne({ year: req.query.year });
+        res.status(200).json({
+            year,
+            single_federal_income_tax,
+            married_federal_income_tax,
+            single_standard_deductions,
+            married_standard_deductions,
+            single_capital_gains_tax,
+            married_capital_gains_tax,
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Failed to fetch tax data", error });
+    }
+});
+
 // POST: Create InvestmentType
 app.post("/api/investmentTypes", async (req, res) => {
     try {
@@ -143,6 +170,7 @@ app.post("/api/investments", async (req, res) => {
             investmentType: req.body.investmentType, // ObjectId of InvestmentType
             value: req.body.value,
             tax_status: req.body.tax_status,
+            userId: "Guest",
         });
 
         await investment.save();
@@ -197,6 +225,8 @@ app.post("/api/scenarioForm", async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+
+module.exports = app;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

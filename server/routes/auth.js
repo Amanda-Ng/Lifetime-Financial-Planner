@@ -203,11 +203,7 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 });
 
 // POST: Create scenario
-//60b8d295f1b2c34d88f5e3b1 is a placeholder for object id
 router.post("/api/scenarioForm", verifyToken, async (req, res) => {
-    console.log("submitting scenario");
-    console.log("body is");
-    console.log(req.body); 
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
@@ -236,12 +232,12 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
-            state_of_residence: req.body.stateResidence, 
-            taxes: new Map(),        /*!!need algorithm*/
-            totalTaxedIncome: 0,  /*!!need algorithm*/
-            totalInvestmentValue: 0, /*!!need algorithm*/ 
-        }); 
-        await scenario.save();  
+            state_of_residence: req.body.stateResidence,
+            taxes: new Map() /*!!need algorithm*/,
+            totalTaxedIncome: 0 /*!!need algorithm*/,
+            totalInvestmentValue: 0 /*!!need algorithm*/,
+        });
+        await scenario.save();
         res.status(201).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });
