@@ -139,7 +139,7 @@ app.post("/api/investments", async (req, res) => {
 });
 
 // POST: Create scenario
-app.post("/api/scenario", async (req, res) => {
+app.post("/api/scenarioForm", async (req, res) => {
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
