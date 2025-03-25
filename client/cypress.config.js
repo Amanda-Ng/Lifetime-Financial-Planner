@@ -1,3 +1,4 @@
+// TP Copilot prompt: "how can I set up testing with cypress?"
 const { defineConfig } = require("cypress");
 
 module.exports = defineConfig({
