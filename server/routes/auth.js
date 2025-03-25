@@ -200,7 +200,7 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 });
 
 // POST: Create scenario
-app.post("/api/scenarioForm", async (req, res) => {
+router.post("/api/scenarioForm", async (req, res) => {
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
