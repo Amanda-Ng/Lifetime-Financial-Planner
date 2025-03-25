@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 function Scenario(){
     return(
     <div id="scenario-container" >
-        <div class="scenario1">
+        <div className="scenario1">
             <div>
                 <img src="kite.png" alt="kite_icon" className="big_icon"/>
                 <span className="subsub_header">Scenario Name</span>
@@ -14,7 +14,7 @@ function Scenario(){
             <div>{/* !!Display chart here */}</div>
              
         </div>
-        <div class="scenario2">
+        <div className="scenario2">
             <div>
                 <img src="add.png" alt="add_icon" className="big_icon"/>
                 <Link to="/scenarioForm" className="subsub_header">Create New Scenario</Link>

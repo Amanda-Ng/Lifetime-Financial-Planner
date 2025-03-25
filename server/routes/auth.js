@@ -146,6 +146,7 @@ router.get("/api/investments", verifyToken, async (req, res) => {
         const investments = await Investment.find().exec();
         res.json(investments);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Failed to fetch investments" });
     }
 });
@@ -157,6 +158,7 @@ router.post("/api/event-series", verifyToken, async (req, res) => {
         await newEventSeries.save();
         res.status(201).json({ message: "EventSeries created successfully", eventSeries: newEventSeries });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Internal server error" });
     }
 });
@@ -167,6 +169,7 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
         const eventSeries = await EventSeries.find();
         res.json(eventSeries);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: "Server error" });
     }
 });

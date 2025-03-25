@@ -1,9 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const InvestmentType = require("./models/InvestmentType");
-const Investment = require("./models/Investment");
-const EventSeries = require("./models/EventSeries");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");

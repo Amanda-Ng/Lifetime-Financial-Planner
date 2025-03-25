@@ -171,16 +171,18 @@ const EventForm = () => {
                     generateRandomFromUniform(event.minStartYear, event.maxStartYear)
                 );
                 break;
-            case "sameAsAnotherEvent":
+            case "sameAsAnotherEvent": {
                 // Find the referenced EventSeries from the eventSeries
                 const referencedEventSame = eventSeries.find(series => series.name === event.anotherEventSeries);
                 calculatedStartYear = referencedEventSame.startYear;
                 break;
-            case "yearAfterAnotherEvent":
+            }
+            case "yearAfterAnotherEvent": {
                 // Find the referenced EventSeries from the already fetched eventSeries
                 const referencedEventAfter = eventSeries.find(series => series.name === event.anotherEventSeries);
                 calculatedStartYear = referencedEventAfter.startYear + referencedEventAfter.duration;
                 break;
+            }
             default:
                 console.error("Invalid startYearType");
                 return;
