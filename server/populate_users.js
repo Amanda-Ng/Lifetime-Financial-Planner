@@ -17,9 +17,9 @@ function createUser(username, email, password, age) {
 }
 
 async function populate() {
-    const user1 = await createUser("Alice", "alice@example.com", "password123", 25);
-    const user2 = await createUser("Bob", "bob@example.com", "password456", 30);
-    const user3 = await createUser("Charlie", "charlie@example.com", "password789", 35);
+    await createUser("Alice", "alice@example.com", "password123", 25);
+    await createUser("Bob", "bob@example.com", "password456", 30);
+    await createUser("Charlie", "charlie@example.com", "password789", 35);
 
     if (db) db.close();
     console.log("Users added");

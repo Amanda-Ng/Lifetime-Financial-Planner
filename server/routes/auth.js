@@ -7,6 +7,9 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../middlewares/jwt");
 const configs = require("../configs/config.js");
+const InvestmentType = require("../models/InvestmentType");
+const Investment = require("../models/Investment");
+const EventSeries = require("../models/EventSeries");
 
 // Signup Route
 router.post("/signup", async (req, res) => {
@@ -109,6 +112,68 @@ router.post("/updateAge", verifyToken, async (req, res) => {
     } catch (error) {
         console.error("Error updating age:", error);
         res.status(500).json({ message: "Failed to update age" });
+    }
+});
+
+// Protected - Create InvestmentType
+router.post("/api/investmentTypes", verifyToken, async (req, res) => {
+    try {
+        const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
+        const investmentType = new InvestmentType({ name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability });
+        await investmentType.save();
+        res.status(201).json(investmentType);
+    } catch (error) {
+        res.status(500).json({ message: "Error creating InvestmentType", error });
+    }
+});
+
+// Protected - Create Investment
+router.post("/api/investments", verifyToken, async (req, res) => {
+    try {
+        const investment = new Investment({
+            investmentType: req.body.investmentType,
+            value: req.body.value,
+            tax_status: req.body.tax_status,
+        });
+
+        await investment.save();
+        res.status(201).json(investment);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Protected - Get Investments
+router.get("/api/investments", verifyToken, async (req, res) => {
+    try {
+        const investments = await Investment.find().exec();
+        res.json(investments);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to fetch investments" });
+    }
+});
+
+// Protected - Create EventSeries
+router.post("/api/event-series", verifyToken, async (req, res) => {
+    try {
+        const newEventSeries = new EventSeries(req.body);
+        await newEventSeries.save();
+        res.status(201).json({ message: "EventSeries created successfully", eventSeries: newEventSeries });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Protected - Get Event Series
+router.get("/api/event-series", verifyToken, async (req, res) => {
+    try {
+        const eventSeries = await EventSeries.find();
+        res.json(eventSeries);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
