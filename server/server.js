@@ -150,8 +150,7 @@ app.post("/api/scenario", async (req, res) => {
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
-});
- 
+}); 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
