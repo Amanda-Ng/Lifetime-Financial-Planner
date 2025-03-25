@@ -17,12 +17,22 @@ const { spawn } = require("child_process"); // Import child_process
 
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
-const { v4: genuuid } = require("uuid");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+const allowed_origins = ["http://localhost:3000"];
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+            if (allowed_origins.indexOf(origin) === -1)
+                return callback(new Error("CORS policy for rthis site does not allow access from the specified origin"), false);
+            return callback(null, true);
+        },
+        credentials: true,
+    })
+);
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -46,7 +56,7 @@ sessionStore.on("error", (error) => {
 
 app.use(
     session({
-        secret: (req) => req.session.secret || genuuid(), // if no Google auth token, then generate a random ID
+        secret: "GUEST-SECRET-KEY", // initial key - changed once Google auth is triggered
         resave: false, // prevent resaving session if nothing has changed
         saveUninitialized: false, // prevent saving uninitialized sessions
         store: sessionStore,
@@ -57,12 +67,12 @@ app.use(
 );
 
 // dynamically set the session secret when Google authentication is triggered
-// app.use((req, res, next) => {
-//     if (req.session && req.session.googleToken) {
-//         req.session.secret = req.session.googleToken;
-//     }
-//     next();
-// });
+app.use((req, res, next) => {
+    if (req.session && req.session.googleToken) {
+        req.session.secret = req.session.googleToken;
+    }
+    next();
+});
 
 // app.use((req, res, next) => {
 //     console.log("Session data:", req.session);
@@ -101,7 +111,7 @@ parseStateYamlProcess.on("close", (code) => {
 });
 
 // POST: Create InvestmentType
-app.post("/api/investmentTypes", async (req, res) => { 
+app.post("/api/investmentTypes", async (req, res) => {
     try {
         const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
 
@@ -146,7 +156,7 @@ app.post("/api/investments", async (req, res) => {
 app.post("/api/scenarioForm", async (req, res) => {
     console.log("submitting scenario");
     console.log("body is");
-    console.log(req.body); 
+    console.log(req.body);
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
@@ -175,12 +185,12 @@ app.post("/api/scenarioForm", async (req, res) => {
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
-            state_of_residence: req.body.stateResidence, 
-            taxes: null,        /*!!need algorithm*/
-            totalTaxedIncome: null, /*!!need algorithm*/
-            totalInvestmentValue: null, /*!!need algorithm*/ 
-        }); 
-        await scenario.save();  
+            state_of_residence: req.body.stateResidence,
+            taxes: null /*!!need algorithm*/,
+            totalTaxedIncome: null /*!!need algorithm*/,
+            totalInvestmentValue: null /*!!need algorithm*/,
+        });
+        await scenario.save();
         res.status(201).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });
