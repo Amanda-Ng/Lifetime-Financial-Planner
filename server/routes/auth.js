@@ -7,10 +7,10 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../middlewares/jwt");
 const configs = require("../configs/config.js");
-const InvestmentType = require("../models/InvestmentType.js");
-const Investment = require("../models/Investment.js");
-const EventSeries = require("../models/EventSeries.js");
-const Scenario = require("../models/Scenario.js");
+const InvestmentType = require("../models/InvestmentType");
+const Investment = require("../models/Investment");
+const EventSeries = require("../models/EventSeries");
+const Scenario = require("../models/Scenario");
 
 // Signup Route
 router.post("/signup", async (req, res) => {
@@ -203,7 +203,7 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 });
 
 // POST: Create scenario
-router.post("/api/scenarioForm", async (req, res) => {
+router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
