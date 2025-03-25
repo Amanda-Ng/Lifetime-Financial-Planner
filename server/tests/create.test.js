@@ -1,10 +1,7 @@
 const request = require("supertest");
-const express = require("express");
 const app = require("../server");
 const User = require("../models/User"); // Import your User model
 const mongoose = require("mongoose");
-
-let mongoServer;
 
 beforeAll(async () => {
     // Start an in-memory MongoDB server
