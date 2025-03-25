@@ -101,7 +101,7 @@ parseStateYamlProcess.on("close", (code) => {
 });
 
 // POST: Create InvestmentType
-app.post("/api/investmentTypes", async (req, res) => {
+app.post("/api/investmentTypes", async (req, res) => { 
     try {
         const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
 
@@ -144,6 +144,9 @@ app.post("/api/investments", async (req, res) => {
 
 // POST: Create scenario
 app.post("/api/scenarioForm", async (req, res) => {
+    console.log("submitting scenario");
+    console.log("body is");
+    console.log(req.body); 
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
@@ -172,13 +175,12 @@ app.post("/api/scenarioForm", async (req, res) => {
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
-            state_of_residence: req.body.stateResidence,
-            taxes: null /*!!need algorithm*/,
-            totalTaxedIncome: null /*!!need algorithm*/,
-            totalInvestmentValue: null /*!!need algorithm*/,
-        });
-
-        await scenario.save();
+            state_of_residence: req.body.stateResidence, 
+            taxes: null,        /*!!need algorithm*/
+            totalTaxedIncome: null, /*!!need algorithm*/
+            totalInvestmentValue: null, /*!!need algorithm*/ 
+        }); 
+        await scenario.save();  
         res.status(201).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });
