@@ -7,9 +7,9 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../middlewares/jwt");
 const configs = require("../configs/config.js");
-const InvestmentType = require("../models/InvestmentType");
-const Investment = require("../models/Investment");
-const EventSeries = require("../models/EventSeries");
+const InvestmentType = require("../models/InvestmentType.js");
+const Investment = require("../models/Investment.js");
+const EventSeries = require("../models/EventSeries.js");
 
 // Signup Route
 router.post("/signup", async (req, res) => {
@@ -69,31 +69,36 @@ router.post("/login", async (req, res) => {
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
 // Google callback route
-router.get("/google/callback", passport.authenticate("google", { session: false, failureRedirect: "/" }), (req, res) => {
+router.get("/google/callback", passport.authenticate("google", { session: true, failureRedirect: "/" }), (req, res) => {
+    const token = jwt.sign({ userId: req.user._id, username: req.user.username }, "secretKey");
     // store Google auth token as session secret
-    req.session.googleId = req.user.googleId; // google ID stored in session data to be accessed later to get user info
-    req.session.secret = req.user.googleToken;
+    // console.log("User:", req.user);
+    // req.session.googleId = req.user.googleId; // google ID stored in session data to be accessed later to get user info
+    req.session.secret = token;
 
     req.session.save((error) => {
         if (error) {
             console.error("Error saving session:", error);
         } else {
-            console.log("Session saved successfully:");
+            console.log("Session saved successfully:", req.session);
         }
     });
-    const token = jwt.sign({ userId: req.user._id, username: req.user.username }, "secretKey");
+
+    console.log("Before redirect:", req.session);
     res.redirect(`${configs.googleAuthClientSuccessURL}/success?token=${token}`);
 });
 
 // Success route
 router.get("/success", (req, res) => {
     const { token } = req.query;
+    console.log("After redirect:", req.session);
     // Render a success page or send a response with the token
     res.json({ message: "Authentication successful", token });
 });
 
 // Protected Route
 router.get("/isAuthenticated", verifyToken, (req, res) => {
+    console.log("Authenticated:", req.session);
     res.status(200).json({
         message: "This is a protected endpoint",
         user: req.user,
@@ -104,7 +109,6 @@ router.post("/updateAge", verifyToken, async (req, res) => {
     try {
         const { age } = req.body;
 
-        console.log("Update");
         // Update the user's age in the database
         const updatedUser = await User.findByIdAndUpdate(
             req.user.userId, // Extracted from the JWT token
@@ -112,11 +116,9 @@ router.post("/updateAge", verifyToken, async (req, res) => {
             { new: true } // Return the updated document
         );
 
-        console.log("Check");
         if (!updatedUser) {
             return res.status(404).json({ message: "User not found" });
         }
-        console.log("Done");
         res.status(200).json({ message: "Age updated successfully", user: updatedUser });
     } catch (error) {
         console.error("Error updating age:", error);
@@ -200,22 +202,11 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 });
 
 router.get("/api/profile", async (req, res) => {
-    console.log("Request:", req.session);
     try {
-        if (!req.session || !req.session.googleId) {
-            // if no session for current user, then do not get the data
-            return res.status(401).json({ message: "Unauthorized: No session found" });
-        }
-
-        // retrieve user
-        const user = await User.findOne({ googleId: req.session.googleId });
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        res.status(200).json({ user });
+        const user = req.user;
+        res.status(200).json(user);
     } catch (error) {
-        console.error("Error fetching user profile:", error);
+        console.error(error);
         res.status(500).json({ message: "Internal server error" });
     }
 });

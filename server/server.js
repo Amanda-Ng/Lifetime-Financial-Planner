@@ -1,9 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const InvestmentType = require("../models/InvestmentType");
-const Investment = require("../models/Investment");
-const Scenario = require("../models/Scenario");
+const InvestmentType = require("./models/InvestmentType.js");
+const Investment = require("./models/Investment.js");
+const Scenario = require("./models/Scenario.js");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
@@ -17,12 +17,22 @@ const { spawn } = require("child_process"); // Import child_process
 
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
-const { v4: genuuid } = require("uuid");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+const allowed_origins = ["http://localhost:3000"];
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+            if (allowed_origins.indexOf(origin) === -1)
+                return callback(new Error("CORS policy for rthis site does not allow access from the specified origin"), false);
+            return callback(null, true);
+        },
+        credentials: true,
+    })
+);
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -46,7 +56,7 @@ sessionStore.on("error", (error) => {
 
 app.use(
     session({
-        secret: (req) => req.session.secret || genuuid(), // if no Google auth token, then generate a random ID
+        secret: "GUEST-SECRET-KEY", // initial key - changed once Google auth is triggered
         resave: false, // prevent resaving session if nothing has changed
         saveUninitialized: false, // prevent saving uninitialized sessions
         store: sessionStore,
@@ -57,12 +67,12 @@ app.use(
 );
 
 // dynamically set the session secret when Google authentication is triggered
-// app.use((req, res, next) => {
-//     if (req.session && req.session.googleToken) {
-//         req.session.secret = req.session.googleToken;
-//     }
-//     next();
-// });
+app.use((req, res, next) => {
+    if (req.session && req.session.googleToken) {
+        req.session.secret = req.session.googleToken;
+    }
+    next();
+});
 
 // app.use((req, res, next) => {
 //     console.log("Session data:", req.session);
