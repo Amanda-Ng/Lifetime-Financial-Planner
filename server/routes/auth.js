@@ -143,6 +143,7 @@ router.post("/api/investments", verifyToken, async (req, res) => {
             investmentType: req.body.investmentType,
             value: req.body.value,
             tax_status: req.body.tax_status,
+            userId: req.user.userId,
         });
 
         await investment.save();
@@ -166,7 +167,10 @@ router.get("/api/investments", verifyToken, async (req, res) => {
 // Protected - Create EventSeries
 router.post("/api/event-series", verifyToken, async (req, res) => {
     try {
-        const newEventSeries = new EventSeries(req.body);
+        const newEventSeries = new EventSeries({
+            ...req.body,
+            userId: req.user.userId,
+        });
         await newEventSeries.save();
         res.status(201).json({ message: "EventSeries created successfully", eventSeries: newEventSeries });
     } catch (error) {

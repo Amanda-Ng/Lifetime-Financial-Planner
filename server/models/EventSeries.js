@@ -13,6 +13,7 @@ const EventSeriesSchema = new Schema(
         duration: { type: Number, required: true },
 
         eventType: { type: String, required: true },
+        userId: { type: String, required: true },
 
         // Optional fields depending on event type
         initialAmount: { type: Number },
