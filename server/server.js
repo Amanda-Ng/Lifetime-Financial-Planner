@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const InvestmentType = require("../models/InvestmentType");
+const Investment = require("../models/Investment");
+const Scenario = require("../models/Scenario");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
@@ -96,20 +99,11 @@ parseStateYamlProcess.stderr.on("data", (data) => {
 parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
- 
+
 // POST: Create InvestmentType
 app.post("/api/investmentTypes", async (req, res) => {
     try {
-        const {
-            name,
-            description,
-            returnType,
-            incomeType,
-            expected_annual_return,
-            expected_annual_income,
-            expense_ratio,
-            taxability,
-        } = req.body;
+        const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
 
         const investmentType = new InvestmentType({
             name,
@@ -153,14 +147,14 @@ app.post("/api/scenario", async (req, res) => {
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
-            name: req.body.name, 
+            name: req.body.name,
             marital_status: req.body.maritialStatus,
             birth_year: req.body.birthYear,
-            birth_year_spouse: req.body.birthYear_spouse, 
+            birth_year_spouse: req.body.birthYear_spouse,
 
             life_expectancy: req.body.lifeExpectancy_value,
             life_expectancy_mean: req.body.life_expectancy_mean,
-            life_expectancy_stdv: req.body.life_expectancy_stdv, 
+            life_expectancy_stdv: req.body.life_expectancy_stdv,
 
             life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
@@ -171,7 +165,7 @@ app.post("/api/scenario", async (req, res) => {
             inflation_assumption: req.body.inflation,
             init_limit_pretax: req.body.pre_contribLimit,
             init_limit_aftertax: req.body.after_contribLimit,
-            spending_strategy: req.body.spendingStrat, 
+            spending_strategy: req.body.spendingStrat,
             expense_withdrawal_strategy: req.body.withdrawStrat,
             roth_conversion_strategy: [req.body.roth_startYr, req.body.roth_endYr],
             rmd_strategy: req.body.rmd_strategy,
@@ -179,18 +173,17 @@ app.post("/api/scenario", async (req, res) => {
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
             state_of_residence: req.body.stateResidence,
-            taxes: null,        /*!!need algorithm*/
-            totalTaxedIncome: null, /*!!need algorithm*/
-            totalInvestmentValue: null, /*!!need algorithm*/ 
+            taxes: null /*!!need algorithm*/,
+            totalTaxedIncome: null /*!!need algorithm*/,
+            totalInvestmentValue: null /*!!need algorithm*/,
         });
 
-        await scenario.save(); 
+        await scenario.save();
         res.status(201).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 });
-
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
