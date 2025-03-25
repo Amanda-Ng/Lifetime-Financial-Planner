@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"; 
+import { axiosClient } from "./services/apiClient";
 import "./App.css";
 import "./ScenarioForm.css"; 
 
@@ -43,24 +44,37 @@ function ScenarioForm(){
     }); 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setScenario((prev) => ({ ...prev, [name]: value }));
+        setScenario((prev) => ({ ...prev, [name]: value })); 
     }; 
     const handleCancel = () => {
         navigate("/");  // Redirect to homepage when canceled
     };
 
+    const handleSubmit = async(e) => {
+        e.preventDefault();
+        console.log("submitting scenario js");
+        try {
+            await axiosClient.post("/api/scenarioForm", scenario);
+            alert("Scenario added successfully!");
+            navigate("/");
+        }catch (error) {
+            alert("Error submitting the form.");
+            console.error("Error submitting form:", error);
+        } 
+    };
+
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const invest_response = await fetch('http://localhost:3000/getInvestments');
-            const invests = await invest_response.json(); 
-            const event_response = await fetch('http://localhost:3000/getEvents');
-            const events = await event_response.json(); 
+            // const invest_response = await fetch('http://localhost:3000/getInvestments');
+            // const invests = await invest_response.json(); 
+            // const event_response = await fetch('http://localhost:3000/getEvents');
+            // const events = await event_response.json(); 
             //!! also get tax brackets
-            setScenario({
-                userInvestments: invests,
-                userEvents: events
-            });
+            // setScenario({
+            //     userInvestments: invests,
+            //     userEvents: events
+            // });
           } catch (err) {
             console.error('Failed to fetch user data:', err);
           }
@@ -69,7 +83,7 @@ function ScenarioForm(){
       }, []);
 
     return( 
-    <form id="scenario-form" >
+    <form id="scenario-form" onSubmit={handleSubmit}>
         <h2>Create New Scenario</h2>  
 
         {/* Name */}

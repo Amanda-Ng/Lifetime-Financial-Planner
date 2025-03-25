@@ -1,9 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const InvestmentType = require("./models/InvestmentType.js");
-const Investment = require("./models/Investment.js");
-const Scenario = require("./models/Scenario.js");
+const InvestmentType = require("./models/InvestmentType");
+const Investment = require("./models/Investment");
+const Scenario = require("./models/Scenario");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
@@ -153,7 +153,10 @@ app.post("/api/investments", async (req, res) => {
 });
 
 // POST: Create scenario
-app.post("/api/scenario", async (req, res) => {
+app.post("/api/scenarioForm", async (req, res) => {
+    console.log("submitting scenario");
+    console.log("body is");
+    console.log(req.body);
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
@@ -187,7 +190,6 @@ app.post("/api/scenario", async (req, res) => {
             totalTaxedIncome: null /*!!need algorithm*/,
             totalInvestmentValue: null /*!!need algorithm*/,
         });
-
         await scenario.save();
         res.status(201).json(scenario);
     } catch (error) {
