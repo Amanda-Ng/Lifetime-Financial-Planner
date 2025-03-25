@@ -70,7 +70,10 @@ router.get("/google", passport.authenticate("google", { scope: ["profile", "emai
 
 // Google callback route
 router.get("/google/callback", passport.authenticate("google", { session: false, failureRedirect: "/" }), (req, res) => {
-    // Successful authentication, send a token
+    // store Google auth token as session secret
+    req.session.googleId = req.user.googleId; // google ID stored in session data to be accessed later to get user info
+    req.session.secret = req.user.googleToken;
+
     const token = jwt.sign({ userId: req.user._id, username: req.user.username }, "secretKey");
     res.redirect(`${configs.googleAuthClientSuccessURL}/success?token=${token}`);
 });
@@ -116,7 +119,16 @@ router.post("/updateAge", verifyToken, async (req, res) => {
 router.post("/api/investmentTypes", verifyToken, async (req, res) => {
     try {
         const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
-        const investmentType = new InvestmentType({ name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability });
+        const investmentType = new InvestmentType({
+            name,
+            description,
+            returnType,
+            incomeType,
+            expected_annual_return,
+            expected_annual_income,
+            expense_ratio,
+            taxability,
+        });
         await investmentType.save();
         res.status(201).json(investmentType);
     } catch (error) {
