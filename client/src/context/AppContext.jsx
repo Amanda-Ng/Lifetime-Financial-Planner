@@ -1,7 +1,7 @@
 // TP Entire File (+ edits) from Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 
 /* eslint-disable react/prop-types */
-import { createContext, useEffect, useState } from 'react';
+import { React, createContext, useEffect, useState } from 'react';
 
 export const AppContext = createContext(null);
 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { axiosClient } from "./services/apiClient";
 
 const EventForm = () => {
-    const navigate = useNavigate();
     const [event, setEvent] = useState({
         name: "",
         description: "",
@@ -45,15 +44,19 @@ const EventForm = () => {
     const [eventSeries, setEventSeries] = useState([]); // All available event series
 
     useEffect(() => {
-        fetch("http://localhost:8000/api/investments")
-            .then((response) => response.json())
-            .then((data) => setInvestments(data))
-            .catch((error) => console.error("Error fetching investments:", error));
+        const fetchData = async () => {
+            try {
+                const investmentsResponse = await axiosClient.get("/api/investments");
+                setInvestments(investmentsResponse.data);
 
-        fetch("http://localhost:8000/api/event-series")
-            .then((response) => response.json())
-            .then((data) => setEventSeries(data))
-            .catch((error) => console.error("Error fetching event series:", error));
+                const eventSeriesResponse = await axiosClient.get("/api/event-series");
+                setEventSeries(eventSeriesResponse.data);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        };
+
+        fetchData();
     }, []);
 
     const handleChange = (e) => {
@@ -106,7 +109,44 @@ const EventForm = () => {
     };
 
     const handleCancel = () => {
-        navigate("/");  // Redirect to homepage when canceled
+        // Clear form when canceled
+        setEvent({
+            name: "",
+            description: "",
+            startYearType: "fixed", // default to fixed
+            startYear: "",
+            meanStartYear: "",
+            stdDevStartYear: "",
+            minStartYear: "",
+            maxStartYear: "",
+            anotherEventSeries: "",
+            durationType: "fixed", // default to fixed
+            duration: "",
+            meanDuration: "",
+            stdDevDuration: "",
+            minDuration: "",
+            maxDuration: "",
+            eventType: "income", // default to income
+            initialAmount: "",
+            expectedChangeType: "fixed", // default to fixed
+            expectedChange: "",
+            expectedChangeAmount: "",
+            expectedChangePercentage: "",
+            meanChange: "",
+            stdDevChange: "",
+            minChange: "",
+            maxChange: "",
+            inflationAdjustment: false,
+            isMarried: false,
+            userPercentage: "",
+            isSocialSecurity: false,
+            isDiscretionary: false,
+            assetAllocationType: "",
+            maxCash: "",
+            fixedAllocation: [],
+            initialAllocation: [],
+            finalAllocation: [],
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -131,17 +171,18 @@ const EventForm = () => {
                     generateRandomFromUniform(event.minStartYear, event.maxStartYear)
                 );
                 break;
-            // TODO
-            case "sameAsAnotherEvent":
+            case "sameAsAnotherEvent": {
                 // Find the referenced EventSeries from the eventSeries
                 const referencedEventSame = eventSeries.find(series => series.name === event.anotherEventSeries);
                 calculatedStartYear = referencedEventSame.startYear;
                 break;
-            case "yearAfterAnotherEvent":
+            }
+            case "yearAfterAnotherEvent": {
                 // Find the referenced EventSeries from the already fetched eventSeries
                 const referencedEventAfter = eventSeries.find(series => series.name === event.anotherEventSeries);
                 calculatedStartYear = referencedEventAfter.startYear + referencedEventAfter.duration;
                 break;
+            }
             default:
                 console.error("Invalid startYearType");
                 return;
@@ -232,15 +273,7 @@ const EventForm = () => {
         }
 
         try {
-            const response = await fetch("http://localhost:8000/api/event-series", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(eventData),
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to submit event");
-            }
+            await axiosClient.post("/api/event-series", eventData);
 
             alert("Event submitted successfully!");
 

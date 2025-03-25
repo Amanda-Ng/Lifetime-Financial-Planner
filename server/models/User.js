@@ -13,7 +13,7 @@ const UserSchema = new Schema(
         googleId: { type: String, unique: true },
         profilePicture: { type: String },
         //
-        
+
         createdAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
         isAdmin: { type: Boolean, default: false },
