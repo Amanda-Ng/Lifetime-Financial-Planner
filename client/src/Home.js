@@ -39,7 +39,7 @@ function Home() {
             await axiosClient.post("/updateAge", { age });
             console.log("User's age saved to the database:", age);
             setShowPopup(false); // close popup
-            navigate("/dashboard");
+            navigate("/");
         } catch (error) {
             console.error("Error saving age to the database:", error);
             alert("Failed to save age. Please try again.");
