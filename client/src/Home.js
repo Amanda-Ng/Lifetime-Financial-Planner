@@ -20,7 +20,11 @@ function Home() {
     useEffect(() => {
         (async () => {
             try {
-                const { data } = await axiosClient.get("/isAuthenticated");
+                const { data } = await axiosClient.get("/isAuthenticated", {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                });
                 setUser(data.user);
             } catch (err) {
                 console.log(err.response);
@@ -36,7 +40,15 @@ function Home() {
 
         try {
             // Send the age to the backend
-            await axiosClient.post("/updateAge", { age });
+            await axiosClient.post(
+                "/updateAge",
+                { age },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
             console.log("User's age saved to the database:", age);
             setShowPopup(false); // close popup
             navigate("/");
