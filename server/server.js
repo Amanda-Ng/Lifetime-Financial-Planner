@@ -88,7 +88,7 @@ parseStateYamlProcess.on("close", (code) => {
 });
  
 // POST: Create InvestmentType
-app.post("/api/investmentTypes", async (req, res) => {
+app.post("/api/investmentTypes", async (req, res) => { 
     try {
         const {
             name,
@@ -140,6 +140,9 @@ app.post("/api/investments", async (req, res) => {
 
 // POST: Create scenario
 app.post("/api/scenarioForm", async (req, res) => {
+    console.log("submitting scenario");
+    console.log("body is");
+    console.log(req.body); 
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
@@ -172,8 +175,7 @@ app.post("/api/scenarioForm", async (req, res) => {
             taxes: null,        /*!!need algorithm*/
             totalTaxedIncome: null, /*!!need algorithm*/
             totalInvestmentValue: null, /*!!need algorithm*/ 
-        });
-
+        }); 
         await scenario.save(); 
         res.status(201).json(scenario);
     } catch (error) {

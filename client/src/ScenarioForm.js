@@ -52,6 +52,7 @@ function ScenarioForm(){
 
     const handleSubmit = async(e) => {
         e.preventDefault();
+        console.log("submitting scenario js");
         try {
             await axiosClient.post("/api/scenarioForm", scenario);
             alert("Scenario added successfully!");
@@ -65,15 +66,15 @@ function ScenarioForm(){
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const invest_response = await fetch('http://localhost:3000/getInvestments');
-            const invests = await invest_response.json(); 
-            const event_response = await fetch('http://localhost:3000/getEvents');
-            const events = await event_response.json(); 
+            // const invest_response = await fetch('http://localhost:3000/getInvestments');
+            // const invests = await invest_response.json(); 
+            // const event_response = await fetch('http://localhost:3000/getEvents');
+            // const events = await event_response.json(); 
             //!! also get tax brackets
-            setScenario({
-                userInvestments: invests,
-                userEvents: events
-            });
+            // setScenario({
+            //     userInvestments: invests,
+            //     userEvents: events
+            // });
           } catch (err) {
             console.error('Failed to fetch user data:', err);
           }
