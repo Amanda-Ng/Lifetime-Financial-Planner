@@ -4,7 +4,7 @@ import "./Simulation.css";
 function Simulation(){
     return(
     <div id="simulation-container" >
-         <div class="sim1">
+         <div className="sim1">
             <div className="section_header"><strong>Simulation</strong></div>
             <div className="optionLine">
                 <span>Choose scenario</span>
@@ -21,7 +21,7 @@ function Simulation(){
             </div>
              
         </div>
-        <div class="sim2">
+        <div className="sim2">
             <div className="subsub_header"><strong>Scenario Name</strong></div> 
             <div className="chart-container">
                 {/* !!Display chart here */}
