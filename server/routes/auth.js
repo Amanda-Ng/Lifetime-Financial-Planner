@@ -203,7 +203,11 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 });
 
 // POST: Create scenario
+//60b8d295f1b2c34d88f5e3b1 is a placeholder for object id
 router.post("/api/scenarioForm", verifyToken, async (req, res) => {
+    console.log("submitting scenario");
+    console.log("body is");
+    console.log(req.body); 
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
@@ -220,25 +224,24 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
             life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
 
-            investments: req.body.investmentList,
-            event_series: req.body.event_series,
+            investments: ["60b8d295f1b2c34d88f5e3b1"],
+            event_series: ["60b8d295f1b2c34d88f5e3b1"],
             inflation_assumption: req.body.inflation,
             init_limit_pretax: req.body.pre_contribLimit,
             init_limit_aftertax: req.body.after_contribLimit,
-            spending_strategy: req.body.spendingStrat,
-            expense_withdrawal_strategy: req.body.withdrawStrat,
-            roth_conversion_strategy: [req.body.roth_startYr, req.body.roth_endYr],
+            spending_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            expense_withdrawal_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
             rmd_strategy: req.body.rmd_strategy,
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
-            state_of_residence: req.body.stateResidence,
-            taxes: null /*!!need algorithm*/,
-            totalTaxedIncome: null /*!!need algorithm*/,
-            totalInvestmentValue: null /*!!need algorithm*/,
-        });
-
-        await scenario.save();
+            state_of_residence: req.body.stateResidence, 
+            taxes: new Map(),        /*!!need algorithm*/
+            totalTaxedIncome: Decimal128.fromString("0.00"),  /*!!need algorithm*/
+            totalInvestmentValue: Decimal128.fromString("0.00"), /*!!need algorithm*/ 
+        }); 
+        await scenario.save();  
         res.status(201).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });
