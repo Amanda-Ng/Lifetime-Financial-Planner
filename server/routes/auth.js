@@ -10,6 +10,7 @@ const configs = require("../configs/config.js");
 const InvestmentType = require("../models/InvestmentType.js");
 const Investment = require("../models/Investment.js");
 const EventSeries = require("../models/EventSeries.js");
+const Scenario = require("../models/Scenario.js");
 
 // Signup Route
 router.post("/signup", async (req, res) => {
