@@ -7,7 +7,6 @@ const Scenario = require("./models/Scenario");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
-const passport = require("passport");
 const configs = require("./configs/config.js");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
@@ -15,8 +14,6 @@ dotenv.config();
 //
 const { spawn } = require("child_process"); // Import child_process
 
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
 const FederalTaxes = require("./models/FederalTaxes.js");
 
 const app = express();
@@ -46,42 +43,6 @@ let db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 db.once("open", () => console.log("Connected to MongoDB"));
 
-// add express-session middleware
-const sessionStore = MongoStore.create({
-    mongoUrl: configs.dbURL,
-});
-
-sessionStore.on("error", (error) => {
-    console.error("Session store error:", error);
-});
-
-app.use(
-    session({
-        secret: "GUEST-SECRET-KEY", // initial key - changed once Google auth is triggered
-        resave: false, // prevent resaving session if nothing has changed
-        saveUninitialized: false, // prevent saving uninitialized sessions
-        store: sessionStore,
-        cookie: {
-            maxAge: 60 * 60 * 1000, // 1 hour
-        },
-    })
-);
-
-// dynamically set the session secret when Google authentication is triggered
-app.use((req, res, next) => {
-    if (req.session && req.session.googleToken) {
-        req.session.secret = req.session.googleToken;
-    }
-    next();
-});
-
-// app.use((req, res, next) => {
-//     console.log("Session data:", req.session);
-//     next();
-// });
-
-app.use(passport.initialize());
-app.use(passport.session());
 // Auth routes
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 app.use("/auth", require("./routes/auth"));
@@ -185,7 +146,7 @@ app.post("/api/investments", async (req, res) => {
 app.post("/api/scenarioForm", async (req, res) => {
     console.log("submitting scenario");
     console.log("body is");
-    console.log(req.body); 
+    console.log(req.body);
     try {
         // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
@@ -214,12 +175,12 @@ app.post("/api/scenarioForm", async (req, res) => {
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
-            state_of_residence: req.body.stateResidence, 
-            taxes: new Map(),        /*!!need algorithm*/
-            totalTaxedIncome: 0,  /*!!need algorithm*/
-            totalInvestmentValue: 0, /*!!need algorithm*/ 
-        }); 
-        await scenario.save();  
+            state_of_residence: req.body.stateResidence,
+            taxes: new Map() /*!!need algorithm*/,
+            totalTaxedIncome: 0 /*!!need algorithm*/,
+            totalInvestmentValue: 0 /*!!need algorithm*/,
+        });
+        await scenario.save();
         res.status(201).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });
