@@ -21,10 +21,13 @@ function Home() {
         (async () => {
             try {
                 const { data: user } = await axiosClient.get("/api/profile", {
-                    withCredentials: true,
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
                 });
-                // setUser(user);
-                // setAge(user.age);
+                setUser(user);
+                console.log("USER:", user);
+                setAge(user.age);
                 if (user.age) {
                     navigate("/");
                 } else {

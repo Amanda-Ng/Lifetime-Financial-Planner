@@ -1,10 +1,7 @@
 const request = require("supertest");
-const express = require("express");
 const app = require("../server");
 const User = require("../models/User"); // Import your User model
 const mongoose = require("mongoose");
-
-let mongoServer;
 
 beforeAll(async () => {
     // Start an in-memory MongoDB server
@@ -82,5 +79,30 @@ describe("POST /api/investments", () => {
             .expect(400);
 
         expect(response.body).toHaveProperty("message");
+    });
+});
+
+describe("GET /api/federalTaxes", () => {
+    it("should fetch federal taxes for a specific year", async () => {
+        const year = 2024;
+
+        const response = await request(app).get(`/api/federalTaxes?year=${year}`).expect(200);
+        // Validate the response
+        expect(response.body).toHaveProperty("year", year);
+        expect(response.body).toHaveProperty("single_federal_income_tax");
+        expect(response.body).toHaveProperty("married_federal_income_tax");
+        expect(response.body).toHaveProperty("single_standard_deductions");
+        expect(response.body).toHaveProperty("married_standard_deductions");
+        expect(response.body).toHaveProperty("single_capital_gains_tax");
+        expect(response.body).toHaveProperty("married_capital_gains_tax");
+    });
+
+    it("should return an error if the year is not found", async () => {
+        const year = 9999;
+
+        const response = await request(app).get(`/api/federalTaxes?year=${year}`).expect(500);
+
+        // Validate the error message
+        expect(response.body).toHaveProperty("message", "Failed to fetch tax data");
     });
 });
