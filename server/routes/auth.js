@@ -190,38 +190,45 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     try {
         // Create Investment document referencing the InvestmentType
+        // console.log("REQUEST: ", req.body);
+        // Object.entries(req.body).forEach(([key, value]) => {
+        //     console.log("KEY: ", key);
+        //     console.log("VALUE: ", typeof value);
+        // });
         const scenario = new Scenario({
             name: req.body.name,
             marital_status: req.body.maritialStatus,
-            birth_year: req.body.birthYear,
-            birth_year_spouse: req.body.birthYear_spouse,
+            birth_year: Number(req.body.birthYear),
+            birth_year_spouse: Number(req.body.birthYear_spouse),
 
-            life_expectancy: req.body.lifeExpectancy_value,
-            life_expectancy_mean: req.body.life_expectancy_mean,
-            life_expectancy_stdv: req.body.life_expectancy_stdv,
+            life_expectancy: Number(req.body.lifeExpectancy_value),
+            life_expectancy_mean: Number(req.body.life_expectancy_mean),
+            life_expectancy_stdv: Number(req.body.life_expectancy_stdv),
 
-            life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
-            life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
-            life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+            life_expectancy_spouse: Number(req.body.lifeExpectancy_value_spouse),
+            life_expectancy_mean_spouse: Number(req.body.life_expectancy_mean_spouse),
+            life_expectancy_stdv_spouse: Number(req.body.life_expectancy_stdv_spouse),
 
-            investments: ["60b8d295f1b2c34d88f5e3b1"],
-            event_series: ["60b8d295f1b2c34d88f5e3b1"],
-            inflation_assumption: req.body.inflation,
-            init_limit_pretax: req.body.pre_contribLimit,
-            init_limit_aftertax: req.body.after_contribLimit,
-            spending_strategy: ["60b8d295f1b2c34d88f5e3b1"],
-            expense_withdrawal_strategy: ["60b8d295f1b2c34d88f5e3b1"],
-            roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
-            rmd_strategy: req.body.rmd_strategy,
-            roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
+            investments: ["67eaa6b6074ecc89e2be6fbc"],
+            event_series: ["67eaa6d3074ecc89e2be6fc0"],
+            inflation_assumption: Number(req.body.inflation),
+            init_limit_pretax: Number(req.body.pre_contribLimit),
+            init_limit_aftertax: Number(req.body.after_contribLimit),
+            spending_strategy: [1, 20, 35],
+            expense_withdrawal_strategy: ["67eaa6b6074ecc89e2be6fbc"], // ["60b8d295f1b2c34d88f5e3b1"],
+            roth_conversion_strategy: ["67eaa6b6074ecc89e2be6fbc"], // ["60b8d295f1b2c34d88f5e3b1"],
+            rmd_strategy: ["67eaa6b6074ecc89e2be6fbc"], //req.body.rmd_strategy,
+            roth_conversion_optimizer_settings: [100, 400, 2000, 2020], // req.body.has_rothOptimizer,
             sharing_settings: null,
-            financial_goal: req.body.financialGoal,
+            financial_goal: Number(req.body.financialGoal),
             state_of_residence: req.body.stateResidence,
             taxes: new Map() /*!!need algorithm*/,
             totalTaxedIncome: 0 /*!!need algorithm*/,
             totalInvestmentValue: 0 /*!!need algorithm*/,
         });
+        console.log("SCENARIO: ", scenario);
         await scenario.save();
+        console.log("saved");
         res.status(201).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });

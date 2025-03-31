@@ -21,7 +21,7 @@ const ScenarioSchema = new Schema(
         expense_withdrawal_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         roth_conversion_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         rmd_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
-        roth_conversion_optimizer_settings: { type: [Number], required: true },
+        roth_conversion_optimizer_settings: { type: [Number], required: true, default: null },
         sharing_settings: { type: Map, required: false },
         financial_goal: { type: mongoose.Schema.Types.Decimal128, required: true },
         state_of_residence: { type: String, required: true },
