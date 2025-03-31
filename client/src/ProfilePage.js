@@ -8,7 +8,6 @@ function ProfilePage() {
     const fetch_user_profile = async () => {
         try {
             const user = await axiosClient.get("/api/profile", {
-                withCredentials: true,
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
