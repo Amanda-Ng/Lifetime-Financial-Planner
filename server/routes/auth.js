@@ -70,36 +70,20 @@ router.post("/login", async (req, res) => {
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
 // Google callback route
-router.get("/google/callback", passport.authenticate("google", { session: true, failureRedirect: "/" }), (req, res) => {
+router.get("/google/callback", passport.authenticate("google", { session: false, failureRedirect: "/" }), (req, res) => {
     const token = jwt.sign({ userId: req.user._id, username: req.user.username }, "secretKey");
-    // store Google auth token as session secret
-    // console.log("User:", req.user);
-    // req.session.googleId = req.user.googleId; // google ID stored in session data to be accessed later to get user info
-    req.session.secret = token;
-
-    req.session.save((error) => {
-        if (error) {
-            console.error("Error saving session:", error);
-        } else {
-            console.log("Session saved successfully:", req.session);
-        }
-    });
-
-    console.log("Before redirect:", req.session);
     res.redirect(`${configs.googleAuthClientSuccessURL}/success?token=${token}`);
 });
 
 // Success route
 router.get("/success", (req, res) => {
     const { token } = req.query;
-    console.log("After redirect:", req.session);
     // Render a success page or send a response with the token
     res.json({ message: "Authentication successful", token });
 });
 
 // Protected Route
 router.get("/isAuthenticated", verifyToken, (req, res) => {
-    console.log("Authenticated:", req.session);
     res.status(200).json({
         message: "This is a protected endpoint",
         user: req.user,
@@ -244,21 +228,14 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     }
 });
 
-router.get("/api/profile", async (req, res) => {
+router.get("/api/profile", verifyToken, async (req, res) => {
     try {
-        const user = req.user;
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
         res.status(200).json(user);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
-    }
-});
-
-router.get("/check-session", (req, res) => {
-    if (req.session) {
-        res.status(200).json({ session: req.session });
-    } else {
-        res.status(404).json({ message: "No session found" });
     }
 });
 

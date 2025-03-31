@@ -9,6 +9,9 @@ function ProfilePage() {
         try {
             const user = await axiosClient.get("/api/profile", {
                 withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
             });
             setUser(user.data);
         } catch (error) {
