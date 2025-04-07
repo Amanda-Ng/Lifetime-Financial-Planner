@@ -160,31 +160,38 @@ const EventForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        let calculatedStartYear;
-        let calculatedDuration;
-        let calculatedExpectedChange = 0;
+        // Create base event object
+        let eventData = {
+            name: event.name,
+            description: event.description,
+            startYearType: event.startYearType,
+            durationType: event.durationType,
+            eventType: event.eventType,
+        };
 
         // Determine the start year based on the selected type
         switch (event.startYearType) {
             case "fixed":
-                calculatedStartYear = event.startYear;
+                eventData.startYear = event.startYear;
                 break;
             case "normal":
-                calculatedStartYear = Math.round(generateRandomFromNormal(event.meanStartYear, event.stdDevStartYear));
+                eventData.meanStartYear = event.meanStartYear;
+                eventData.stdDevStartYear = event.stdDevStartYear;
                 break;
             case "uniform":
-                calculatedStartYear = Math.round(generateRandomFromUniform(event.minStartYear, event.maxStartYear));
+                eventData.minStartYear = event.minStartYear;
+                eventData.maxStartYear = event.maxStartYear;
                 break;
             case "sameAsAnotherEvent": {
                 // Find the referenced EventSeries from the eventSeries
                 const referencedEventSame = eventSeries.find((series) => series.name === event.anotherEventSeries);
-                calculatedStartYear = referencedEventSame.startYear;
+                eventData.startYear = referencedEventSame.startYear;
                 break;
             }
             case "yearAfterAnotherEvent": {
                 // Find the referenced EventSeries from the already fetched eventSeries
                 const referencedEventAfter = eventSeries.find((series) => series.name === event.anotherEventSeries);
-                calculatedStartYear = referencedEventAfter.startYear + referencedEventAfter.duration;
+                eventData.startYear = referencedEventAfter.startYear + referencedEventAfter.duration;
                 break;
             }
             default:
@@ -195,51 +202,46 @@ const EventForm = () => {
         // Determine the duration based on the selected type
         switch (event.durationType) {
             case "fixed":
-                calculatedDuration = event.duration;
+                eventData.duration = event.duration;
                 break;
             case "normal":
-                calculatedDuration = Math.max(1, Math.round(generateRandomFromNormal(event.meanDuration, event.stdDevDuration))); // Ensure duration is at least 1
+                eventData.meanDuration = event.meanDuration;
+                eventData.stdDevDuration = event.stdDevDuration;
                 break;
             case "uniform":
-                calculatedDuration = Math.max(1, Math.round(generateRandomFromUniform(event.minDuration, event.maxDuration)));
+                eventData.minDuration = event.minDuration;
+                eventData.maxDuration = event.maxDuration;
                 break;
             default:
                 console.error("Invalid durationType");
                 return;
         }
 
-        // Create base event object
-        let eventData = {
-            name: event.name,
-            description: event.description,
-            startYearType: event.startYearType,
-            startYear: calculatedStartYear,
-            durationType: event.durationType,
-            duration: calculatedDuration,
-            eventType: event.eventType,
-        };
-
         // Handle event type-specific data
         if (event.eventType === "income" || event.eventType === "expense") {
             // Determine the expected annual change
             switch (event.expectedChangeType) {
                 case "fixedAmount":
-                    calculatedExpectedChange = event.expectedChangeAmount || 0;
+                    eventData.expectedChange = event.expectedChangeAmount;
                     break;
                 case "fixedPercentage":
-                    calculatedExpectedChange = event.expectedChangePercentage || 0;
+                    eventData.expectedChange = event.expectedChangePercentage;
                     break;
                 case "randomAmount":
-                    calculatedExpectedChange = generateRandomFromNormal(event.meanChange, event.stdDevChange);
+                    eventData.expectedChangeMean = event.meanChange;
+                    eventData.expectedChangeStDev = event.stdDevChange;
                     break;
                 case "uniformAmount":
-                    calculatedExpectedChange = generateRandomFromUniform(event.minChange, event.maxChange);
+                    eventData.expectedChangeMin = event.minChange;
+                    eventData.expectedChangeMax = event.maxChange;
                     break;
                 case "randomPercentage":
-                    calculatedExpectedChange = generateRandomFromNormal(event.meanChange, event.stdDevChange);
+                    eventData.expectedChangeMean = event.meanChange;
+                    eventData.expectedChangeStDev = event.stdDevChange;
                     break;
                 case "uniformPercentage":
-                    calculatedExpectedChange = generateRandomFromUniform(event.minChange, event.maxChange);
+                    eventData.expectedChangeMin = event.minChange;
+                    eventData.expectedChangeMax = event.maxChange;
                     break;
                 default:
                     console.error("Invalid expectedChangeType");
@@ -250,7 +252,6 @@ const EventForm = () => {
                 ...eventData,
                 initialAmount: event.initialAmount,
                 expectedChangeType: event.expectedChangeType,
-                expectedChange: calculatedExpectedChange,
                 inflationAdjustment: event.inflationAdjustment,
                 isMarried: event.isMarried,
                 userPercentage: event.userPercentage || 0,
@@ -320,17 +321,6 @@ const EventForm = () => {
         } catch (error) {
             console.error("Error submitting event:", error);
         }
-    };
-
-    const generateRandomFromNormal = (mean, stdDev) => {
-        const u1 = Math.random();
-        const u2 = Math.random();
-        const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-        return Number(mean) + z0 * stdDev;
-    };
-
-    const generateRandomFromUniform = (min, max) => {
-        return Math.random() * (max - min) + Number(min);
     };
 
     return (

@@ -114,16 +114,8 @@ router.post("/updateAge", verifyToken, async (req, res) => {
 // Protected - Create InvestmentType
 router.post("/api/investmentTypes", verifyToken, async (req, res) => {
     try {
-        const { name, description, expected_annual_return, expected_annual_income, returnType, incomeType, expense_ratio, taxability } = req.body;
         const investmentType = new InvestmentType({
-            name,
-            description,
-            expected_annual_return,
-            expected_annual_income,
-            returnType,
-            incomeType,
-            expense_ratio,
-            taxability,
+            ...req.body,
         });
         await investmentType.save();
         res.status(201).json(investmentType);

@@ -59,43 +59,40 @@ const InvestmentForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        let expectedAnnualReturn = 0;
-        let expectedAnnualIncome = 0;
-
-        // Calculate Expected Annual Return
-        if (investment.returnType === "fixedAmount") {
-            expectedAnnualReturn = investment.fixedReturnAmount;
-        } else if (investment.returnType === "fixedPercentage") {
-            expectedAnnualReturn = investment.value * (investment.fixedReturnPercentage / 100);
-        } else if (investment.returnType === "randomAmount") {
-            expectedAnnualReturn = generateRandomFromNormal(investment.meanReturnAmount, investment.stdDevReturnAmount);
-        } else if (investment.returnType === "randomPercentage") {
-            const randomPercentage = generateRandomFromNormal(investment.meanReturnPercentage, investment.stdDevReturnPercentage);
-            expectedAnnualReturn = investment.value * (randomPercentage / 100);
-        }
-
-        // Calculate Expected Annual Income
-        if (investment.incomeType === "fixedAmount") {
-            expectedAnnualIncome = investment.fixedIncomeAmount;
-        } else if (investment.incomeType === "fixedPercentage") {
-            expectedAnnualIncome = investment.value * (investment.fixedIncomePercentage / 100);
-        } else if (investment.incomeType === "randomAmount") {
-            expectedAnnualIncome = generateRandomFromNormal(investment.meanIncomeAmount, investment.stdDevIncomeAmount);
-        } else if (investment.incomeType === "randomPercentage") {
-            const randomPercentage = generateRandomFromNormal(investment.meanIncomePercentage, investment.stdDevIncomePercentage);
-            expectedAnnualIncome = investment.value * (randomPercentage / 100);
-        }
-
         const investmentTypeData = {
             name: investment.name,
             description: investment.description,
-            expected_annual_return: expectedAnnualReturn,
-            expected_annual_income: expectedAnnualIncome,
             returnType: investment.returnType,
             incomeType: investment.incomeType,
             expense_ratio: investment.expenseRatio,
             taxability: investment.taxability,
         };
+
+        // Expected Annual Return
+        if (investment.returnType === "fixedAmount") {
+            investmentTypeData.expected_annual_return = investment.fixedReturnAmount;
+        } else if (investment.returnType === "fixedPercentage") {
+            investmentTypeData.expected_annual_return = investment.value * (investment.fixedReturnPercentage / 100);
+        } else if (investment.returnType === "randomAmount") {
+            investmentTypeData.expected_annual_return_mean = investment.meanReturnAmount;
+            investmentTypeData.expected_annual_return_stdev = investment.stdDevReturnAmount;
+        } else if (investment.returnType === "randomPercentage") {
+            investmentTypeData.expected_annual_return_mean = investment.meanReturnPercentage;
+            investmentTypeData.expected_annual_return_stdev = investment.stdDevReturnPercentage;
+        }
+
+        // Expected Annual Income
+        if (investment.incomeType === "fixedAmount") {
+            investmentTypeData.expected_annual_income = investment.fixedIncomeAmount;
+        } else if (investment.incomeType === "fixedPercentage") {
+            investmentTypeData.expected_annual_income = investment.value * (investment.fixedIncomePercentage / 100);
+        } else if (investment.incomeType === "randomAmount") {
+            investmentTypeData.expected_annual_income_mean = investment.meanIncomeAmount;
+            investmentTypeData.expected_annual_income_stdev = investment.stdDevIncomeAmount;
+        } else if (investment.incomeType === "randomPercentage") {
+            investmentTypeData.expected_annual_income_mean = investment.meanIncomePercentage;
+            investmentTypeData.expected_annual_income_stdev = investment.stdDevIncomePercentage;
+        }
 
         console.log("ITD", investmentTypeData);
         try {
@@ -148,13 +145,6 @@ const InvestmentForm = () => {
             alert("Error submitting the form.");
             console.error("Error submitting form:", error);
         }
-    };
-
-    const generateRandomFromNormal = (mean, stdDev) => {
-        const u1 = Math.random();
-        const u2 = Math.random();
-        const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-        return Number(mean) + z0 * stdDev;
     };
 
     return (
