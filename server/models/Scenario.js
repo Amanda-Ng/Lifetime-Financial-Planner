@@ -17,7 +17,7 @@ const ScenarioSchema = new Schema(
         inflation_assumption: { type: Number, required: true },
         init_limit_pretax: { type: mongoose.Schema.Types.Decimal128, required: true },
         init_limit_aftertax: { type: mongoose.Schema.Types.Decimal128, required: true },
-        spending_strategy: { type: [Number], required: true },
+        spending_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "ExpenseEvent", required: true},
         expense_withdrawal_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         roth_conversion_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         rmd_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },

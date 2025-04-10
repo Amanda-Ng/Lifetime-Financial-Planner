@@ -204,7 +204,7 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             spending_strategy: ["60b8d295f1b2c34d88f5e3b1"],
             expense_withdrawal_strategy: ["60b8d295f1b2c34d88f5e3b1"],
             roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
-            rmd_strategy: req.body.rmd_strategy,
+            rmd_strategy: ["60b8d295f1b2c34d88f5e3b1"], //req.body.rmd_strategy,
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
             sharing_settings: null,
             financial_goal: req.body.financialGoal,
@@ -216,6 +216,8 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
         await scenario.save();
         res.status(201).json(scenario);
     } catch (error) {
+        console.log("two")
+        console.log({ message: error.message })
         res.status(400).json({ message: error.message });
     }
 });
