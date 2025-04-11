@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { axiosClient } from "./services/apiClient";
+import "./InvestmentForm.css";
 
 const EventForm = () => {
     const [event, setEvent] = useState({
