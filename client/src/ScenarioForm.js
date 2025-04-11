@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { axiosClient } from "./services/apiClient";
 import "./App.css";
 import "./ScenarioForm.css";
 
 function ScenarioForm() {
+    const location = useLocation();
+    const { scenarioObject, isEditing } = location.state || {};
+
     const navigate = useNavigate();
     const [scenario, setScenario] = useState({
         name: "",
@@ -53,9 +56,16 @@ function ScenarioForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("submitting scenario js");
+
         try {
-            await axiosClient.post("/api/scenarioForm", scenario);
-            alert("Scenario added successfully!");
+            if (isEditing && scenarioObject?._id) {
+                await axiosClient.put(`/api/scenarioForm/${scenarioObject._id}`, scenario);
+                alert("Scenario updated successfully!");
+            } else {
+                await axiosClient.post("/api/scenarioForm", scenario);
+                alert("Scenario added successfully!");
+            }
+
             navigate("/");
         } catch (error) {
             alert("Error submitting the form.");
@@ -81,6 +91,33 @@ function ScenarioForm() {
         };
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (isEditing && scenarioObject) {
+            setScenario(prev => ({
+                ...prev,
+                name: scenarioObject.name || "",
+                birthYear: scenarioObject.birth_year || "",
+                birthYear_spouse: scenarioObject.birth_year_spouse || "",
+                financialGoal: scenarioObject.financial_goal?.$numberDecimal || "",
+                stateResidence: scenarioObject.state_of_residence || "",
+                maritialStatus: scenarioObject.marital_status || "single",
+                lifeExpectancy_value: scenarioObject.life_expectancy || "",
+                life_expectancy_mean: scenarioObject.life_expectancy_mean || "",
+                life_expectancy_stdv: scenarioObject.life_expectancy_stdv || "",
+                lifeExpectancy_value_spouse: scenarioObject.life_expectancy_spouse || "",
+                roth_conversion_strategy: scenarioObject.roth_conversion_strategy?.[0] || "",
+                rmd_strategy: scenarioObject.rmd_strategy?.[0] || "",
+                spendingStrat: scenarioObject.spending_strategy?.[0] || "",
+                withdrawStrat: scenarioObject.expense_withdrawal_strategy?.[0] || "",
+                inflation: scenarioObject.inflation_assumption || "",
+                pre_contribLimit: scenarioObject.init_limit_pretax?.$numberDecimal || "",
+                after_contribLimit: scenarioObject.init_limit_aftertax?.$numberDecimal || "",
+                investmentList: scenarioObject.investments?.[0] || "",
+                events: scenarioObject.event_series?.[0] || "",
+            }));
+        }
+    }, [isEditing, scenarioObject]);
 
     return (
         <form id="scenario-form" onSubmit={handleSubmit}>
