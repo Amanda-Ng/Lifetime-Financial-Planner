@@ -121,7 +121,7 @@ function ScenarioForm() {
 
     return (
         <form id="scenario-form" onSubmit={handleSubmit}>
-            <h2>Create New Scenario</h2>
+            <h2>Scenario Form</h2>
 
             {/* Name */}
             <div>
