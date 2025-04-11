@@ -181,7 +181,6 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 // POST: Create scenario
 router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     try {
-        // Create Investment document referencing the InvestmentType
         const scenario = new Scenario({
             name: req.body.name,
             marital_status: req.body.maritialStatus,
@@ -196,7 +195,7 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
             life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
 
-            investments: ["60b8d295f1b2c34d88f5e3b1"],
+            investments: ["60b8d295f1b2c34d88f5e3b1"], //placeholder, needs to be replaced
             event_series: ["60b8d295f1b2c34d88f5e3b1"],
             inflation_assumption: req.body.inflation,
             init_limit_pretax: req.body.pre_contribLimit,
@@ -222,6 +221,48 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     }
 });
 
+// PUT: Update scenario
+router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
+    try {
+        const scenario = await Scenario.findByIdAndUpdate(req.params.id, {
+            name: req.body.name,
+            marital_status: req.body.marital_status,
+            birth_year: req.body.birth_year,
+            birth_year_spouse: req.body.birth_year_spouse,
+
+            life_expectancy: req.body.life_expectancy,
+            life_expectancy_mean: req.body.life_expectancy_mean,
+            life_expectancy_stdv: req.body.life_expectancy_stdv,
+
+            life_expectancy_spouse: req.body.life_expectancy_spouse,
+            life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
+            life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+
+            investments: ["60b8d295f1b2c34d88f5e3b1"], //placeholder, needs to be replaced,
+            event_series: ["60b8d295f1b2c34d88f5e3b1"],
+            inflation_assumption: req.body.inflation_assumption,
+            init_limit_pretax: req.body.init_limit_pretax,
+            init_limit_aftertax: req.body.init_limit_aftertax,
+            spending_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            expense_withdrawal_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            rmd_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+            roth_conversion_optimizer_settings: req.body.roth_conversion_optimizer_settings,
+            sharing_settings: req.body.sharing_settings,
+            financial_goal: req.body.financial_goal,
+            state_of_residence: req.body.state_of_residence,
+            taxes: req.body.taxes,
+            totalTaxedIncome: req.body.totalTaxedIncome,
+            totalInvestmentValue: req.body.totalInvestmentValue,
+        }, { new: true });
+
+        res.status(200).json(scenario);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+
 router.get("/api/profile", verifyToken, async (req, res) => {
     try {
         const user_id = req.user.userId;
@@ -230,6 +271,17 @@ router.get("/api/profile", verifyToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Protected - Get Scenarios
+router.get("/api/scenarios", verifyToken, async (req, res) => {
+    try {
+        const scenarios = await Scenario.find();
+        res.json(scenarios);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
