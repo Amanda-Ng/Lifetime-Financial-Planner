@@ -21,7 +21,6 @@ function ScenarioForm() {
         financialGoal: "",
         stateResidence: "",
         maritalStatus: "single",
-        maritalStatus: "single",
         birthYear_spouse: "",
         lifeExpectancy_opt_spouse: "fixed",
         lifeExpectancy_value_spouse: "",
@@ -32,20 +31,9 @@ function ScenarioForm() {
         withdrawStrat: [] /*list, should load investments dynamically*/,
         roth_conversion_strategy: [],
         rmd_strategy: [],
-        life_expectancy_mean_spouse: "",
-        life_expectancy_stdv_spouse: "",
-
-        spendingStrat: [] /*list, should load discretionary expenses dynamically*/,
-        withdrawStrat: [] /*list, should load investments dynamically*/,
-        roth_conversion_strategy: [],
-        rmd_strategy: [],
         inflation: "",
         pre_contribLimit: "",
         /*Roth conversion*/
-        target_taxBrac: 0 /*load dynamically withh scraped tax brackets */,
-        has_rothOptimizer: "",
-        roth_startYr: "",
-        roth_endYr: "",
         target_taxBrac: 0 /*load dynamically withh scraped tax brackets */,
         has_rothOptimizer: "",
         roth_startYr: "",
@@ -254,37 +242,7 @@ function ScenarioForm() {
 
             navigate("/scenario");
         } catch (error) {
-
-        const readOnlyList = (scenario.read_only || "")
-            .split(",")
-            .map(email => email.trim())
-            .filter(email => email); // Remove empty strings
-
-        const readWriteList = (scenario.read_write || "")
-            .split(",")
-            .map(email => email.trim())
-            .filter(email => email);
-
-        const scenarioPayload = {
-            ...scenario,
-            read_only: readOnlyList,
-            read_write: readWriteList
-        };
-
-        try {
-            if (isEditing && scenarioObject?._id) {
-                await axiosClient.put(`/api/scenarioForm/${scenarioObject._id}`, scenarioPayload);
-                alert("Scenario updated successfully!");
-            } else {
-                await axiosClient.post("/api/scenarioForm", scenarioPayload);
-                alert("Scenario added successfully!");
-            }
-
-            navigate("/scenario");
-        } catch (error) {
             alert("Error submitting the form.");
-            console.log(scenarioPayload)
-            console.log("scenario.maritalStatus is" + scenario.maritalStatus)
             console.log(scenarioPayload)
             console.log("scenario.maritalStatus is" + scenario.maritalStatus)
             console.error("Error submitting form:", error);
@@ -316,11 +274,6 @@ function ScenarioForm() {
                 userInvestments: invests,
                 userEvents: events
               }));
-            setScenario(prev => ({
-                ...prev,
-                userInvestments: invests,
-                userEvents: events
-              }));
           } catch (err) {
             console.error('Failed to fetch user data:', err);
           }
@@ -328,104 +281,6 @@ function ScenarioForm() {
         fetchData();
     }, []);
 
-    useEffect(() => {
-        if (isEditing && scenarioObject) {
-            setScenario(prev => ({
-                ...prev,
-                read_only: (scenarioObject.read_only || []).join(", "),
-                read_write: (scenarioObject.read_write || []).join(", "),
-                name: scenarioObject.name || "",
-                birthYear: scenarioObject.birth_year || "",
-                birthYear_spouse: scenarioObject.birth_year_spouse || "",
-                financialGoal: scenarioObject.financial_goal?.$numberDecimal || "",
-                stateResidence: scenarioObject.state_of_residence || "",
-                maritalStatus: scenarioObject.marital_status || "single",
-                lifeExpectancy_value: scenarioObject.life_expectancy || "",
-                life_expectancy_mean: scenarioObject.life_expectancy_mean || "",
-                life_expectancy_stdv: scenarioObject.life_expectancy_stdv || "",
-                lifeExpectancy_value_spouse: scenarioObject.life_expectancy_spouse || "",
-                roth_conversion_strategy: scenarioObject.roth_conversion_strategy || [],
-                rmd_strategy: scenarioObject.rmd_strategy || [],
-                spendingStrat: scenarioObject.spending_strategy || [],
-                withdrawStrat: scenarioObject.expense_withdrawal_strategy || [],
-                inflation: scenarioObject.inflation_assumption || "",
-                pre_contribLimit: scenarioObject.init_limit_pretax?.$numberDecimal || "",
-                after_contribLimit: scenarioObject.init_limit_aftertax?.$numberDecimal || "",
-                investmentList: scenarioObject.investments || [],
-                events: scenarioObject.event_series || [],
-            }));
-        }
-    }, [isEditing, scenarioObject]);
-
-    return (
-        <form id="scenario-form" onSubmit={handleSubmit}>
-            <h2>Scenario Form</h2>
-            {/* Sharing - Read-only */}
-            <div>
-                <label>
-                    Share with (Read-Only)
-                </label>
-                <input
-                    type="text"
-                    name="read_only"
-                    placeholder="email1@example.com, email2@example.com"
-                    value={scenario.read_only}
-                    onChange={handleChange}
-                />
-            </div>
-            {/* Sharing - Read-Write */}
-            <div>
-                <label>
-                    Share with (Read-Write)
-                </label>
-                <input
-                    type="text"
-                    name="read_write"
-                    placeholder="email3@example.com, email4@example.com"
-                    value={scenario.read_write}
-                    onChange={handleChange}
-                />
-            </div>
-            {/* Name */}
-            <div>
-                <label>
-                    Scenario Name <span className="required">*</span>
-                </label>
-                <input type="text" name="name" value={scenario.name} onChange={handleChange} required />
-            </div>
-            {/*birthYear*/}
-            <div>
-                <label>
-                    Your Birth Year<span className="required">*</span>
-                </label>
-                <input type="number" name="birthYear" value={scenario.birthYear} onChange={handleChange} required />
-            </div>
-            {/*life expectancy*/}
-            <div>
-                <label>
-                    Your Life Expectancy<span className="required"> *</span>
-                </label>
-                <div className="radio-group2">
-                    {/*opt: fixed*/}
-                    <div className="radioOpt">
-                        <label>
-                            <input
-                                className="radioInput"
-                                type="radio"
-                                name="lifeExpectancy_opt"
-                                value="fixed"
-                                checked={scenario.lifeExpectancy_opt === "fixed"}
-                                onChange={handleChange}
-                            />
-                            Fixed Value
-                        </label>
-                        {scenario.lifeExpectancy_opt === "fixed" && (
-                            <>
-                                <input type="number" name="lifeExpectancy_value" value={scenario.lifeExpectancy_value} onChange={handleChange} required />
-                            </>
-                        )}
-                    </div>
-                    {/*opt: normDistri*/}
     useEffect(() => {
         if (isEditing && scenarioObject) {
             setScenario(prev => ({
@@ -572,87 +427,7 @@ function ScenarioForm() {
                     <option value="married">Married</option>
                 </select>
             </div>
-            </div>
-            {/*financialGoal: */}
-            <div>
-                <label>
-                    Financial Goal<span className="required">*</span>
-                </label>
-                <input type="number" name="financialGoal" value={scenario.financialGoal} onChange={handleChange} required />
-            </div>
-            {/*state of residence: */}
-            <div>
-                <label>
-                    State of Residence <span className="required">*</span>
-                </label>
-                <input type="text" name="stateResidence" value={scenario.stateResidence} onChange={handleChange} required />
-            </div>
-            {/*maritalStatus: */}
-            <div>
-                <label>
-                    Maritial Status <span className="required">*</span>
-                </label>
-                <select name="maritalStatus" value={scenario.maritalStatus} onChange={handleChange} required>
-                    <option value="single">Single</option>
-                    <option value="married">Married</option>
-                </select>
-            </div>
 
-            {scenario.maritalStatus === "married" && (
-                <>
-                    {/*spouse birthYear*/}
-                    <div>
-                        <label>
-                            Spouse Birth Year<span className="required">*</span>
-                        </label>
-                        <input type="number" name="birthYear_spouse" value={scenario.birthYear_spouse} onChange={handleChange} required />
-                    </div>
-                    {/*spouse life expectancy*/}
-                    <div>
-                        <label>
-                            Spouse Life Expectancy<span className="required">*</span>
-                        </label>
-                        <div className="radio-group2">
-                            {/*opt: fixed*/}
-                            <div className="radioOpt">
-                                <label>
-                                    <input
-                                        className="radioInput"
-                                        type="radio"
-                                        name="lifeExpectancy_opt_spouse"
-                                        value="fixed"
-                                        checked={scenario.lifeExpectancy_opt_spouse === "fixed"}
-                                        onChange={handleChange}
-                                    />
-                                    Fixed Value
-                                </label>
-                                {scenario.lifeExpectancy_opt_spouse === "fixed" && (
-                                    <>
-                                        <input
-                                            type="number"
-                                            name="lifeExpectancy_value_spouse"
-                                            value={scenario.lifeExpectancy_value_spouse}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </>
-                                )}
-                            </div>
-                            {/*opt: normDistri*/}
-                            <label className="radioInput">
-                                <input
-                                    type="radio"
-                                    name="lifeExpectancy_opt_spouse"
-                                    value="normDistri"
-                                    checked={scenario.lifeExpectancy_opt_spouse === "normDistri"}
-                                    onChange={handleChange}
-                                />
-                                Sample from normal distribution
-                            </label>
-                            {scenario.lifeExpectancy_opt_spouse === "normDistri" && (
-                                <>
-                                    <div className="radioOpt">
-                                        <label className="radioInput">Mean</label>
             {scenario.maritalStatus === "married" && (
                 <>
                     {/*spouse birthYear*/}
@@ -756,38 +531,6 @@ function ScenarioForm() {
                     ))}
                 </ul>
             </div>
-                                        />
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/*Investments*/}
-            <div>
-                <label>
-                    Investments 
-                </label>
-                <select name="investmentList" defaultValue="" onChange={handleAddInvestment}>
-                    <option value="" disabled>
-                        Select Investments
-                    </option>
-                    {scenario.userInvestments.map((ele,index)=>
-                            <option key={index} value={ele._id}>{ele.investmentType.name}: ${ele.value.$numberDecimal}</option>
-                    )
-                    } 
-                </select>
-
-                <ul > 
-                    {(scenario.investmentList || []).map(inv => (
-                    <li key={inv._id} onClick={() => handleRemoveInvestment(inv._id)} > 
-                        {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                    </li>
-                    ))}
-                </ul>
-            </div>
 
             {/*Event series*/}
             <div>
@@ -812,174 +555,7 @@ function ScenarioForm() {
                     ))}
                 </ul> 
             </div>
-            {/*Event series*/}
-            <div>
-                <label>
-                    Event Series
-                </label>
-                <select name="events" defaultValue="" onChange={handleAddEvent} >
-                    <option value="" disabled>
-                        Select events
-                    </option>
-                    {scenario.userEvents.map((event, index) => (
-                        <option key={index} value={event._id}>
-                            {event.name}
-                        </option>
-                    ))}
-                </select>
-                <ul>
-                    {(scenario.events || []).map(event => (
-                        <li key={event._id} onClick={() => handleRemoveEvent(event._id)}>
-                            {event.name}
-                        </li>
-                    ))}
-                </ul> 
-            </div>
 
-            {/*spending strategy: */}
-            <div>
-                <label>
-                    Spending Strategy
-                </label>
-                <select name="spendingStrat" defaultValue="" onChange={handleAddSpendingStrat}>
-                    <option value="" disabled>
-                        Select a discretionary event
-                    </option>
-                    {(scenario.events || []).filter(event => event.isDiscretionary).map(event => (
-                        <option key={event._id} value={event._id}>
-                            {event.name}
-                        </option>
-                    ))} 
-                </select> 
-                <ul>
-                    {(scenario.spendingStrat || []).map(event => (
-                        <li key={event._id} onClick={() => handleRemoveSpendingStrat(event._id)} >
-                            {event.name}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            {/*withdrawal strategy*/}
-            <div>
-                <label>
-                    Expense Withdrawal Strategy
-                </label>
-                <select name="withdrawStrat" defaultValue="" onChange={handleAddWithdrawStrat}>
-                    <option value="" disabled>
-                        Select an investment
-                    </option>
-                    {(scenario.investmentList || []).map(inv => (
-                        <option key={inv._id} value={inv._id}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                        </option>
-                    ))}
-                </select> 
-
-                <ul>
-                    {(scenario.withdrawStrat || []).map(inv => (
-                        <li key={inv._id} onClick={() => handleRemoveWithdrawStrat(inv._id)}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            {/*inflation: */}
-            <div>
-                <label>
-                    Inflation<span className="required"> *</span>
-                </label>
-                <input type="number" name="inflation" value={scenario.inflation} onChange={handleChange} placeholder="%" required />
-            </div>
-            {/*pre-tax retirement account contribution limit*/}
-            <div>
-                <label>
-                    Pre-tax retirement account contribution limit<span className="required"> *</span>
-                </label>
-                <input type="number" name="pre_contribLimit" value={scenario.pre_contribLimit} onChange={handleChange} required />
-            </div>
-
-            {/*enable roth conversion optimizer*/}
-            <div>
-                <label>Roth conversion optimizer</label>
-                <div>
-                    {/*opt: disable*/}
-                    <label className="radioInput">
-                        <input type="radio" name="has_rothOptimizer" value="None" checked={scenario.has_rothOptimizer === "None"} onChange={handleChange} />
-                        None
-                    </label>
-                    <label className="radioInput">
-                        <input
-                            type="radio"
-                            name="has_rothOptimizer"
-                            value="rothOptimizer_on"
-                            checked={scenario.has_rothOptimizer === "rothOptimizer_on"}
-                            onChange={handleChange}
-                        />
-                        Enable
-                    </label>
-                    {/*roth conversion*/}
-                    {scenario.has_rothOptimizer === "rothOptimizer_on" && (
-                        <>
-                            <div className="radioOpt">
-                                <label>
-                                    Target Tax Bracket<span className="required"> *</span>
-                                </label>
-                                <select name="target_taxBrac" value={scenario.investmentList} onChange={handleChange} required>
-                                    <option value="index#">bracket 1</option>
-                                    {/*!!load options dynamically from db data*/}
-                                </select>
-                            </div>
-                            <div className="radioOpt">
-                                <label className="radioInput">Start Year</label>
-                                <input type="number" name="roth_startYr" value={scenario.roth_startYr} onChange={handleChange} required />
-                            </div>
-                            <div className="radioOpt">
-                                <label className="radioInput">End Year</label>
-                                <input type="number" name="roth_endYr" value={scenario.roth_endYr} onChange={handleChange} required />
-                            </div>
-                            <div className="radioOpt">
-                                <label className="radioInput">Roth Conversion Strategy</label>
-                                <select name="roth_conversion_strategy" defaultValue="" onChange={handleAddRothConversionStrategy}>
-                                    <option value="" disabled>Select a pre-tax investment</option>
-                                    {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
-                                        <option key={inv._id} value={inv._id}>
-                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <ul>
-                                    {(scenario.roth_conversion_strategy || []).map(inv => (
-                                        <li key={inv._id} onClick={() => handleRemoveRothConversionStrategy(inv._id)}>
-                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
-            {/*rmd_strategy */}
-            <div>
-                <label>RMD Strategy</label>
-                <select name="rmd_strategy" defaultValue="" onChange={handleAddRMDStrategy}>
-                    <option value="" disabled>Select a pre-tax investment</option>
-                    {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
-                        <option key={inv._id} value={inv._id}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                        </option>
-                    ))}
-                </select>
-
-                <ul>  
-                    {(scenario.rmd_strategy || []).map(inv => (
-                        <li key={inv._id} onClick={() => handleRemoveRMDStrategy(inv._id)}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                        </li>
-                    ))}
-                </ul>
-            </div>
             {/*spending strategy: */}
             <div>
                 <label>
