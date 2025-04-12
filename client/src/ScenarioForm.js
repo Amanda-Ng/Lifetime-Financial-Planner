@@ -20,7 +20,7 @@ function ScenarioForm() {
         life_expectancy_stdv: "",
         financialGoal: "",
         stateResidence: "",
-        maritialStatus: "single",
+        maritalStatus: "single",
         birthYear_spouse: "",
         lifeExpectancy_opt_spouse: "fixed",
         lifeExpectancy_value_spouse: "",
@@ -29,12 +29,12 @@ function ScenarioForm() {
 
         spendingStrat: [] /*list, should load discretionary expenses dynamically*/,
         withdrawStrat: [] /*list, should load investments dynamically*/,
-        roth_conversion_strategy: "",
+        roth_conversion_strategy: [],
         rmd_strategy: [],
         inflation: "",
         pre_contribLimit: "",
         /*Roth conversion*/
-        target_taxBrac: "" /*load dynamically withh scraped tax brackets */,
+        target_taxBrac: 0 /*load dynamically withh scraped tax brackets */,
         has_rothOptimizer: "",
         roth_startYr: "",
         roth_endYr: "",
@@ -47,7 +47,7 @@ function ScenarioForm() {
         userInvestments: [],
         userEvents: [],
     });
-    const handleChange = (e) => {
+    const handleChange = (e) => { 
         const { name, value } = e.target;
         setScenario((prev) => ({ ...prev, [name]: value }));
     };
@@ -215,12 +215,12 @@ function ScenarioForm() {
         e.preventDefault();
         console.log("submitting scenario js");
 
-        const readOnlyList = scenario.read_only
+        const readOnlyList = (scenario.read_only || "")
             .split(",")
             .map(email => email.trim())
             .filter(email => email); // Remove empty strings
 
-        const readWriteList = scenario.read_write
+        const readWriteList = (scenario.read_write || "")
             .split(",")
             .map(email => email.trim())
             .filter(email => email);
@@ -243,6 +243,8 @@ function ScenarioForm() {
             navigate("/scenario");
         } catch (error) {
             alert("Error submitting the form.");
+            console.log(scenarioPayload)
+            console.log("scenario.maritalStatus is" + scenario.maritalStatus)
             console.error("Error submitting form:", error);
         }
     };
@@ -267,10 +269,11 @@ function ScenarioForm() {
             const events = event_response.data; 
             console.log(events) 
             //!! also get tax brackets
-            setScenario({
+            setScenario(prev => ({
+                ...prev,
                 userInvestments: invests,
                 userEvents: events
-            }); 
+              }));
           } catch (err) {
             console.error('Failed to fetch user data:', err);
           }
@@ -289,20 +292,20 @@ function ScenarioForm() {
                 birthYear_spouse: scenarioObject.birth_year_spouse || "",
                 financialGoal: scenarioObject.financial_goal?.$numberDecimal || "",
                 stateResidence: scenarioObject.state_of_residence || "",
-                maritialStatus: scenarioObject.marital_status || "single",
+                maritalStatus: scenarioObject.marital_status || "single",
                 lifeExpectancy_value: scenarioObject.life_expectancy || "",
                 life_expectancy_mean: scenarioObject.life_expectancy_mean || "",
                 life_expectancy_stdv: scenarioObject.life_expectancy_stdv || "",
                 lifeExpectancy_value_spouse: scenarioObject.life_expectancy_spouse || "",
-                roth_conversion_strategy: scenarioObject.roth_conversion_strategy?.[0] || "",
-                rmd_strategy: scenarioObject.rmd_strategy?.[0] || "",
-                spendingStrat: scenarioObject.spending_strategy?.[0] || "",
-                withdrawStrat: scenarioObject.expense_withdrawal_strategy?.[0] || "",
+                roth_conversion_strategy: scenarioObject.roth_conversion_strategy || [],
+                rmd_strategy: scenarioObject.rmd_strategy || [],
+                spendingStrat: scenarioObject.spending_strategy || [],
+                withdrawStrat: scenarioObject.expense_withdrawal_strategy || [],
                 inflation: scenarioObject.inflation_assumption || "",
                 pre_contribLimit: scenarioObject.init_limit_pretax?.$numberDecimal || "",
                 after_contribLimit: scenarioObject.init_limit_aftertax?.$numberDecimal || "",
-                investmentList: scenarioObject.investments?.[0] || "",
-                events: scenarioObject.event_series?.[0] || "",
+                investmentList: scenarioObject.investments || [],
+                events: scenarioObject.event_series || [],
             }));
         }
     }, [isEditing, scenarioObject]);
@@ -414,18 +417,18 @@ function ScenarioForm() {
                 </label>
                 <input type="text" name="stateResidence" value={scenario.stateResidence} onChange={handleChange} required />
             </div>
-            {/*maritialStatus: */}
+            {/*maritalStatus: */}
             <div>
                 <label>
                     Maritial Status <span className="required">*</span>
                 </label>
-                <select name="maritialStatus" value={scenario.maritialStatus} onChange={handleChange} required>
+                <select name="maritalStatus" value={scenario.maritalStatus} onChange={handleChange} required>
                     <option value="single">Single</option>
                     <option value="married">Married</option>
                 </select>
             </div>
 
-            {scenario.maritialStatus === "married" && (
+            {scenario.maritalStatus === "married" && (
                 <>
                     {/*spouse birthYear*/}
                     <div>
@@ -508,9 +511,9 @@ function ScenarioForm() {
             {/*Investments*/}
             <div>
                 <label>
-                    Investments<span className="required"> *</span>
+                    Investments 
                 </label>
-                <select name="investmentList" defaultValue="" onChange={handleAddInvestment} required>
+                <select name="investmentList" defaultValue="" onChange={handleAddInvestment}>
                     <option value="" disabled>
                         Select Investments
                     </option>
@@ -532,9 +535,9 @@ function ScenarioForm() {
             {/*Event series*/}
             <div>
                 <label>
-                    Event Series<span className="required"> *</span>
+                    Event Series
                 </label>
-                <select name="events" defaultValue="" onChange={handleAddEvent} required >
+                <select name="events" defaultValue="" onChange={handleAddEvent} >
                     <option value="" disabled>
                         Select events
                     </option>
@@ -556,9 +559,9 @@ function ScenarioForm() {
             {/*spending strategy: */}
             <div>
                 <label>
-                    Spending Strategy<span className="required"> *</span>
+                    Spending Strategy
                 </label>
-                <select name="spendingStrat" defaultValue="" onChange={handleAddSpendingStrat} required>
+                <select name="spendingStrat" defaultValue="" onChange={handleAddSpendingStrat}>
                     <option value="" disabled>
                         Select a discretionary event
                     </option>
@@ -579,9 +582,9 @@ function ScenarioForm() {
             {/*withdrawal strategy*/}
             <div>
                 <label>
-                    Expense Withdrawal Strategy<span className="required"> *</span>
+                    Expense Withdrawal Strategy
                 </label>
-                <select name="withdrawStrat" defaultValue="" onChange={handleAddWithdrawStrat} required>
+                <select name="withdrawStrat" defaultValue="" onChange={handleAddWithdrawStrat}>
                     <option value="" disabled>
                         Select an investment
                     </option>
@@ -656,7 +659,7 @@ function ScenarioForm() {
                             </div>
                             <div className="radioOpt">
                                 <label className="radioInput">Roth Conversion Strategy</label>
-                                <select name="roth_conversion_strategy" defaultValue="" onChange={handleAddRothConversionStrategy} required>
+                                <select name="roth_conversion_strategy" defaultValue="" onChange={handleAddRothConversionStrategy}>
                                     <option value="" disabled>Select a pre-tax investment</option>
                                     {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
                                         <option key={inv._id} value={inv._id}>
@@ -680,7 +683,7 @@ function ScenarioForm() {
             {/*rmd_strategy */}
             <div>
                 <label>RMD Strategy</label>
-                <select name="rmd_strategy" defaultValue="" onChange={handleAddRMDStrategy} required>
+                <select name="rmd_strategy" defaultValue="" onChange={handleAddRMDStrategy}>
                     <option value="" disabled>Select a pre-tax investment</option>
                     {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
                         <option key={inv._id} value={inv._id}>

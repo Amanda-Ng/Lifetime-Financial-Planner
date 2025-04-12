@@ -208,9 +208,16 @@ router.get("/api/getUserEvents", verifyToken, async (req, res) => {
 // POST: Create scenario
 router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     try {
+        let roth_settings = [];
+        if(req.body.has_rothOptimizer===true){
+            roth_settings = [
+                Number(req.body.target_taxBrac),
+                Number(req.body.roth_startYr),
+                Number(req.body.roth_endYr),] 
+        }
         const scenario = new Scenario({
             name: req.body.name,
-            marital_status: req.body.maritialStatus,
+            marital_status: req.body.maritalStatus,
             birth_year: req.body.birthYear,
             birth_year_spouse: req.body.birthYear_spouse,
 
@@ -221,17 +228,18 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
             life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
-
-            investments: ["60b8d295f1b2c34d88f5e3b1"], //placeholder, needs to be replaced
-            event_series: ["60b8d295f1b2c34d88f5e3b1"],
+ 
+            investments: req.body.investmentList, 
+            event_series: req.body.events,
             inflation_assumption: req.body.inflation,
             init_limit_pretax: req.body.pre_contribLimit,
             init_limit_aftertax: req.body.after_contribLimit,
-            spending_strategy: ["60b8d295f1b2c34d88f5e3b1"],
-            expense_withdrawal_strategy: ["60b8d295f1b2c34d88f5e3b1"],
-            roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
-            rmd_strategy: ["60b8d295f1b2c34d88f5e3b1"], //req.body.rmd_strategy,
-            roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
+            spending_strategy: req.body.spendingStrat,
+            expense_withdrawal_strategy: req.body.withdrawStrat,
+            roth_conversion_optimizer_settings :roth_settings,
+            roth_conversion_strategy: req.body.roth_conversion_strategy,
+            rmd_strategy: req.body.rmd_strategy,  
+                 
             read_only: req.body.read_only,
             read_write: req.body.read_write,
             financial_goal: req.body.financialGoal,
@@ -243,8 +251,8 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
         });
         await scenario.save();
         res.status(201).json(scenario);
-    } catch (error) {
-        console.log("two")
+    } catch (error) { 
+        console.log(req.body)
         console.log({ message: error.message })
         res.status(400).json({ message: error.message });
     }
@@ -255,7 +263,7 @@ router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
     try {
         const scenario = await Scenario.findByIdAndUpdate(req.params.id, {
             name: req.body.name,
-            marital_status: req.body.marital_status,
+            marital_status: req.body.maritalStatus,
             birth_year: req.body.birth_year,
             birth_year_spouse: req.body.birth_year_spouse,
 
