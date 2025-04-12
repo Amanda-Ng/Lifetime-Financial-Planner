@@ -6,10 +6,12 @@ import "./ScenarioForm.css";
 
 function ScenarioForm() {
     const location = useLocation();
-    const { scenarioObject, isEditing } = location.state || {};
+    const { scenarioObject, isEditing, isViewing } = location.state || {};
 
     const navigate = useNavigate();
     const [scenario, setScenario] = useState({
+        read_only: "",
+        read_write: "",
         name: "",
         birthYear: "",
         lifeExpectancy_opt: "fixed",
@@ -206,23 +208,39 @@ function ScenarioForm() {
     };
     
     const handleCancel = () => {
-        navigate("/"); // Redirect to homepage when canceled
+        navigate("/scenario"); // Redirect to homepage when canceled
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("submitting scenario js");
 
+        const readOnlyList = scenario.read_only
+            .split(",")
+            .map(email => email.trim())
+            .filter(email => email); // Remove empty strings
+
+        const readWriteList = scenario.read_write
+            .split(",")
+            .map(email => email.trim())
+            .filter(email => email);
+
+        const scenarioPayload = {
+            ...scenario,
+            read_only: readOnlyList,
+            read_write: readWriteList
+        };
+
         try {
             if (isEditing && scenarioObject?._id) {
-                await axiosClient.put(`/api/scenarioForm/${scenarioObject._id}`, scenario);
+                await axiosClient.put(`/api/scenarioForm/${scenarioObject._id}`, scenarioPayload);
                 alert("Scenario updated successfully!");
             } else {
-                await axiosClient.post("/api/scenarioForm", scenario);
+                await axiosClient.post("/api/scenarioForm", scenarioPayload);
                 alert("Scenario added successfully!");
             }
 
-            navigate("/");
+            navigate("/scenario");
         } catch (error) {
             alert("Error submitting the form.");
             console.error("Error submitting form:", error);
@@ -264,6 +282,8 @@ function ScenarioForm() {
         if (isEditing && scenarioObject) {
             setScenario(prev => ({
                 ...prev,
+                read_only: (scenarioObject.read_only || []).join(", "),
+                read_write: (scenarioObject.read_write || []).join(", "),
                 name: scenarioObject.name || "",
                 birthYear: scenarioObject.birth_year || "",
                 birthYear_spouse: scenarioObject.birth_year_spouse || "",
@@ -290,7 +310,32 @@ function ScenarioForm() {
     return (
         <form id="scenario-form" onSubmit={handleSubmit}>
             <h2>Scenario Form</h2>
-
+            {/* Sharing - Read-only */}
+            <div>
+                <label>
+                    Share with (Read-Only)
+                </label>
+                <input
+                    type="text"
+                    name="read_only"
+                    placeholder="email1@example.com, email2@example.com"
+                    value={scenario.read_only}
+                    onChange={handleChange}
+                />
+            </div>
+            {/* Sharing - Read-Write */}
+            <div>
+                <label>
+                    Share with (Read-Write)
+                </label>
+                <input
+                    type="text"
+                    name="read_write"
+                    placeholder="email3@example.com, email4@example.com"
+                    value={scenario.read_write}
+                    onChange={handleChange}
+                />
+            </div>
             {/* Name */}
             <div>
                 <label>
@@ -662,7 +707,7 @@ function ScenarioForm() {
             </div>
 
             {/* Buttons */}
-            <button type="submit">Save Scenario</button>
+            <button type="submit" disabled={isViewing}>Save Scenario</button>
             <button type="button" onClick={handleCancel}>
                 Cancel
             </button>
