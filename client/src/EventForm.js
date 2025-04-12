@@ -327,6 +327,7 @@ const EventForm = () => {
     return (
         <form className="event-form" onSubmit={handleSubmit}>
             <h2>Add Event Series</h2>
+            <h3>Event Types: Income | Expense | Invest | Rebalance</h3>
             <label>
                 Name <span className="required">*</span>
             </label>
