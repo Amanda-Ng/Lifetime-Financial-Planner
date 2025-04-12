@@ -311,6 +311,30 @@ router.put("/api/users/update", verifyToken, async (req, res) => {
     }
 });
 
+router.get("/api/users/activity", verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const [investments, eventSeries, scenarios] = await Promise.all([
+            Investment.find({ userId }).sort({ updatedAt: -1 }),
+            EventSeries.find({ userId }).sort({ updatedAt: -1 }),
+            Scenario.find({ userId }).sort({ updatedAt: -1 }),
+        ]);
+
+        // Combine and sort all activities by updatedAt or createdAt
+        const allActivity = [
+            ...investments.map((item) => ({ type: "Investment", ...item._doc })),
+            ...eventSeries.map((item) => ({ type: "EventSeries", ...item._doc })),
+            ...scenarios.map((item) => ({ type: "Scenario", ...item._doc })),
+        ].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+        res.status(200).json(allActivity);
+    } catch (error) {
+        console.error("Error fetching user activity:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 
 // Protected - Get Scenarios
 router.get("/api/scenarios", verifyToken, async (req, res) => {

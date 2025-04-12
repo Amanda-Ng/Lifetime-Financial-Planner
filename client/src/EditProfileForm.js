@@ -4,7 +4,6 @@ import "./EditProfileForm.css";
 
 export default function EditProfileForm({ userData }) {
 
-    console.log('userData: ', userData);
     const [formData, setFormData] = useState({
         username: userData.username || "",
         age: userData.age || "",

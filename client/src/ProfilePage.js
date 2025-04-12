@@ -7,6 +7,7 @@ import "./App.css";
 function ProfilePage() {
     const [user, setUser] = useState(null);
     const [editing, setEditing] = useState(false);
+    const [activity, setActivity] = useState(null);
 
     const fetch_user_profile = async () => {
         try {
@@ -24,6 +25,19 @@ function ProfilePage() {
     useEffect(() => {
         fetch_user_profile();
     }, []);
+
+    useEffect(() => {
+        const fetchActivity = async () => {
+            try {
+                const response = await axiosClient.get("/api/users/activity");
+                setActivity(response.data);
+            } catch (error) {
+                console.error("Failed to fetch activity:", error);
+            }
+        };
+        fetchActivity();
+    }, []);
+
 
     if (!user) {
         return <p>Loading profile...</p>;
@@ -61,14 +75,25 @@ function ProfilePage() {
             {/* !!Add action to text above */}
             <div className="profile4">
                 <div className="section_header">Recent Activity</div>
-                <div className="description">Populated automatically with data about any new changes or additions to your account.</div>
+                <div className="description">Recent changes or additions to your account.</div>
 
                 <div id="log_table">
                     <div>
                         <span className="leftEntry">Date</span>
                         <span>Log Detail</span>
                     </div>
-                    <div></div> {/* !!Add div to for each entry */}
+
+                    {activity.map((entry, index) => (
+                        <div key={index}>
+                            <span className="leftEntry">
+                                {new Date(entry.updatedAt || entry.createdAt).toLocaleDateString()}
+                            </span>
+                            <span>
+                                {entry.type}: {entry.name || ''}
+                            </span>
+                        </div>
+                    ))}
+
                 </div>
             </div>
         </div>
