@@ -6,17 +6,21 @@ import { Link } from "react-router-dom";
 
 function Scenario() {
 
-    const [scenarios, setScenarios] = useState([]);
+    const [editableScenarios, setEditableScenarios] = useState([]);
+    const [readOnlyScenarios, setReadOnlyScenarios] = useState([]);
 
     useEffect(() => {
         const fetchScenarios = async () => {
             try {
-                const response = await axiosClient.get("/api/scenarios", {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                });
-                setScenarios(response.data);
+                const headers = {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                };
+                const [editableRes, readOnlyRes] = await Promise.all([
+                    axiosClient.get("/api/scenarios/editable", { headers }),
+                    axiosClient.get("/api/scenarios/readonly", { headers })
+                ]);
+                setEditableScenarios(editableRes.data);
+                setReadOnlyScenarios(readOnlyRes.data);
             } catch (error) {
                 console.error("Error fetching scenarios:", error);
             }
@@ -28,17 +32,36 @@ function Scenario() {
     return (
         <div id="scenario-container" >
 
-            {scenarios.map((scenario) => (
+            <h3>Your Editable Scenarios</h3>
+            {editableScenarios.map((scenario) => (
                 <div key={scenario._id} className="scenario1">
                     <div>
                         <img src="kite.png" alt="kite_icon" className="big_icon" />
                         <span className="subsub_header">{scenario.name}</span>
                         <Link
                             to="/scenarioForm"
-                            state={{ scenarioObject: scenario, isEditing: true }}
+                            state={{ scenarioObject: scenario, isEditing: true, isViewing: false }}
                             className="edit-button"
                         >
                             ✏️ Edit
+                        </Link>
+                    </div>
+                    <div>{/* !!Display chart here */}</div>
+                </div>
+            ))}
+
+            <h3>Read-Only Scenarios Shared With You</h3>
+            {readOnlyScenarios.map((scenario) => (
+                <div key={scenario._id} className="scenario1">
+                    <div>
+                        <img src="kite.png" alt="kite_icon" className="big_icon" />
+                        <span className="subsub_header">{scenario.name}</span>
+                        <Link
+                            to="/scenarioForm"
+                            state={{ scenarioObject: scenario, isEditing: false, isViewing: true }}
+                            className="edit-button"
+                        >
+                            👁️ View
                         </Link>
                     </div>
                     <div>{/* !!Display chart here */}</div>
