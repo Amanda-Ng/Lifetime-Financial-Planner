@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { axiosClient } from "./services/apiClient";
+import EditProfileForm from "./EditProfileForm";
 import "./ProfilePage.css";
 import "./App.css";
 
 function ProfilePage() {
     const [user, setUser] = useState(null);
+    const [editing, setEditing] = useState(false);
+
     const fetch_user_profile = async () => {
         try {
             const user = await axiosClient.get("/api/profile", {
@@ -44,9 +47,17 @@ function ProfilePage() {
             <div className="profile2">
                 <div className="section_header">Personal Profile Info</div>
                 <img src="editPage.png" alt="editProfile" className="editPage_icon" />
-                <div>Name, age, profile photo</div>
-                <div className="update_info_option">UPDATE INFO &gt;</div>
+                <div
+                    className="update_info_option"
+                    onClick={() => setEditing((prev) => !prev)}
+                    style={{ cursor: "pointer" }}
+                >
+                    {editing ? "CANCEL" : "UPDATE INFO >"}
+                </div>
             </div>{" "}
+            {editing && (
+                <EditProfileForm userData={user} />
+            )}
             {/* !!Add action to text above */}
             <div className="profile4">
                 <div className="section_header">Recent Activity</div>
