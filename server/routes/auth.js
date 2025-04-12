@@ -205,12 +205,14 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
             rmd_strategy: ["60b8d295f1b2c34d88f5e3b1"], //req.body.rmd_strategy,
             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
-            sharing_settings: null,
+            read_only: req.body.read_only,
+            read_write: req.body.read_write,
             financial_goal: req.body.financialGoal,
             state_of_residence: req.body.stateResidence,
             taxes: new Map() /*!!need algorithm*/,
             totalTaxedIncome: 0 /*!!need algorithm*/,
             totalInvestmentValue: 0 /*!!need algorithm*/,
+            userId: req.user.userId,
         });
         await scenario.save();
         res.status(201).json(scenario);
@@ -248,7 +250,8 @@ router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
             roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
             rmd_strategy: ["60b8d295f1b2c34d88f5e3b1"],
             roth_conversion_optimizer_settings: req.body.roth_conversion_optimizer_settings,
-            sharing_settings: req.body.sharing_settings,
+            read_only: req.body.read_only,
+            read_write: req.body.read_write,
             financial_goal: req.body.financial_goal,
             state_of_residence: req.body.state_of_residence,
             taxes: req.body.taxes,
@@ -281,6 +284,46 @@ router.get("/api/scenarios", verifyToken, async (req, res) => {
         res.json(scenarios);
     } catch (error) {
         console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// GET editable scenarios (user owns or has read-write access)
+router.get("/api/scenarios/editable", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
+        const user_email = user.email;
+
+        const editableScenarios = await Scenario.find({
+            $or: [
+                { userId: user_id },
+                { read_write: user_email }
+            ]
+        });
+
+        res.json(editableScenarios);
+    } catch (error) {
+        console.error("Error fetching editable scenarios:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// GET read-only scenarios (user does not own, only has read-only access)
+router.get("/api/scenarios/readonly", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
+        const user_email = user.email;
+
+        const readOnlyScenarios = await Scenario.find({
+            userId: { $ne: user_id },
+            read_only: user_email
+        });
+
+        res.json(readOnlyScenarios);
+    } catch (error) {
+        console.error("Error fetching read-only scenarios:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
