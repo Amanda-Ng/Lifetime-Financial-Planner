@@ -76,7 +76,6 @@ function Home({ onUserUpdate }) {
                     },
                 }
             );
-            console.log("User's age saved to the database:", age);
             setShowPopup(false); // close popup
             navigate("/");
         } catch (error) {

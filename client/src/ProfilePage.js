@@ -83,7 +83,7 @@ function ProfilePage() {
                         <span>Log Detail</span>
                     </div>
 
-                    {activity.map((entry, index) => (
+                    {Array.isArray(activity) && activity.map((entry, index) => (
                         <div key={index}>
                             <span className="leftEntry">
                                 {new Date(entry.updatedAt || entry.createdAt).toLocaleDateString()}
