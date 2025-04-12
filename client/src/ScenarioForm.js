@@ -25,10 +25,10 @@ function ScenarioForm() {
         life_expectancy_mean_spouse: "",
         life_expectancy_stdv_spouse: "",
 
-        spendingStrat: "" /*list, should load discretionary expenses dynamically*/,
-        withdrawStrat: "" /*list, should load investments dynamically*/,
+        spendingStrat: [] /*list, should load discretionary expenses dynamically*/,
+        withdrawStrat: [] /*list, should load investments dynamically*/,
         roth_conversion_strategy: "",
-        rmd_strategy: "",
+        rmd_strategy: [],
         inflation: "",
         pre_contribLimit: "",
         /*Roth conversion*/
@@ -38,8 +38,8 @@ function ScenarioForm() {
         roth_endYr: "",
         after_contribLimit: "",
         //chosen investments and event for this scenario
-        investmentList: "",
-        events: "",
+        investmentList:  [],
+        events: [],
 
         //fetched from db
         userInvestments: [],
@@ -49,6 +49,162 @@ function ScenarioForm() {
         const { name, value } = e.target;
         setScenario((prev) => ({ ...prev, [name]: value }));
     };
+ 
+    const handleAddInvestment = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return; 
+        const selectedInvestment = scenario.userInvestments.find(inv => inv._id === selectedId);
+        if (
+            selectedInvestment &&
+            !(scenario.investmentList || []).some(inv => inv._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                investmentList: [...(prev.investmentList || []), selectedInvestment],
+            }));
+        } 
+        e.target.value = "";
+    };
+    
+    const handleRemoveInvestment = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            investmentList: prev.investmentList.filter(inv => inv._id !== id),
+            withdrawStrat: (prev.withdrawStrat || []).filter(inv => inv._id !== id), // ensure withdrawStrat is an array
+            roth_conversion_strategy: (prev.roth_conversion_strategy || []).filter(
+                inv => inv._id !== id // ensure roth_conversion_strategy is an array
+            ),
+            rmd_strategy: (prev.rmd_strategy || []).filter(inv => inv._id !== id), // ensure rmd_strategy is an array
+        }));
+    };
+    
+
+    const handleAddEvent = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return; 
+        const selectedEvent = scenario.userEvents.find(ev => ev._id === selectedId);
+        if (
+          selectedEvent &&
+          !(scenario.events || []).some(ev => ev._id === selectedId)
+        ) {
+          setScenario(prev => ({
+            ...prev,
+            events: [...(prev.events || []), selectedEvent],
+          }));
+        } 
+        e.target.value = "";
+      };
+      
+    const handleRemoveEvent = (id) => {
+    setScenario(prev => ({
+        ...prev,
+        events: prev.events.filter(ev => ev._id !== id),
+        spendingStrat: prev.spendingStrat.filter(ev => ev._id !== id), // remove from strategy too
+    }));
+    };
+      
+    const handleAddSpendingStrat = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return; 
+        const selectedEvent = scenario.events.find(ev => ev._id === selectedId && ev.isDiscretionary); 
+        if (
+            selectedEvent &&
+            !(scenario.spendingStrat || []).some(ev => ev._id === selectedId)
+        ) {
+            setScenario(prev => ({
+            ...prev,
+            spendingStrat: [...(prev.spendingStrat || []), selectedEvent],
+            }));
+        } 
+            e.target.value = "";
+    };
+      
+    const handleRemoveSpendingStrat = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            spendingStrat: (prev.spendingStrat || []).filter(ev => ev._id !== id),
+        }));
+    };  
+
+    const handleAddWithdrawStrat = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return; 
+        const selectedInvestment = scenario.investmentList.find(inv => inv._id === selectedId); 
+        if (
+            selectedInvestment &&
+            !(scenario.withdrawStrat || []).some(inv => inv._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                withdrawStrat: [...(prev.withdrawStrat || []), selectedInvestment],
+            }));
+        }
+    
+        e.target.value = "";
+    };
+    
+    const handleRemoveWithdrawStrat = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            withdrawStrat: (prev.withdrawStrat || []).filter(inv => inv._id !== id),
+        }));
+    };
+
+    const handleAddRMDStrategy = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return; 
+        const selectedInvestment = scenario.investmentList.find(
+            inv => inv._id === selectedId && inv.tax_status === "pre-tax retirement"
+        ); 
+        if (
+            selectedInvestment &&
+            !((scenario.rmd_strategy || []).some(inv => inv._id === selectedId))
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                rmd_strategy: [...(prev.rmd_strategy || []), selectedInvestment],
+            }));
+        } 
+        e.target.value = "";
+    };
+    
+    const handleRemoveRMDStrategy = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            rmd_strategy: prev.rmd_strategy.filter(inv => inv._id !== id),
+        }));
+    };
+
+    const handleAddRothConversionStrategy = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return; 
+        const selectedInvestment = scenario.investmentList.find(
+            inv => inv._id === selectedId && inv.tax_status === "pre-tax retirement"
+        ); 
+        if (
+            selectedInvestment &&
+            !(scenario.roth_conversion_strategy || []).some(inv => inv._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                roth_conversion_strategy: [
+                    ...(prev.roth_conversion_strategy || []),
+                    selectedInvestment
+                ]
+            }));
+        } 
+        e.target.value = "";
+    };
+    
+    const handleRemoveRothConversionStrategy = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            roth_conversion_strategy: (prev.roth_conversion_strategy || []).filter(
+                inv => inv._id !== id
+            )
+        }));
+    };
+    
     const handleCancel = () => {
         navigate("/"); // Redirect to homepage when canceled
     };
@@ -75,20 +231,32 @@ function ScenarioForm() {
 
     useEffect(() => {
         const fetchData = async () => {
-            try {
-                // const invest_response = await fetch('http://localhost:3000/getInvestments');
-                // const invests = await invest_response.json();
-                // const event_response = await fetch('http://localhost:3000/getEvents');
-                // const events = await event_response.json();
-                //!! also get tax brackets
-                // setScenario({
-                //     userInvestments: invests,
-                //     userEvents: events
-                // });
-            } catch (err) {
-                console.error("Failed to fetch user data:", err);
-            }
-        };
+          try {
+            console.log("getting investments: ")
+            const invest_response = await axiosClient.get('/api/getUserInvestments', { 
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+            const invests = invest_response.data;
+            console.log(invests)
+            console.log("getting events: ")
+            const event_response = await axiosClient.get('/api/getUserEvents', {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+            const events = event_response.data; 
+            console.log(events) 
+            //!! also get tax brackets
+            setScenario({
+                userInvestments: invests,
+                userEvents: events
+            }); 
+          } catch (err) {
+            console.error('Failed to fetch user data:', err);
+          }
+        };  
         fetchData();
     }, []);
 
@@ -297,10 +465,23 @@ function ScenarioForm() {
                 <label>
                     Investments<span className="required"> *</span>
                 </label>
-                <select name="investmentList" value={scenario.investmentList} onChange={handleChange} required>
-                    <option value="investmentName">investment 1</option>
-                    {/*!!load options dynamically from user investments*/}
+                <select name="investmentList" defaultValue="" onChange={handleAddInvestment} required>
+                    <option value="" disabled>
+                        Select Investments
+                    </option>
+                    {scenario.userInvestments.map((ele,index)=>
+                            <option key={index} value={ele._id}>{ele.investmentType.name}: ${ele.value.$numberDecimal}</option>
+                    )
+                    } 
                 </select>
+
+                <ul > 
+                    {(scenario.investmentList || []).map(inv => (
+                    <li key={inv._id} onClick={() => handleRemoveInvestment(inv._id)} > 
+                        {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                    </li>
+                    ))}
+                </ul>
             </div>
 
             {/*Event series*/}
@@ -308,10 +489,23 @@ function ScenarioForm() {
                 <label>
                     Event Series<span className="required"> *</span>
                 </label>
-                <select name="events" value={scenario.events} onChange={handleChange} required>
-                    <option value="eventName">event 1</option>
-                    {/*!!load options dynamically from user events*/}
+                <select name="events" defaultValue="" onChange={handleAddEvent} required >
+                    <option value="" disabled>
+                        Select events
+                    </option>
+                    {scenario.userEvents.map((event, index) => (
+                        <option key={index} value={event._id}>
+                            {event.name}
+                        </option>
+                    ))}
                 </select>
+                <ul>
+                    {(scenario.events || []).map(event => (
+                        <li key={event._id} onClick={() => handleRemoveEvent(event._id)}>
+                            {event.name}
+                        </li>
+                    ))}
+                </ul> 
             </div>
 
             {/*spending strategy: */}
@@ -319,20 +513,47 @@ function ScenarioForm() {
                 <label>
                     Spending Strategy<span className="required"> *</span>
                 </label>
-                <select name="spendingStrat" value={scenario.spendingStrat} onChange={handleChange} required>
-                    <option value="investmentName">investment 1</option>
-                </select>
-                {/*!!load options dynamically from chosen investments*/}
+                <select name="spendingStrat" defaultValue="" onChange={handleAddSpendingStrat} required>
+                    <option value="" disabled>
+                        Select a discretionary event
+                    </option>
+                    {(scenario.events || []).filter(event => event.isDiscretionary).map(event => (
+                        <option key={event._id} value={event._id}>
+                            {event.name}
+                        </option>
+                    ))} 
+                </select> 
+                <ul>
+                    {(scenario.spendingStrat || []).map(event => (
+                        <li key={event._id} onClick={() => handleRemoveSpendingStrat(event._id)} >
+                            {event.name}
+                        </li>
+                    ))}
+                </ul>
             </div>
             {/*withdrawal strategy*/}
             <div>
                 <label>
                     Expense Withdrawal Strategy<span className="required"> *</span>
                 </label>
-                <select name="withdrawStrat" value={scenario.withdrawStrat} onChange={handleChange} required>
-                    <option value="eventName">event 1</option>
-                </select>
-                {/*!!load options dynamically from chosen events*/}
+                <select name="withdrawStrat" defaultValue="" onChange={handleAddWithdrawStrat} required>
+                    <option value="" disabled>
+                        Select an investment
+                    </option>
+                    {(scenario.investmentList || []).map(inv => (
+                        <option key={inv._id} value={inv._id}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </option>
+                    ))}
+                </select> 
+
+                <ul>
+                    {(scenario.withdrawStrat || []).map(inv => (
+                        <li key={inv._id} onClick={() => handleRemoveWithdrawStrat(inv._id)}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </li>
+                    ))}
+                </ul>
             </div>
             {/*inflation: */}
             <div>
@@ -390,10 +611,22 @@ function ScenarioForm() {
                             </div>
                             <div className="radioOpt">
                                 <label className="radioInput">Roth Conversion Strategy</label>
-                                <select name="roth_conversion_strategy" value={scenario.roth_conversion_strategy} onChange={handleChange} required>
-                                    <option value="investmentName">investment 1</option>
+                                <select name="roth_conversion_strategy" defaultValue="" onChange={handleAddRothConversionStrategy} required>
+                                    <option value="" disabled>Select a pre-tax investment</option>
+                                    {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
+                                        <option key={inv._id} value={inv._id}>
+                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                                        </option>
+                                    ))}
                                 </select>
-                                {/*!!load options dynamically from chosen investments*/}
+
+                                <ul>
+                                    {(scenario.roth_conversion_strategy || []).map(inv => (
+                                        <li key={inv._id} onClick={() => handleRemoveRothConversionStrategy(inv._id)}>
+                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                         </>
                     )}
@@ -402,10 +635,22 @@ function ScenarioForm() {
             {/*rmd_strategy */}
             <div>
                 <label>RMD Strategy</label>
-                <select name="rmd_strategy " value={scenario.rmd_strategy} onChange={handleChange} required>
-                    <option value="investmentID">investment 1</option>
+                <select name="rmd_strategy" defaultValue="" onChange={handleAddRMDStrategy} required>
+                    <option value="" disabled>Select a pre-tax investment</option>
+                    {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
+                        <option key={inv._id} value={inv._id}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </option>
+                    ))}
                 </select>
-                {/*!!load options dynamically from chosen investments that're pre-tax retirement acc*/}
+
+                <ul>  
+                    {(scenario.rmd_strategy || []).map(inv => (
+                        <li key={inv._id} onClick={() => handleRemoveRMDStrategy(inv._id)}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </li>
+                    ))}
+                </ul>
             </div>
 
             {/*after-tax retirement account contribution limit*/}

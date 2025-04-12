@@ -28,6 +28,7 @@ const ScenarioSchema = new Schema(
         taxes: { type: Map, required: true },
         totalTaxedIncome: { type: mongoose.Schema.Types.Decimal128, required: true },
         totalInvestmentValue: { type: mongoose.Schema.Types.Decimal128, required: true },
+        sharedUser:{type: [mongoose.Schema.Types.ObjectId], ref: "User"} 
     },
     { timestamps: true }
 );

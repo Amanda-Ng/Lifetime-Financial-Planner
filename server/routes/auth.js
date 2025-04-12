@@ -178,6 +178,33 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
     }
 });
 
+router.get("/api/getUserInvestments", verifyToken, async (req, res) => {
+    console.log("got req: getUserInvestments") 
+    try {
+        const user_id = req.user.userId;
+        console.log("user id:" + user_id)
+        const investments = await Investment.find({ userId: user_id}).populate("investmentType"); 
+        res.json(investments);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error fetching user investments" });
+    }
+});
+
+router.get("/api/getUserEvents", verifyToken, async (req, res) => {
+    console.log("got req: getUserEvents") 
+    try {
+        const user_id = req.user.userId;
+        console.log("user id:" + user_id)
+        const events = await EventSeries.find({ userId: user_id}); 
+        res.json(events);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error fetching user events" });
+    }
+});
+
+
 // POST: Create scenario
 router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     try {
