@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { axiosClient } from "./services/apiClient";
 import "./App.css";
 import "./ScenarioForm.css";
 
 function ScenarioForm() {
+    const location = useLocation();
+    const { scenarioObject, isEditing, isViewing } = location.state || {};
+
     const navigate = useNavigate();
     const [scenario, setScenario] = useState({
+        read_only: "",
+        read_write: "",
         name: "",
         birthYear: "",
         lifeExpectancy_opt: "fixed",
@@ -15,48 +20,261 @@ function ScenarioForm() {
         life_expectancy_stdv: "",
         financialGoal: "",
         stateResidence: "",
-        maritialStatus: "single",
+        maritalStatus: "single",
         birthYear_spouse: "",
         lifeExpectancy_opt_spouse: "fixed",
         lifeExpectancy_value_spouse: "",
         life_expectancy_mean_spouse: "",
         life_expectancy_stdv_spouse: "",
 
-        spendingStrat: "" /*list, should load discretionary expenses dynamically*/,
-        withdrawStrat: "" /*list, should load investments dynamically*/,
-        roth_conversion_strategy: "",
-        rmd_strategy: "",
+        spendingStrat: [] /*list, should load discretionary expenses dynamically*/,
+        withdrawStrat: [] /*list, should load investments dynamically*/,
+        roth_conversion_strategy: [],
+        rmd_strategy: [],
         inflation: "",
         pre_contribLimit: "",
         /*Roth conversion*/
-        target_taxBrac: "" /*load dynamically withh scraped tax brackets */,
+        target_taxBrac: 0 /*load dynamically withh scraped tax brackets */,
         has_rothOptimizer: "",
         roth_startYr: "",
         roth_endYr: "",
         after_contribLimit: "",
         //chosen investments and event for this scenario
-        investmentList: "",
-        events: "",
+        investmentList: [],
+        events: [],
 
         //fetched from db
+        tax_Brack:null, 
         userInvestments: [],
         userEvents: [],
     });
-    const handleChange = (e) => {
+
+    //update tax brackets based on state   
+    useEffect(() => {
+        if (scenario.stateResidence) {  
+            axiosClient
+                .get(`/api/tax-brackets?stateResidence=${scenario.stateResidence}&year=${scenario.roth_startYr}`) 
+                .then((response) => {
+                    const brackets = response.data ;
+                    setScenario((prev) => ({
+                        ...prev,
+                        tax_Brack: brackets, // Update with fetched brackets or no-brackets
+                    }));
+                    console.log("tax_Brack: " + brackets)
+                })
+                .catch((error) => {
+                    if (error.response && error.response.status === 404) {
+                        // No brackets found for state and year
+                        setScenario((prev) => ({
+                            ...prev,
+                            tax_Brack: null,  
+                        }));
+                        console.log("404 tax_Brack: " )
+                    } else {
+                        // Other errors 
+                        console.error("Error fetching tax brackets:", error);
+                        setScenario((prev) => ({
+                            ...prev,
+                            tax_Brack: ["Error"], // You can handle/display this as needed
+                        }));
+                    }
+                });
+        }
+    }, [scenario.stateResidence,scenario.roth_startYr]);
+
+    const handleChange = (e) => { 
         const { name, value } = e.target;
         setScenario((prev) => ({ ...prev, [name]: value }));
     };
+
+    const handleAddInvestment = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return;
+        const selectedInvestment = scenario.userInvestments.find(inv => inv._id === selectedId);
+        if (
+            selectedInvestment &&
+            !(scenario.investmentList || []).some(inv => inv._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                investmentList: [...(prev.investmentList || []), selectedInvestment],
+            }));
+        }
+        e.target.value = "";
+    };
+
+    const handleRemoveInvestment = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            investmentList: prev.investmentList.filter(inv => inv._id !== id),
+            withdrawStrat: (prev.withdrawStrat || []).filter(inv => inv._id !== id), // ensure withdrawStrat is an array
+            roth_conversion_strategy: (prev.roth_conversion_strategy || []).filter(
+                inv => inv._id !== id // ensure roth_conversion_strategy is an array
+            ),
+            rmd_strategy: (prev.rmd_strategy || []).filter(inv => inv._id !== id), // ensure rmd_strategy is an array
+        }));
+    };
+
+
+    const handleAddEvent = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return;
+        const selectedEvent = scenario.userEvents.find(ev => ev._id === selectedId);
+        if (
+            selectedEvent &&
+            !(scenario.events || []).some(ev => ev._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                events: [...(prev.events || []), selectedEvent],
+            }));
+        }
+        e.target.value = "";
+    };
+
+    const handleRemoveEvent = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            events: prev.events.filter(ev => ev._id !== id),
+            spendingStrat: prev.spendingStrat.filter(ev => ev._id !== id), // remove from strategy too
+        }));
+    };
+
+    const handleAddSpendingStrat = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return;
+        const selectedEvent = scenario.events.find(ev => ev._id === selectedId && ev.isDiscretionary);
+        if (
+            selectedEvent &&
+            !(scenario.spendingStrat || []).some(ev => ev._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                spendingStrat: [...(prev.spendingStrat || []), selectedEvent],
+            }));
+        }
+        e.target.value = "";
+    };
+
+    const handleRemoveSpendingStrat = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            spendingStrat: (prev.spendingStrat || []).filter(ev => ev._id !== id),
+        }));
+    };
+
+    const handleAddWithdrawStrat = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return;
+        const selectedInvestment = scenario.investmentList.find(inv => inv._id === selectedId);
+        if (
+            selectedInvestment &&
+            !(scenario.withdrawStrat || []).some(inv => inv._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                withdrawStrat: [...(prev.withdrawStrat || []), selectedInvestment],
+            }));
+        }
+
+        e.target.value = "";
+    };
+
+    const handleRemoveWithdrawStrat = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            withdrawStrat: (prev.withdrawStrat || []).filter(inv => inv._id !== id),
+        }));
+    };
+
+    const handleAddRMDStrategy = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return;
+        const selectedInvestment = scenario.investmentList.find(
+            inv => inv._id === selectedId && inv.tax_status === "pre-tax retirement"
+        );
+        if (
+            selectedInvestment &&
+            !((scenario.rmd_strategy || []).some(inv => inv._id === selectedId))
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                rmd_strategy: [...(prev.rmd_strategy || []), selectedInvestment],
+            }));
+        }
+        e.target.value = "";
+    };
+
+    const handleRemoveRMDStrategy = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            rmd_strategy: prev.rmd_strategy.filter(inv => inv._id !== id),
+        }));
+    };
+
+    const handleAddRothConversionStrategy = (e) => {
+        const selectedId = e.target.value;
+        if (!selectedId) return;
+        const selectedInvestment = scenario.investmentList.find(
+            inv => inv._id === selectedId && inv.tax_status === "pre-tax retirement"
+        );
+        if (
+            selectedInvestment &&
+            !(scenario.roth_conversion_strategy || []).some(inv => inv._id === selectedId)
+        ) {
+            setScenario(prev => ({
+                ...prev,
+                roth_conversion_strategy: [
+                    ...(prev.roth_conversion_strategy || []),
+                    selectedInvestment
+                ]
+            }));
+        }
+        e.target.value = "";
+    };
+
+    const handleRemoveRothConversionStrategy = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            roth_conversion_strategy: (prev.roth_conversion_strategy || []).filter(
+                inv => inv._id !== id
+            )
+        }));
+    };
+
     const handleCancel = () => {
-        navigate("/"); // Redirect to homepage when canceled
+        navigate("/scenario"); // Redirect to homepage when canceled
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("submitting scenario js");
+
+        const readOnlyList = (scenario.read_only || "")
+            .split(",")
+            .map(email => email.trim())
+            .filter(email => email); // Remove empty strings
+
+        const readWriteList = (scenario.read_write || "")
+            .split(",")
+            .map(email => email.trim())
+            .filter(email => email);
+
+        const scenarioPayload = {
+            ...scenario,
+            read_only: readOnlyList,
+            read_write: readWriteList
+        };
+
         try {
-            await axiosClient.post("/api/scenarioForm", scenario);
-            alert("Scenario added successfully!");
-            navigate("/");
+            if (isEditing && scenarioObject?._id) {
+                await axiosClient.put(`/api/scenarioForm/${scenarioObject._id}`, scenarioPayload);
+                alert("Scenario updated successfully!");
+            } else {
+                await axiosClient.post("/api/scenarioForm", scenarioPayload);
+                alert("Scenario added successfully!");
+            }
+
+            navigate("/scenario");
         } catch (error) {
             alert("Error submitting the form.");
             console.error("Error submitting form:", error);
@@ -66,26 +284,113 @@ function ScenarioForm() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // const invest_response = await fetch('http://localhost:3000/getInvestments');
-                // const invests = await invest_response.json();
-                // const event_response = await fetch('http://localhost:3000/getEvents');
-                // const events = await event_response.json();
+                const invest_response = await axiosClient.get('/api/getUserInvestments', {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                });
+                const invests = invest_response.data;
+
+                const event_response = await axiosClient.get('/api/getUserEvents', {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                });
+                const events = event_response.data;
                 //!! also get tax brackets
-                // setScenario({
-                //     userInvestments: invests,
-                //     userEvents: events
-                // });
+                setScenario(prev => ({
+                    ...prev,
+                    userInvestments: invests,
+                    userEvents: events
+                }));
             } catch (err) {
-                console.error("Failed to fetch user data:", err);
+                console.error('Failed to fetch user data:', err);
             }
         };
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (
+            isEditing &&
+            scenarioObject &&
+            scenario.userInvestments.length > 0 &&
+            scenario.userEvents.length > 0
+        ) {
+            const investmentList = (scenarioObject.investments || [])
+                .map(id => scenario.userInvestments.find(inv => inv._id === id))
+                .filter(Boolean);
+
+            const events = (scenarioObject.event_series || [])
+                .map(id => scenario.userEvents.find(evt => evt._id === id))
+                .filter(Boolean);
+
+            const withdrawStrat = (scenarioObject.expense_withdrawal_strategy || [])
+                .map(id => investmentList.find(inv => inv._id === id))
+                .filter(Boolean);
+
+            const spendingStrat = (scenarioObject.spending_strategy || [])
+                .map(id => events.find(evt => evt._id === id))
+                .filter(Boolean);
+
+            setScenario(prev => ({
+                ...prev,
+                read_only: (scenarioObject.read_only || []).join(", "),
+                read_write: (scenarioObject.read_write || []).join(", "),
+                name: scenarioObject.name || "",
+                birthYear: scenarioObject.birth_year || "",
+                birthYear_spouse: scenarioObject.birth_year_spouse || "",
+                financialGoal: scenarioObject.financial_goal?.$numberDecimal || "",
+                stateResidence: scenarioObject.state_of_residence || "",
+                maritalStatus: scenarioObject.marital_status || "single",
+                lifeExpectancy_value: scenarioObject.life_expectancy || "",
+                life_expectancy_mean: scenarioObject.life_expectancy_mean || "",
+                life_expectancy_stdv: scenarioObject.life_expectancy_stdv || "",
+                lifeExpectancy_value_spouse: scenarioObject.life_expectancy_spouse || "",
+                roth_conversion_strategy: [...(scenarioObject.roth_conversion_strategy || [])],
+                rmd_strategy: [...(scenarioObject.rmd_strategy || [])],
+                spendingStrat,
+                withdrawStrat,
+                inflation: scenarioObject.inflation_assumption || "",
+                pre_contribLimit: scenarioObject.init_limit_pretax?.$numberDecimal || "",
+                after_contribLimit: scenarioObject.init_limit_aftertax?.$numberDecimal || "",
+                investmentList,
+                events,
+            }));
+        }
+    }, [isEditing, scenarioObject, scenario.userInvestments, scenario.userEvents]);
+
+
+
     return (
         <form id="scenario-form" onSubmit={handleSubmit}>
-            <h2>Create New Scenario</h2>
-
+            <h2>Scenario Form</h2>
+            {/* Sharing - Read-only */}
+            <div>
+                <label>
+                    Share with (Read-Only)
+                </label>
+                <input
+                    type="text"
+                    name="read_only"
+                    placeholder="email1@example.com, email2@example.com"
+                    value={scenario.read_only}
+                    onChange={handleChange}
+                />
+            </div>
+            {/* Sharing - Read-Write */}
+            <div>
+                <label>
+                    Share with (Read-Write)
+                </label>
+                <input
+                    type="text"
+                    name="read_write"
+                    placeholder="email3@example.com, email4@example.com"
+                    value={scenario.read_write}
+                    onChange={handleChange}
+                />
+            </div>
             {/* Name */}
             <div>
                 <label>
@@ -164,18 +469,18 @@ function ScenarioForm() {
                 </label>
                 <input type="text" name="stateResidence" value={scenario.stateResidence} onChange={handleChange} required />
             </div>
-            {/*maritialStatus: */}
+            {/*maritalStatus: */}
             <div>
                 <label>
                     Maritial Status <span className="required">*</span>
                 </label>
-                <select name="maritialStatus" value={scenario.maritialStatus} onChange={handleChange} required>
+                <select name="maritalStatus" value={scenario.maritalStatus} onChange={handleChange} required>
                     <option value="single">Single</option>
                     <option value="married">Married</option>
                 </select>
             </div>
 
-            {scenario.maritialStatus === "married" && (
+            {scenario.maritalStatus === "married" && (
                 <>
                     {/*spouse birthYear*/}
                     <div>
@@ -258,44 +563,97 @@ function ScenarioForm() {
             {/*Investments*/}
             <div>
                 <label>
-                    Investments<span className="required"> *</span>
+                    Investments
                 </label>
-                <select name="investmentList" value={scenario.investmentList} onChange={handleChange} required>
-                    <option value="investmentName">investment 1</option>
-                    {/*!!load options dynamically from user investments*/}
+                <select name="investmentList" defaultValue="" onChange={handleAddInvestment}>
+                    <option value="" disabled>
+                        Select Investments
+                    </option>
+                    {scenario.userInvestments.map((ele, index) =>
+                        <option key={index} value={ele._id}>{ele.investmentType.name}: ${ele.value.$numberDecimal}</option>
+                    )
+                    }
                 </select>
+
+                <ul >
+                    {(scenario.investmentList || []).map(inv => (
+                        <li key={inv._id} onClick={() => handleRemoveInvestment(inv._id)} >
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </li>
+                    ))}
+                </ul>
             </div>
 
             {/*Event series*/}
             <div>
                 <label>
-                    Event Series<span className="required"> *</span>
+                    Event Series
                 </label>
-                <select name="events" value={scenario.events} onChange={handleChange} required>
-                    <option value="eventName">event 1</option>
-                    {/*!!load options dynamically from user events*/}
+                <select name="events" defaultValue="" onChange={handleAddEvent} >
+                    <option value="" disabled>
+                        Select events
+                    </option>
+                    {scenario.userEvents.map((event, index) => (
+                        <option key={index} value={event._id}>
+                            {event.name}
+                        </option>
+                    ))}
                 </select>
+                <ul>
+                    {(scenario.events || []).map(event => (
+                        <li key={event._id} onClick={() => handleRemoveEvent(event._id)}>
+                            {event.name}
+                        </li>
+                    ))}
+                </ul>
             </div>
 
             {/*spending strategy: */}
             <div>
                 <label>
-                    Spending Strategy<span className="required"> *</span>
+                    Spending Strategy
                 </label>
-                <select name="spendingStrat" value={scenario.spendingStrat} onChange={handleChange} required>
-                    <option value="investmentName">investment 1</option>
+                <select name="spendingStrat" defaultValue="" onChange={handleAddSpendingStrat}>
+                    <option value="" disabled>
+                        Select a discretionary expense
+                    </option>
+                    {(scenario.events || []).filter(event => event.isDiscretionary).map(event => (
+                        <option key={event._id} value={event._id}>
+                            {event.name}
+                        </option>
+                    ))}
                 </select>
-                {/*!!load options dynamically from chosen investments*/}
+                <ul>
+                    {(scenario.spendingStrat || []).map(event => (
+                        <li key={event._id} onClick={() => handleRemoveSpendingStrat(event._id)} >
+                            {event.name}
+                        </li>
+                    ))}
+                </ul>
             </div>
             {/*withdrawal strategy*/}
             <div>
                 <label>
-                    Expense Withdrawal Strategy<span className="required"> *</span>
+                    Expense Withdrawal Strategy
                 </label>
-                <select name="withdrawStrat" value={scenario.withdrawStrat} onChange={handleChange} required>
-                    <option value="eventName">event 1</option>
+                <select name="withdrawStrat" defaultValue="" onChange={handleAddWithdrawStrat}>
+                    <option value="" disabled>
+                        Select an investment
+                    </option>
+                    {(scenario.investmentList || []).map(inv => (
+                        <option key={inv._id} value={inv._id}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </option>
+                    ))}
                 </select>
-                {/*!!load options dynamically from chosen events*/}
+
+                <ul>
+                    {(scenario.withdrawStrat || []).map(inv => (
+                        <li key={inv._id} onClick={() => handleRemoveWithdrawStrat(inv._id)}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </li>
+                    ))}
+                </ul>
             </div>
             {/*inflation: */}
             <div>
@@ -335,15 +693,6 @@ function ScenarioForm() {
                     {scenario.has_rothOptimizer === "rothOptimizer_on" && (
                         <>
                             <div className="radioOpt">
-                                <label>
-                                    Target Tax Bracket<span className="required"> *</span>
-                                </label>
-                                <select name="target_taxBrac" value={scenario.investmentList} onChange={handleChange} required>
-                                    <option value="index#">bracket 1</option>
-                                    {/*!!load options dynamically from db data*/}
-                                </select>
-                            </div>
-                            <div className="radioOpt">
                                 <label className="radioInput">Start Year</label>
                                 <input type="number" name="roth_startYr" value={scenario.roth_startYr} onChange={handleChange} required />
                             </div>
@@ -352,11 +701,53 @@ function ScenarioForm() {
                                 <input type="number" name="roth_endYr" value={scenario.roth_endYr} onChange={handleChange} required />
                             </div>
                             <div className="radioOpt">
-                                <label className="radioInput">Roth Conversion Strategy</label>
-                                <select name="roth_conversion_strategy" value={scenario.roth_conversion_strategy} onChange={handleChange} required>
-                                    <option value="investmentName">investment 1</option>
+                                <label>
+                                    Target Tax Bracket<span className="required"> *</span>
+                                </label>
+                                <select name="target_taxBrac" value={scenario.target_taxBrac} onChange={handleChange} required>
+                                    {scenario.tax_Brack === null &&
+                                        (<option disabled>No data found for state and start year</option>)
+                                    } 
+                                    {/*single tax brackets*/}
+                                    {scenario.tax_Brack != null && scenario.maritalStatus === "single" &&
+                                        scenario.tax_Brack.single_tax_brackets.map((bracket, index) => (
+                                            <option key={index} value={index}>
+                                                {bracket.range[1] === "Infinity"
+                                                    ? `$${bracket.range[0]} and up`
+                                                    : `$${bracket.range[0]} - $${bracket.range[1]}`}
+                                            </option>
+                                        )
+                                    )}
+                                    {/*married tax brackets*/}
+                                    {scenario.tax_Brack != null && scenario.maritalStatus === "married" &&
+                                    scenario.tax_Brack.married_tax_brackets.map((bracket, index) => (
+                                        <option key={index} value={index}>
+                                            {bracket.range[1] === "Infinity"
+                                                ? `$${bracket.range[0]} and up`
+                                                : `$${bracket.range[0]} - $${bracket.range[1]}`}
+                                        </option>
+                                    ))}
                                 </select>
-                                {/*!!load options dynamically from chosen investments*/}
+                            </div>
+                             
+                            <div className="radioOpt">
+                                <label className="radioInput">Roth Conversion Strategy</label>
+                                <select name="roth_conversion_strategy" defaultValue="" onChange={handleAddRothConversionStrategy}>
+                                    <option value="" disabled>Select a pre-tax investment</option>
+                                    {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
+                                        <option key={inv._id} value={inv._id}>
+                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <ul>
+                                    {(scenario.roth_conversion_strategy || []).map(inv => (
+                                        <li key={inv._id} onClick={() => handleRemoveRothConversionStrategy(inv._id)}>
+                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                         </>
                     )}
@@ -365,10 +756,22 @@ function ScenarioForm() {
             {/*rmd_strategy */}
             <div>
                 <label>RMD Strategy</label>
-                <select name="rmd_strategy " value={scenario.rmd_strategy} onChange={handleChange} required>
-                    <option value="investmentID">investment 1</option>
+                <select name="rmd_strategy" defaultValue="" onChange={handleAddRMDStrategy}>
+                    <option value="" disabled>Select a pre-tax investment</option>
+                    {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
+                        <option key={inv._id} value={inv._id}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </option>
+                    ))}
                 </select>
-                {/*!!load options dynamically from chosen investments that're pre-tax retirement acc*/}
+
+                <ul>
+                    {(scenario.rmd_strategy || []).map(inv => (
+                        <li key={inv._id} onClick={() => handleRemoveRMDStrategy(inv._id)}>
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </li>
+                    ))}
+                </ul>
             </div>
 
             {/*after-tax retirement account contribution limit*/}
@@ -380,7 +783,7 @@ function ScenarioForm() {
             </div>
 
             {/* Buttons */}
-            <button type="submit">Save Scenario</button>
+            <button type="submit" disabled={isViewing}>Save Scenario</button>
             <button type="button" onClick={handleCancel}>
                 Cancel
             </button>

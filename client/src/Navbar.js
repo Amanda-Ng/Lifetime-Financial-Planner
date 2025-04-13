@@ -1,14 +1,22 @@
 import React from "react";
+import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
-function Navbar() {
+Navbar.propTypes = {
+    username: PropTypes.func.isRequired,
+};
+
+function Navbar({ username }) {
+    const navigate = useNavigate();
+
     return (
         <nav className="navbar">
             <img src="headerIcon.png" alt="headerIcon" id="headerIcon" />
             <p>CitriFi</p>
-            <button>
+            <button onClick={() => navigate("/profile")}>
                 <img src="userPfp.png" alt="headerPfp" className="userPfp_small" />
-                <span>Username</span>
+                <span>{username || "Guest"}</span>
             </button>
         </nav>
     );

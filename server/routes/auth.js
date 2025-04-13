@@ -11,7 +11,7 @@ const InvestmentType = require("../models/InvestmentType.js");
 const Investment = require("../models/Investment.js");
 const EventSeries = require("../models/EventSeries.js");
 const Scenario = require("../models/Scenario.js");
-
+const StateTaxes = require("../models/StateTaxes.js");
 // Signup Route
 router.post("/signup", async (req, res) => {
     try {
@@ -114,16 +114,8 @@ router.post("/updateAge", verifyToken, async (req, res) => {
 // Protected - Create InvestmentType
 router.post("/api/investmentTypes", verifyToken, async (req, res) => {
     try {
-        const { name, description, expected_annual_return, expected_annual_income, returnType, incomeType, expense_ratio, taxability } = req.body;
         const investmentType = new InvestmentType({
-            name,
-            description,
-            expected_annual_return,
-            expected_annual_income,
-            returnType,
-            incomeType,
-            expense_ratio,
-            taxability,
+            ...req.body,
         });
         await investmentType.save();
         res.status(201).json(investmentType);
@@ -186,50 +178,147 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
     }
 });
 
+router.get("/api/getUserInvestments", verifyToken, async (req, res) => {
+    console.log("got req: getUserInvestments");
+    try {
+        const user_id = req.user.userId;
+        console.log("user id:" + user_id);
+        const investments = await Investment.find({ userId: user_id }).populate("investmentType");
+        res.json(investments);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error fetching user investments" });
+    }
+});
+
+router.get("/api/getUserEvents", verifyToken, async (req, res) => {
+    console.log("got req: getUserEvents");
+    try {
+        const user_id = req.user.userId;
+        console.log("user id:" + user_id);
+        const events = await EventSeries.find({ userId: user_id });
+        res.json(events);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error fetching user events" });
+    }
+});
+
 // POST: Create scenario
 router.post("/api/scenarioForm", verifyToken, async (req, res) => {
+    console.log(req.body);
     try {
-        // Create Investment document referencing the InvestmentType
-        // console.log("REQUEST: ", req.body);
-        // Object.entries(req.body).forEach(([key, value]) => {
-        //     console.log("KEY: ", key);
-        //     console.log("VALUE: ", typeof value);
-        // });
+        let roth_settings = [];
+        if (req.body.has_rothOptimizer === "rothOptimizer_on") {
+            roth_settings = [Number(req.body.target_taxBrac), Number(req.body.roth_startYr), Number(req.body.roth_endYr)];
+        }
         const scenario = new Scenario({
             name: req.body.name,
-            marital_status: req.body.maritialStatus,
-            birth_year: Number(req.body.birthYear),
-            birth_year_spouse: Number(req.body.birthYear_spouse),
+            marital_status: req.body.maritalStatus,
+            birth_year: req.body.birthYear,
+            birth_year_spouse: req.body.birthYear_spouse,
 
             life_expectancy: Number(req.body.lifeExpectancy_value),
             life_expectancy_mean: Number(req.body.life_expectancy_mean),
             life_expectancy_stdv: Number(req.body.life_expectancy_stdv),
 
-            life_expectancy_spouse: Number(req.body.lifeExpectancy_value_spouse),
-            life_expectancy_mean_spouse: Number(req.body.life_expectancy_mean_spouse),
-            life_expectancy_stdv_spouse: Number(req.body.life_expectancy_stdv_spouse),
+            life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
+            life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
+            life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
 
-            investments: ["67eaa6b6074ecc89e2be6fbc"],
-            event_series: ["67eaa6d3074ecc89e2be6fc0"],
-            inflation_assumption: Number(req.body.inflation),
-            init_limit_pretax: Number(req.body.pre_contribLimit),
-            init_limit_aftertax: Number(req.body.after_contribLimit),
-            spending_strategy: [1, 20, 35],
-            expense_withdrawal_strategy: ["67eaa6b6074ecc89e2be6fbc"], // ["60b8d295f1b2c34d88f5e3b1"],
-            roth_conversion_strategy: ["67eaa6b6074ecc89e2be6fbc"], // ["60b8d295f1b2c34d88f5e3b1"],
-            rmd_strategy: ["67eaa6b6074ecc89e2be6fbc"], //req.body.rmd_strategy,
-            roth_conversion_optimizer_settings: [100, 400, 2000, 2020], // req.body.has_rothOptimizer,
-            sharing_settings: null,
-            financial_goal: Number(req.body.financialGoal),
+            investments: req.body.investmentList,
+            event_series: req.body.events,
+            inflation_assumption: req.body.inflation,
+            init_limit_pretax: req.body.pre_contribLimit,
+            init_limit_aftertax: req.body.after_contribLimit,
+            spending_strategy: req.body.spendingStrat,
+            expense_withdrawal_strategy: req.body.withdrawStrat,
+            roth_conversion_optimizer_settings: roth_settings,
+            roth_conversion_strategy: req.body.roth_conversion_strategy,
+            rmd_strategy: req.body.rmd_strategy,
+
+            read_only: req.body.read_only,
+            read_write: req.body.read_write,
+            financial_goal: req.body.financialGoal,
             state_of_residence: req.body.stateResidence,
             taxes: new Map() /*!!need algorithm*/,
             totalTaxedIncome: 0 /*!!need algorithm*/,
             totalInvestmentValue: 0 /*!!need algorithm*/,
+            userId: req.user.userId,
         });
         console.log("SCENARIO: ", scenario);
         await scenario.save();
         console.log("saved");
         res.status(201).json(scenario);
+    } catch (error) {
+        console.log(req.body);
+        console.log({ message: error.message });
+        res.status(400).json({ message: error.message });
+    }
+});
+
+router.get("/api/tax-brackets", verifyToken, async (req, res) => {
+    try {
+        const { stateResidence, year } = req.query;
+        if (!stateResidence) return res.json(null);
+        state_str = stateResidence.replace(" ", "_").toLowerCase() + "_tax_rates";
+
+        const stateTax = await StateTaxes.findOne({ state: state_str, year: year });
+
+        if (!stateTax) {
+            console.log("No tax brackets found for that state and year: " + state_str + " " + year);
+            return res.status(404).json({ error: "No tax brackets found for that state and year" });
+        }
+        res.json(stateTax);
+    } catch (error) {
+        console.error("Error fetching tax brackets:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+// PUT: Update scenario
+router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
+    try {
+        const scenario = await Scenario.findByIdAndUpdate(
+            req.params.id,
+            {
+                name: req.body.name,
+                marital_status: req.body.maritalStatus,
+                birth_year: req.body.birthYear,
+                birth_year_spouse: req.body.birthYear_spouse,
+
+                life_expectancy: req.body.lifeExpectancy_value,
+                life_expectancy_mean: req.body.life_expectancy_mean,
+                life_expectancy_stdv: req.body.life_expectancy_stdv,
+
+                life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
+                life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
+                life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+
+                investments: req.body.investmentList,
+                event_series: req.body.events,
+                inflation_assumption: req.body.inflation,
+                init_limit_pretax: req.body.pre_contribLimit,
+                init_limit_aftertax: req.body.after_contribLimit,
+                spending_strategy: req.body.spendingStrat,
+                expense_withdrawal_strategy: req.body.withdrawStrat,
+                roth_conversion_optimizer_settings: roth_settings,
+                roth_conversion_strategy: req.body.roth_conversion_strategy,
+                rmd_strategy: req.body.rmd_strategy,
+
+                read_only: req.body.read_only,
+                read_write: req.body.read_write,
+                financial_goal: req.body.financialGoal,
+                state_of_residence: req.body.stateResidence,
+                taxes: new Map() /*!!need algorithm*/,
+                totalTaxedIncome: 0 /*!!need algorithm*/,
+                totalInvestmentValue: 0 /*!!need algorithm*/,
+                userId: req.user.userId,
+            },
+            { new: true }
+        );
+
+        res.status(200).json(scenario);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
@@ -243,6 +332,112 @@ router.get("/api/profile", verifyToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+router.put("/api/users/update", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const { username, age } = req.body;
+
+        // validation
+        if (!username || typeof age === "undefined") {
+            return res.status(400).json({ message: "Username and age are required" });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            user_id,
+            {
+                username,
+                age,
+                updatedAt: Date.now(),
+            },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            message: "User updated successfully",
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+router.get("/api/users/activity", verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const [investments, eventSeries, scenarios] = await Promise.all([
+            Investment.find({ userId }).sort({ updatedAt: -1 }),
+            EventSeries.find({ userId }).sort({ updatedAt: -1 }),
+            Scenario.find({ userId }).sort({ updatedAt: -1 }),
+        ]);
+
+        // Combine and sort all activities by updatedAt or createdAt
+        const allActivity = [
+            ...investments.map((item) => ({ type: "Investment", ...item._doc })),
+            ...eventSeries.map((item) => ({ type: "EventSeries", ...item._doc })),
+            ...scenarios.map((item) => ({ type: "Scenario", ...item._doc })),
+        ].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+        res.status(200).json(allActivity);
+    } catch (error) {
+        console.error("Error fetching user activity:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Protected - Get Scenarios
+router.get("/api/scenarios", verifyToken, async (req, res) => {
+    try {
+        const scenarios = await Scenario.find();
+        res.json(scenarios);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// GET editable scenarios (user owns or has read-write access)
+router.get("/api/scenarios/editable", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
+        const user_email = user.email;
+
+        const editableScenarios = await Scenario.find({
+            $or: [{ userId: user_id }, { read_write: user_email }],
+        });
+
+        res.json(editableScenarios);
+    } catch (error) {
+        console.error("Error fetching editable scenarios:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// GET read-only scenarios (user does not own, only has read-only access)
+router.get("/api/scenarios/readonly", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
+        const user_email = user.email;
+
+        const readOnlyScenarios = await Scenario.find({
+            userId: { $ne: user_id },
+            read_only: user_email,
+        });
+
+        res.json(readOnlyScenarios);
+    } catch (error) {
+        console.error("Error fetching read-only scenarios:", error);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
