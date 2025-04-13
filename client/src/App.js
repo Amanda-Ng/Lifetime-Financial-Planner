@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import InvestmentForm from "./InvestmentForm";
@@ -19,10 +19,19 @@ import PrivateRoute from "./PrivateRoute.jsx";
 // End TP
 
 function App() {
+    const [username, setUsername] = useState(() => {
+        return localStorage.getItem("username") || undefined;
+    });
+
+    const handleUserUpdate = (newUsername) => {
+        setUsername(newUsername);
+        localStorage.setItem("username", newUsername)
+    }
+
     return (
         <Router>
             <div className="App">
-                <Navbar />
+                <Navbar username={username}/>
                 <Sidebar />
                 <div className="main-content">
                     <Routes>
@@ -35,7 +44,7 @@ function App() {
                             path="/home"
                             element={
                                 <PrivateRoute>
-                                    <Home />
+                                    <Home onUserUpdate={handleUserUpdate}/>
                                 </PrivateRoute>
                             }
                         />

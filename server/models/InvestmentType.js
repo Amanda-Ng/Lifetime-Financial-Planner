@@ -6,9 +6,19 @@ const InvestmentTypeSchema = new Schema(
     {
         name: { type: String, required: true },
         description: { type: String, required: false },
-        expected_annual_return: { type: mongoose.Schema.Types.Decimal128, required: true },
+
+        // Expected annual return
+        expected_annual_return: { type: mongoose.Schema.Types.Decimal128 },
+        expected_annual_return_mean: { type: mongoose.Schema.Types.Decimal128 },
+        expected_annual_return_stdev: { type: mongoose.Schema.Types.Decimal128 },
+
         expense_ratio: { type: mongoose.Schema.Types.Decimal128, required: true },
-        expected_annual_income: { type: mongoose.Schema.Types.Decimal128, required: true },
+
+        // Expected Annual Income
+        expected_annual_income: { type: mongoose.Schema.Types.Decimal128 },
+        expected_annual_income_mean: { type: mongoose.Schema.Types.Decimal128 },
+        expected_annual_income_stdev: { type: mongoose.Schema.Types.Decimal128 },
+
         taxability: {
             type: String,
             required: true

@@ -17,17 +17,20 @@ const ScenarioSchema = new Schema(
         inflation_assumption: { type: Number, required: true },
         init_limit_pretax: { type: mongoose.Schema.Types.Decimal128, required: true },
         init_limit_aftertax: { type: mongoose.Schema.Types.Decimal128, required: true },
-        spending_strategy: { type: [Number], required: true },
+        spending_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "ExpenseEvent", required: true },
         expense_withdrawal_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         roth_conversion_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         rmd_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         roth_conversion_optimizer_settings: { type: [Number], required: true },
-        sharing_settings: { type: Map, required: false },
+        read_only: { type: [String], default: [] },
+        read_write: { type: [String], default: [] },
         financial_goal: { type: mongoose.Schema.Types.Decimal128, required: true },
         state_of_residence: { type: String, required: true },
         taxes: { type: Map, required: true },
         totalTaxedIncome: { type: mongoose.Schema.Types.Decimal128, required: true },
         totalInvestmentValue: { type: mongoose.Schema.Types.Decimal128, required: true },
+        userId: { type: String, required: true },
+        sharedUser:{type: [mongoose.Schema.Types.ObjectId], ref: "User"} 
     },
     { timestamps: true }
 );

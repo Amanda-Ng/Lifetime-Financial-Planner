@@ -5,12 +5,17 @@
 // modified slightly to be a JS file instead of JSX and add popup window
 
 import { useEffect, useState, React } from "react";
+import PropTypes from "prop-types";
 import useApp from "./hooks/useApp";
 import { axiosClient } from "./services/apiClient";
 import { useNavigate } from "react-router-dom";
 import "./Home.css";
 
-function Home() {
+Home.propTypes = {
+    onUserUpdate: PropTypes.func.isRequired
+};
+
+function Home({ onUserUpdate }) {
     const navigate = useNavigate(); // Move useNavigate inside the component
     const { token, logout } = useApp();
     const [user, setUser] = useState(null);
@@ -26,7 +31,7 @@ function Home() {
                     },
                 });
                 setUser(user);
-                console.log("USER:", user);
+                onUserUpdate(user.username)
                 setAge(user.age);
                 if (user.age) {
                     navigate("/");
@@ -37,7 +42,7 @@ function Home() {
                 console.error(error.response);
             }
         })();
-    }, [navigate]);
+    }, [navigate, onUserUpdate]);
 
     useEffect(() => {
         (async () => {
@@ -71,7 +76,6 @@ function Home() {
                     },
                 }
             );
-            console.log("User's age saved to the database:", age);
             setShowPopup(false); // close popup
             navigate("/");
         } catch (error) {
