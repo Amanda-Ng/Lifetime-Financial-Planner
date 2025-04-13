@@ -282,6 +282,13 @@ router.get("/api/tax-brackets", verifyToken, async (req, res) => {
 // PUT: Update scenario
 router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
     try {
+        let roth_settings = [];
+        if(req.body.has_rothOptimizer==="rothOptimizer_on" ){
+            roth_settings = [
+                Number(req.body.target_taxBrac),
+                Number(req.body.roth_startYr),
+                Number(req.body.roth_endYr),] 
+        }
         const scenario = await Scenario.findByIdAndUpdate(req.params.id, {
             name: req.body.name,
             marital_status: req.body.maritalStatus,
