@@ -5,17 +5,44 @@
 // modified slightly to be a JS file instead of JSX and add popup window
 
 import { useEffect, useState, React } from "react";
+import PropTypes from "prop-types";
 import useApp from "./hooks/useApp";
 import { axiosClient } from "./services/apiClient";
 import { useNavigate } from "react-router-dom";
 import "./Home.css";
 
-function Home() {
+Home.propTypes = {
+    onUserUpdate: PropTypes.func.isRequired
+};
+
+function Home({ onUserUpdate }) {
     const navigate = useNavigate(); // Move useNavigate inside the component
     const { token, logout } = useApp();
     const [user, setUser] = useState(null);
     const [age, setAge] = useState(""); // store user's age
-    const [showPopup, setShowPopup] = useState(true); // control visibility of popup based on the age input
+    const [showPopup, setShowPopup] = useState(false); // control visibility of popup based on the age input
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const { data: user } = await axiosClient.get("/api/profile", {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                });
+                setUser(user);
+                onUserUpdate(user.username)
+                setAge(user.age);
+                if (user.age) {
+                    navigate("/");
+                } else {
+                    setShowPopup(true);
+                }
+            } catch (error) {
+                console.error(error.response);
+            }
+        })();
+    }, [navigate, onUserUpdate]);
 
     useEffect(() => {
         (async () => {
@@ -49,7 +76,6 @@ function Home() {
                     },
                 }
             );
-            console.log("User's age saved to the database:", age);
             setShowPopup(false); // close popup
             navigate("/");
         } catch (error) {

@@ -6,19 +6,36 @@ const EventSeriesSchema = new Schema(
     {
         name: { type: String, required: true },
         description: { type: String },
-        startYearType: { type: String, required: true },
-        startYear: { type: Number, required: true },
 
+        // Start Year
+        startYearType: { type: String, required: true },
+        startYear: { type: Number },
+        meanStartYear: { type: Number },
+        stdDevStartYear: { type: Number },
+        minStartYear: { type: Number },
+        maxStartYear: { type: Number },
+
+        // Duration
         durationType: { type: String, required: true },
-        duration: { type: Number, required: true },
+        duration: { type: Number },
+        meanDuration: { type: Number },
+        stdDevDuration: { type: Number },
+        minDuration: { type: Number },
+        maxDuration: { type: Number },
 
         eventType: { type: String, required: true },
         userId: { type: String, required: true },
 
         // Optional fields depending on event type
         initialAmount: { type: Number },
+
+        // Expected Annual Change
         expectedChangeType: { type: String },
         expectedChange: { type: Number },
+        expectedChangeMean: { type: Number },
+        expectedChangeStDev: { type: Number },
+        expectedChangeMin: { type: Number },
+        expectedChangeMax: { type: Number },
 
         inflationAdjustment: { type: Boolean },
         isMarried: { type: Boolean },

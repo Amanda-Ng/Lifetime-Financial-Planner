@@ -10,10 +10,16 @@ passport.serializeUser((user, done) => {
     done(null, user.id);
 });
 
+// passport.deserializeUser((id, done) => {
+//     User.findById(id, (err, user) => {
+//         done(err, user);
+//     });
+// });
+
 passport.deserializeUser((id, done) => {
-    User.findById(id, (err, user) => {
-        done(err, user);
-    });
+    User.findById(id)
+        .then((user) => done(null, user)) // Pass the user to the next middleware
+        .catch((err) => done(err, null)); // Handle errors
 });
 
 // Use GoogleStrategy for OAuth 2.0 authentication

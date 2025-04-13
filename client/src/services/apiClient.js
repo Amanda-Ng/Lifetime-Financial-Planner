@@ -2,14 +2,14 @@
 
 import axios from 'axios';
 
-const token = localStorage.getItem('token') || null;
+// const token = localStorage.getItem('token') || null;
 
 export const axiosClient = axios.create({
   baseURL: "http://localhost:8000/auth",
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${localStorage.getItem('token') || null}`,
   },
 });
 

@@ -1,13 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const InvestmentType = require("../models/InvestmentType");
-const Investment = require("../models/Investment");
-const Scenario = require("../models/Scenario");
+const InvestmentType = require("./models/InvestmentType");
+const Investment = require("./models/Investment");
+const Scenario = require("./models/Scenario");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
-const passport = require("passport");
 const configs = require("./configs/config.js");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
@@ -15,14 +14,23 @@ dotenv.config();
 //
 const { spawn } = require("child_process"); // Import child_process
 
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
-const { v4: genuuid } = require("uuid");
+const FederalTaxes = require("./models/FederalTaxes.js");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+const allowed_origins = ["http://localhost:3000"];
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+            if (allowed_origins.indexOf(origin) === -1)
+                return callback(new Error("CORS policy for rthis site does not allow access from the specified origin"), false);
+            return callback(null, true);
+        },
+        credentials: true,
+    })
+);
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -35,42 +43,6 @@ let db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 db.once("open", () => console.log("Connected to MongoDB"));
 
-// add express-session middleware
-const sessionStore = MongoStore.create({
-    mongoUrl: configs.dbURL,
-});
-
-sessionStore.on("error", (error) => {
-    console.error("Session store error:", error);
-});
-
-app.use(
-    session({
-        secret: (req) => req.session.secret || genuuid(), // if no Google auth token, then generate a random ID
-        resave: false, // prevent resaving session if nothing has changed
-        saveUninitialized: false, // prevent saving uninitialized sessions
-        store: sessionStore,
-        cookie: {
-            maxAge: 60 * 60 * 1000, // 1 hour
-        },
-    })
-);
-
-// dynamically set the session secret when Google authentication is triggered
-// app.use((req, res, next) => {
-//     if (req.session && req.session.googleToken) {
-//         req.session.secret = req.session.googleToken;
-//     }
-//     next();
-// });
-
-// app.use((req, res, next) => {
-//     console.log("Session data:", req.session);
-//     next();
-// });
-
-app.use(passport.initialize());
-app.use(passport.session());
 // Auth routes
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 app.use("/auth", require("./routes/auth"));
@@ -100,92 +72,122 @@ parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
 
-// POST: Create InvestmentType
-app.post("/api/investmentTypes", async (req, res) => { 
+app.get("/api/federalTaxes", async (req, res) => {
+    console.log("Year: ", req.query.year);
     try {
-        const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
-
-        const investmentType = new InvestmentType({
-            name,
-            description,
-            returnType,
-            incomeType,
-            expected_annual_return,
-            expected_annual_income,
-            expense_ratio,
-            taxability,
+        const {
+            year,
+            single_federal_income_tax,
+            married_federal_income_tax,
+            single_standard_deductions,
+            married_standard_deductions,
+            single_capital_gains_tax,
+            married_capital_gains_tax,
+        } = await FederalTaxes.findOne({ year: req.query.year });
+        res.status(200).json({
+            year,
+            single_federal_income_tax,
+            married_federal_income_tax,
+            single_standard_deductions,
+            married_standard_deductions,
+            single_capital_gains_tax,
+            married_capital_gains_tax,
         });
-
-        await investmentType.save();
-
-        return res.status(201).json(investmentType); // Return the created InvestmentType
     } catch (error) {
-        console.error("Error creating InvestmentType:", error); // Log the error to the server console
-        return res.status(500).json({ message: "Error creating InvestmentType", error });
+        return res.status(500).json({ message: "Failed to fetch tax data", error });
     }
 });
 
-// POST: Create Investment
-app.post("/api/investments", async (req, res) => {
-    try {
-        // Create Investment document referencing the InvestmentType
-        const investment = new Investment({
-            investmentType: req.body.investmentType, // ObjectId of InvestmentType
-            value: req.body.value,
-            tax_status: req.body.tax_status,
-        });
+// // POST: Create InvestmentType
+// app.post("/api/investmentTypes", async (req, res) => {
+//     try {
+//         const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
 
-        await investment.save();
-        res.status(201).json(investment);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
+//         const investmentType = new InvestmentType({
+//             name,
+//             description,
+//             returnType,
+//             incomeType,
+//             expected_annual_return,
+//             expected_annual_income,
+//             expense_ratio,
+//             taxability,
+//         });
 
-// POST: Create scenario
-app.post("/api/scenarioForm", async (req, res) => {
-    console.log("submitting scenario");
-    console.log("body is");
-    console.log(req.body); 
-    try {
-        // Create Investment document referencing the InvestmentType
-        const scenario = new Scenario({
-            name: req.body.name,
-            marital_status: req.body.maritialStatus,
-            birth_year: req.body.birthYear,
-            birth_year_spouse: req.body.birthYear_spouse,
+//         await investmentType.save();
 
-            life_expectancy: req.body.lifeExpectancy_value,
-            life_expectancy_mean: req.body.life_expectancy_mean,
-            life_expectancy_stdv: req.body.life_expectancy_stdv,
+//         return res.status(201).json(investmentType); // Return the created InvestmentType
+//     } catch (error) {
+//         console.error("Error creating InvestmentType:", error); // Log the error to the server console
+//         return res.status(500).json({ message: "Error creating InvestmentType", error });
+//     }
+// });
 
-            life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
-            life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
-            life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+// // POST: Create Investment
+// app.post("/api/investments", async (req, res) => {
+//     try {
+//         // Create Investment document referencing the InvestmentType
+//         const investment = new Investment({
+//             investmentType: req.body.investmentType, // ObjectId of InvestmentType
+//             value: req.body.value,
+//             tax_status: req.body.tax_status,
+//             userId: "Guest",
+//         });
 
-            investments: req.body.investmentList,
-            event_series: req.body.event_series,
-            inflation_assumption: req.body.inflation,
-            init_limit_pretax: req.body.pre_contribLimit,
-            init_limit_aftertax: req.body.after_contribLimit,
-            spending_strategy: req.body.spendingStrat,
-            expense_withdrawal_strategy: req.body.withdrawStrat,
-            roth_conversion_strategy: [req.body.roth_startYr, req.body.roth_endYr],
-            rmd_strategy: req.body.rmd_strategy,
-            roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
-            sharing_settings: null,
-            financial_goal: req.body.financialGoal,
-            state_of_residence: req.body.stateResidence, 
-            taxes: null,        /*!!need algorithm*/
-            totalTaxedIncome: null, /*!!need algorithm*/
-            totalInvestmentValue: null, /*!!need algorithm*/ 
-        }); 
-        await scenario.save();  
-        res.status(201).json(scenario);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
+//         await investment.save();
+//         res.status(201).json(investment);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// });
+
+// // POST: Create scenario
+// //60b8d295f1b2c34d88f5e3b1 is a placeholder for object id
+// app.post("/api/scenarioForm", async (req, res) => {
+//     console.log("submitting scenario");
+//     console.log("body is");
+//     console.log(req.body);
+//     try {
+//         // Create Investment document referencing the InvestmentType
+//         const scenario = new Scenario({
+//             name: req.body.name,
+//             marital_status: req.body.maritialStatus,
+//             birth_year: req.body.birthYear,
+//             birth_year_spouse: req.body.birthYear_spouse,
+
+//             life_expectancy: req.body.lifeExpectancy_value,
+//             life_expectancy_mean: req.body.life_expectancy_mean,
+//             life_expectancy_stdv: req.body.life_expectancy_stdv,
+
+//             life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
+//             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
+//             life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+
+//             investments: ["60b8d295f1b2c34d88f5e3b1"],
+//             event_series: ["60b8d295f1b2c34d88f5e3b1"],
+//             inflation_assumption: req.body.inflation,
+//             init_limit_pretax: req.body.pre_contribLimit,
+//             init_limit_aftertax: req.body.after_contribLimit,
+//             spending_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+//             expense_withdrawal_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+//             roth_conversion_strategy: ["60b8d295f1b2c34d88f5e3b1"],
+//             rmd_strategy: req.body.rmd_strategy,
+//             roth_conversion_optimizer_settings: req.body.has_rothOptimizer,
+//             sharing_settings: null,
+//             financial_goal: req.body.financialGoal,
+//             state_of_residence: req.body.stateResidence,
+//             taxes: new Map() /*!!need algorithm*/,
+//             totalTaxedIncome: 0 /*!!need algorithm*/,
+//             totalInvestmentValue: 0 /*!!need algorithm*/,
+//         });
+//         await scenario.save();
+//         res.status(201).json(scenario);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// });
+
+module.exports = app;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -7,10 +7,11 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../middlewares/jwt");
 const configs = require("../configs/config.js");
-const InvestmentType = require("../models/InvestmentType");
-const Investment = require("../models/Investment");
-const EventSeries = require("../models/EventSeries");
-
+const InvestmentType = require("../models/InvestmentType.js");
+const Investment = require("../models/Investment.js");
+const EventSeries = require("../models/EventSeries.js");
+const Scenario = require("../models/Scenario.js");
+const StateTaxes = require("../models/StateTaxes.js");
 // Signup Route
 router.post("/signup", async (req, res) => {
     try {
@@ -70,17 +71,6 @@ router.get("/google", passport.authenticate("google", { scope: ["profile", "emai
 
 // Google callback route
 router.get("/google/callback", passport.authenticate("google", { session: false, failureRedirect: "/" }), (req, res) => {
-    // store Google auth token as session secret
-    req.session.googleId = req.user.googleId; // google ID stored in session data to be accessed later to get user info
-    req.session.secret = req.user.googleToken;
-
-    req.session.save((error) => {
-        if (error) {
-            console.error("Error saving session:", error);
-        } else {
-            console.log("Session saved successfully:");
-        }
-    });
     const token = jwt.sign({ userId: req.user._id, username: req.user.username }, "secretKey");
     res.redirect(`${configs.googleAuthClientSuccessURL}/success?token=${token}`);
 });
@@ -104,7 +94,6 @@ router.post("/updateAge", verifyToken, async (req, res) => {
     try {
         const { age } = req.body;
 
-        console.log("Update");
         // Update the user's age in the database
         const updatedUser = await User.findByIdAndUpdate(
             req.user.userId, // Extracted from the JWT token
@@ -112,11 +101,9 @@ router.post("/updateAge", verifyToken, async (req, res) => {
             { new: true } // Return the updated document
         );
 
-        console.log("Check");
         if (!updatedUser) {
             return res.status(404).json({ message: "User not found" });
         }
-        console.log("Done");
         res.status(200).json({ message: "Age updated successfully", user: updatedUser });
     } catch (error) {
         console.error("Error updating age:", error);
@@ -127,16 +114,8 @@ router.post("/updateAge", verifyToken, async (req, res) => {
 // Protected - Create InvestmentType
 router.post("/api/investmentTypes", verifyToken, async (req, res) => {
     try {
-        const { name, description, returnType, incomeType, expected_annual_return, expected_annual_income, expense_ratio, taxability } = req.body;
         const investmentType = new InvestmentType({
-            name,
-            description,
-            returnType,
-            incomeType,
-            expected_annual_return,
-            expected_annual_income,
-            expense_ratio,
-            taxability,
+            ...req.body,
         });
         await investmentType.save();
         res.status(201).json(investmentType);
@@ -199,32 +178,270 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
     }
 });
 
-router.get("/api/profile", async (req, res) => {
-    console.log("Request:", req.session);
+router.get("/api/getUserInvestments", verifyToken, async (req, res) => {
+    console.log("got req: getUserInvestments") 
     try {
-        if (!req.session || !req.session.googleId) {
-            // if no session for current user, then do not get the data
-            return res.status(401).json({ message: "Unauthorized: No session found" });
-        }
-
-        // retrieve user
-        const user = await User.findOne({ googleId: req.session.googleId });
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        res.status(200).json({ user });
+        const user_id = req.user.userId;
+        console.log("user id:" + user_id)
+        const investments = await Investment.find({ userId: user_id}).populate("investmentType"); 
+        res.json(investments);
     } catch (error) {
-        console.error("Error fetching user profile:", error);
+        console.error(error);
+        res.status(500).json({ message: "Server error fetching user investments" });
+    }
+});
+
+router.get("/api/getUserEvents", verifyToken, async (req, res) => {
+    console.log("got req: getUserEvents") 
+    try {
+        const user_id = req.user.userId;
+        console.log("user id:" + user_id)
+        const events = await EventSeries.find({ userId: user_id}); 
+        res.json(events);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error fetching user events" });
+    }
+});
+
+
+// POST: Create scenario
+router.post("/api/scenarioForm", verifyToken, async (req, res) => {
+    console.log(req.body)
+    try {
+        let roth_settings = [];
+        if(req.body.has_rothOptimizer==="rothOptimizer_on" ){
+            roth_settings = [
+                Number(req.body.target_taxBrac),
+                Number(req.body.roth_startYr),
+                Number(req.body.roth_endYr),] 
+        }
+        const scenario = new Scenario({
+            name: req.body.name,
+            marital_status: req.body.maritalStatus,
+            birth_year: req.body.birthYear,
+            birth_year_spouse: req.body.birthYear_spouse,
+
+            life_expectancy: req.body.lifeExpectancy_value,
+            life_expectancy_mean: req.body.life_expectancy_mean,
+            life_expectancy_stdv: req.body.life_expectancy_stdv,
+
+            life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
+            life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
+            life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+ 
+            investments: req.body.investmentList, 
+            event_series: req.body.events,
+            inflation_assumption: req.body.inflation,
+            init_limit_pretax: req.body.pre_contribLimit,
+            init_limit_aftertax: req.body.after_contribLimit,
+            spending_strategy: req.body.spendingStrat,
+            expense_withdrawal_strategy: req.body.withdrawStrat,
+            roth_conversion_optimizer_settings :roth_settings,
+            roth_conversion_strategy: req.body.roth_conversion_strategy,
+            rmd_strategy: req.body.rmd_strategy,  
+                 
+            read_only: req.body.read_only,
+            read_write: req.body.read_write,
+            financial_goal: req.body.financialGoal,
+            state_of_residence: req.body.stateResidence,
+            taxes: new Map() /*!!need algorithm*/,
+            totalTaxedIncome: 0 /*!!need algorithm*/,
+            totalInvestmentValue: 0 /*!!need algorithm*/,
+            userId: req.user.userId,
+        });
+        await scenario.save();
+        res.status(201).json(scenario);
+    } catch (error) { 
+        console.log(req.body)
+        console.log({ message: error.message })
+        res.status(400).json({ message: error.message });
+    }
+});  
+
+router.get("/api/tax-brackets", verifyToken, async (req, res) => {
+    try {
+        const { stateResidence, year } = req.query;
+        if (!stateResidence) 
+            return res.json(null); 
+        state_str = stateResidence.replace(" ", "_").toLowerCase() + "_tax_rates"
+ 
+        const stateTax = await StateTaxes.findOne({ state:state_str, year:year }) 
+
+        if (!stateTax) {
+            console.log("No tax brackets found for that state and year: " + state_str + " " + year )
+            return res.status(404).json({ error: "No tax brackets found for that state and year"});
+        }  
+        res.json(stateTax);
+    } catch (error) {
+        console.error("Error fetching tax brackets:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+// PUT: Update scenario
+router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
+    try {
+        const scenario = await Scenario.findByIdAndUpdate(req.params.id, {
+            name: req.body.name,
+            marital_status: req.body.maritalStatus,
+            birth_year: req.body.birthYear,
+            birth_year_spouse: req.body.birthYear_spouse,
+
+            life_expectancy: req.body.lifeExpectancy_value,
+            life_expectancy_mean: req.body.life_expectancy_mean,
+            life_expectancy_stdv: req.body.life_expectancy_stdv,
+
+            life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
+            life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
+            life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
+ 
+            investments: req.body.investmentList, 
+            event_series: req.body.events,
+            inflation_assumption: req.body.inflation,
+            init_limit_pretax: req.body.pre_contribLimit,
+            init_limit_aftertax: req.body.after_contribLimit,
+            spending_strategy: req.body.spendingStrat,
+            expense_withdrawal_strategy: req.body.withdrawStrat,
+            roth_conversion_optimizer_settings :roth_settings,
+            roth_conversion_strategy: req.body.roth_conversion_strategy,
+            rmd_strategy: req.body.rmd_strategy,  
+                 
+            read_only: req.body.read_only,
+            read_write: req.body.read_write,
+            financial_goal: req.body.financialGoal,
+            state_of_residence: req.body.stateResidence,
+            taxes: new Map() /*!!need algorithm*/,
+            totalTaxedIncome: 0 /*!!need algorithm*/,
+            totalInvestmentValue: 0 /*!!need algorithm*/,
+            userId: req.user.userId,
+        }, { new: true });
+
+        res.status(200).json(scenario);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+
+router.get("/api/profile", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
+        res.status(200).json(user);
+    } catch (error) {
+        console.error(error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
 
-router.get("/check-session", (req, res) => {
-    if (req.session) {
-        res.status(200).json({ session: req.session });
-    } else {
-        res.status(404).json({ message: "No session found" });
+router.put("/api/users/update", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const { username, age } = req.body;
+
+        // validation
+        if (!username || typeof age === "undefined") {
+            return res.status(400).json({ message: "Username and age are required" });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            user_id,
+            {
+                username,
+                age,
+                updatedAt: Date.now(),
+            },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            message: "User updated successfully",
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+router.get("/api/users/activity", verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const [investments, eventSeries, scenarios] = await Promise.all([
+            Investment.find({ userId }).sort({ updatedAt: -1 }),
+            EventSeries.find({ userId }).sort({ updatedAt: -1 }),
+            Scenario.find({ userId }).sort({ updatedAt: -1 }),
+        ]);
+
+        // Combine and sort all activities by updatedAt or createdAt
+        const allActivity = [
+            ...investments.map((item) => ({ type: "Investment", ...item._doc })),
+            ...eventSeries.map((item) => ({ type: "EventSeries", ...item._doc })),
+            ...scenarios.map((item) => ({ type: "Scenario", ...item._doc })),
+        ].sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+        res.status(200).json(allActivity);
+    } catch (error) {
+        console.error("Error fetching user activity:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
+// Protected - Get Scenarios
+router.get("/api/scenarios", verifyToken, async (req, res) => {
+    try {
+        const scenarios = await Scenario.find();
+        res.json(scenarios);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// GET editable scenarios (user owns or has read-write access)
+router.get("/api/scenarios/editable", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
+        const user_email = user.email;
+
+        const editableScenarios = await Scenario.find({
+            $or: [
+                { userId: user_id },
+                { read_write: user_email }
+            ]
+        });
+
+        res.json(editableScenarios);
+    } catch (error) {
+        console.error("Error fetching editable scenarios:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// GET read-only scenarios (user does not own, only has read-only access)
+router.get("/api/scenarios/readonly", verifyToken, async (req, res) => {
+    try {
+        const user_id = req.user.userId;
+        const user = await User.findById(user_id);
+        const user_email = user.email;
+
+        const readOnlyScenarios = await Scenario.find({
+            userId: { $ne: user_id },
+            read_only: user_email
+        });
+
+        res.json(readOnlyScenarios);
+    } catch (error) {
+        console.error("Error fetching read-only scenarios:", error);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
