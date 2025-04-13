@@ -95,7 +95,6 @@ const InvestmentForm = () => {
             investmentTypeData.expected_annual_income_stdev = investment.stdDevIncomePercentage;
         }
 
-        console.log("ITD", investmentTypeData);
         try {
             const responseType = await axiosClient.post("/api/investmentTypes", investmentTypeData, {
                 headers: {

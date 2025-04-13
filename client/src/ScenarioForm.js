@@ -40,7 +40,7 @@ function ScenarioForm() {
         roth_endYr: "",
         after_contribLimit: "",
         //chosen investments and event for this scenario
-        investmentList:  [],
+        investmentList: [],
         events: [],
 
         //fetched from db
@@ -86,10 +86,10 @@ function ScenarioForm() {
         const { name, value } = e.target;
         setScenario((prev) => ({ ...prev, [name]: value }));
     };
- 
+
     const handleAddInvestment = (e) => {
         const selectedId = e.target.value;
-        if (!selectedId) return; 
+        if (!selectedId) return;
         const selectedInvestment = scenario.userInvestments.find(inv => inv._id === selectedId);
         if (
             selectedInvestment &&
@@ -99,10 +99,10 @@ function ScenarioForm() {
                 ...prev,
                 investmentList: [...(prev.investmentList || []), selectedInvestment],
             }));
-        } 
+        }
         e.target.value = "";
     };
-    
+
     const handleRemoveInvestment = (id) => {
         setScenario(prev => ({
             ...prev,
@@ -114,59 +114,59 @@ function ScenarioForm() {
             rmd_strategy: (prev.rmd_strategy || []).filter(inv => inv._id !== id), // ensure rmd_strategy is an array
         }));
     };
-    
+
 
     const handleAddEvent = (e) => {
         const selectedId = e.target.value;
-        if (!selectedId) return; 
+        if (!selectedId) return;
         const selectedEvent = scenario.userEvents.find(ev => ev._id === selectedId);
         if (
-          selectedEvent &&
-          !(scenario.events || []).some(ev => ev._id === selectedId)
+            selectedEvent &&
+            !(scenario.events || []).some(ev => ev._id === selectedId)
         ) {
-          setScenario(prev => ({
-            ...prev,
-            events: [...(prev.events || []), selectedEvent],
-          }));
-        } 
+            setScenario(prev => ({
+                ...prev,
+                events: [...(prev.events || []), selectedEvent],
+            }));
+        }
         e.target.value = "";
-      };
-      
-    const handleRemoveEvent = (id) => {
-    setScenario(prev => ({
-        ...prev,
-        events: prev.events.filter(ev => ev._id !== id),
-        spendingStrat: prev.spendingStrat.filter(ev => ev._id !== id), // remove from strategy too
-    }));
     };
-      
+
+    const handleRemoveEvent = (id) => {
+        setScenario(prev => ({
+            ...prev,
+            events: prev.events.filter(ev => ev._id !== id),
+            spendingStrat: prev.spendingStrat.filter(ev => ev._id !== id), // remove from strategy too
+        }));
+    };
+
     const handleAddSpendingStrat = (e) => {
         const selectedId = e.target.value;
-        if (!selectedId) return; 
-        const selectedEvent = scenario.events.find(ev => ev._id === selectedId && ev.isDiscretionary); 
+        if (!selectedId) return;
+        const selectedEvent = scenario.events.find(ev => ev._id === selectedId && ev.isDiscretionary);
         if (
             selectedEvent &&
             !(scenario.spendingStrat || []).some(ev => ev._id === selectedId)
         ) {
             setScenario(prev => ({
-            ...prev,
-            spendingStrat: [...(prev.spendingStrat || []), selectedEvent],
+                ...prev,
+                spendingStrat: [...(prev.spendingStrat || []), selectedEvent],
             }));
-        } 
-            e.target.value = "";
+        }
+        e.target.value = "";
     };
-      
+
     const handleRemoveSpendingStrat = (id) => {
         setScenario(prev => ({
             ...prev,
             spendingStrat: (prev.spendingStrat || []).filter(ev => ev._id !== id),
         }));
-    };  
+    };
 
     const handleAddWithdrawStrat = (e) => {
         const selectedId = e.target.value;
-        if (!selectedId) return; 
-        const selectedInvestment = scenario.investmentList.find(inv => inv._id === selectedId); 
+        if (!selectedId) return;
+        const selectedInvestment = scenario.investmentList.find(inv => inv._id === selectedId);
         if (
             selectedInvestment &&
             !(scenario.withdrawStrat || []).some(inv => inv._id === selectedId)
@@ -176,10 +176,10 @@ function ScenarioForm() {
                 withdrawStrat: [...(prev.withdrawStrat || []), selectedInvestment],
             }));
         }
-    
+
         e.target.value = "";
     };
-    
+
     const handleRemoveWithdrawStrat = (id) => {
         setScenario(prev => ({
             ...prev,
@@ -189,10 +189,10 @@ function ScenarioForm() {
 
     const handleAddRMDStrategy = (e) => {
         const selectedId = e.target.value;
-        if (!selectedId) return; 
+        if (!selectedId) return;
         const selectedInvestment = scenario.investmentList.find(
             inv => inv._id === selectedId && inv.tax_status === "pre-tax retirement"
-        ); 
+        );
         if (
             selectedInvestment &&
             !((scenario.rmd_strategy || []).some(inv => inv._id === selectedId))
@@ -201,10 +201,10 @@ function ScenarioForm() {
                 ...prev,
                 rmd_strategy: [...(prev.rmd_strategy || []), selectedInvestment],
             }));
-        } 
+        }
         e.target.value = "";
     };
-    
+
     const handleRemoveRMDStrategy = (id) => {
         setScenario(prev => ({
             ...prev,
@@ -214,10 +214,10 @@ function ScenarioForm() {
 
     const handleAddRothConversionStrategy = (e) => {
         const selectedId = e.target.value;
-        if (!selectedId) return; 
+        if (!selectedId) return;
         const selectedInvestment = scenario.investmentList.find(
             inv => inv._id === selectedId && inv.tax_status === "pre-tax retirement"
-        ); 
+        );
         if (
             selectedInvestment &&
             !(scenario.roth_conversion_strategy || []).some(inv => inv._id === selectedId)
@@ -229,10 +229,10 @@ function ScenarioForm() {
                     selectedInvestment
                 ]
             }));
-        } 
+        }
         e.target.value = "";
     };
-    
+
     const handleRemoveRothConversionStrategy = (id) => {
         setScenario(prev => ({
             ...prev,
@@ -241,14 +241,13 @@ function ScenarioForm() {
             )
         }));
     };
-    
+
     const handleCancel = () => {
         navigate("/scenario"); // Redirect to homepage when canceled
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("submitting scenario js");
 
         const readOnlyList = (scenario.read_only || "")
             .split(",")
@@ -278,46 +277,62 @@ function ScenarioForm() {
             navigate("/scenario");
         } catch (error) {
             alert("Error submitting the form.");
-            console.log(scenarioPayload)
-            console.log("scenario.maritalStatus is" + scenario.maritalStatus)
             console.error("Error submitting form:", error);
         }
     };
 
     useEffect(() => {
         const fetchData = async () => {
-          try {
-            console.log("getting investments: ")
-            const invest_response = await axiosClient.get('/api/getUserInvestments', { 
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            });
-            const invests = invest_response.data;
-            console.log(invests)
-            console.log("getting events: ")
-            const event_response = await axiosClient.get('/api/getUserEvents', {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            });
-            const events = event_response.data; 
-            console.log(events) 
-            //!! also get tax brackets
-            setScenario(prev => ({
-                ...prev,
-                userInvestments: invests,
-                userEvents: events
-              }));
-          } catch (err) {
-            console.error('Failed to fetch user data:', err);
-          }
-        };  
+            try {
+                const invest_response = await axiosClient.get('/api/getUserInvestments', {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                });
+                const invests = invest_response.data;
+
+                const event_response = await axiosClient.get('/api/getUserEvents', {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                });
+                const events = event_response.data;
+                //!! also get tax brackets
+                setScenario(prev => ({
+                    ...prev,
+                    userInvestments: invests,
+                    userEvents: events
+                }));
+            } catch (err) {
+                console.error('Failed to fetch user data:', err);
+            }
+        };
         fetchData();
     }, []);
 
     useEffect(() => {
-        if (isEditing && scenarioObject) {
+        if (
+            isEditing &&
+            scenarioObject &&
+            scenario.userInvestments.length > 0 &&
+            scenario.userEvents.length > 0
+        ) {
+            const investmentList = (scenarioObject.investments || [])
+                .map(id => scenario.userInvestments.find(inv => inv._id === id))
+                .filter(Boolean);
+
+            const events = (scenarioObject.event_series || [])
+                .map(id => scenario.userEvents.find(evt => evt._id === id))
+                .filter(Boolean);
+
+            const withdrawStrat = (scenarioObject.expense_withdrawal_strategy || [])
+                .map(id => investmentList.find(inv => inv._id === id))
+                .filter(Boolean);
+
+            const spendingStrat = (scenarioObject.spending_strategy || [])
+                .map(id => events.find(evt => evt._id === id))
+                .filter(Boolean);
+
             setScenario(prev => ({
                 ...prev,
                 read_only: (scenarioObject.read_only || []).join(", "),
@@ -332,18 +347,20 @@ function ScenarioForm() {
                 life_expectancy_mean: scenarioObject.life_expectancy_mean || "",
                 life_expectancy_stdv: scenarioObject.life_expectancy_stdv || "",
                 lifeExpectancy_value_spouse: scenarioObject.life_expectancy_spouse || "",
-                roth_conversion_strategy: scenarioObject.roth_conversion_strategy || [],
-                rmd_strategy: scenarioObject.rmd_strategy || [],
-                spendingStrat: scenarioObject.spending_strategy || [],
-                withdrawStrat: scenarioObject.expense_withdrawal_strategy || [],
+                roth_conversion_strategy: [...(scenarioObject.roth_conversion_strategy || [])],
+                rmd_strategy: [...(scenarioObject.rmd_strategy || [])],
+                spendingStrat,
+                withdrawStrat,
                 inflation: scenarioObject.inflation_assumption || "",
                 pre_contribLimit: scenarioObject.init_limit_pretax?.$numberDecimal || "",
                 after_contribLimit: scenarioObject.init_limit_aftertax?.$numberDecimal || "",
-                investmentList: scenarioObject.investments || [],
-                events: scenarioObject.event_series || [],
+                investmentList,
+                events,
             }));
         }
-    }, [isEditing, scenarioObject]);
+    }, [isEditing, scenarioObject, scenario.userInvestments, scenario.userEvents]);
+
+
 
     return (
         <form id="scenario-form" onSubmit={handleSubmit}>
@@ -546,23 +563,23 @@ function ScenarioForm() {
             {/*Investments*/}
             <div>
                 <label>
-                    Investments 
+                    Investments
                 </label>
                 <select name="investmentList" defaultValue="" onChange={handleAddInvestment}>
                     <option value="" disabled>
                         Select Investments
                     </option>
-                    {scenario.userInvestments.map((ele,index)=>
-                            <option key={index} value={ele._id}>{ele.investmentType.name}: ${ele.value.$numberDecimal}</option>
+                    {scenario.userInvestments.map((ele, index) =>
+                        <option key={index} value={ele._id}>{ele.investmentType.name}: ${ele.value.$numberDecimal}</option>
                     )
-                    } 
+                    }
                 </select>
 
-                <ul > 
+                <ul >
                     {(scenario.investmentList || []).map(inv => (
-                    <li key={inv._id} onClick={() => handleRemoveInvestment(inv._id)} > 
-                        {inv.investmentType.name}: ${inv.value.$numberDecimal}
-                    </li>
+                        <li key={inv._id} onClick={() => handleRemoveInvestment(inv._id)} >
+                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                        </li>
                     ))}
                 </ul>
             </div>
@@ -588,7 +605,7 @@ function ScenarioForm() {
                             {event.name}
                         </li>
                     ))}
-                </ul> 
+                </ul>
             </div>
 
             {/*spending strategy: */}
@@ -604,8 +621,8 @@ function ScenarioForm() {
                         <option key={event._id} value={event._id}>
                             {event.name}
                         </option>
-                    ))} 
-                </select> 
+                    ))}
+                </select>
                 <ul>
                     {(scenario.spendingStrat || []).map(event => (
                         <li key={event._id} onClick={() => handleRemoveSpendingStrat(event._id)} >
@@ -628,7 +645,7 @@ function ScenarioForm() {
                             {inv.investmentType.name}: ${inv.value.$numberDecimal}
                         </option>
                     ))}
-                </select> 
+                </select>
 
                 <ul>
                     {(scenario.withdrawStrat || []).map(inv => (
@@ -748,7 +765,7 @@ function ScenarioForm() {
                     ))}
                 </select>
 
-                <ul>  
+                <ul>
                     {(scenario.rmd_strategy || []).map(inv => (
                         <li key={inv._id} onClick={() => handleRemoveRMDStrategy(inv._id)}>
                             {inv.investmentType.name}: ${inv.value.$numberDecimal}
