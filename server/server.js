@@ -33,6 +33,7 @@ app.use(
 );
 app.use(express.json());
 app.use(morgan("dev"));
+app.use("/api/scenarios", require("./routes/scenario.js"));
 
 // const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
 // mongoose.connect(mongodb);
@@ -186,6 +187,8 @@ app.get("/api/federalTaxes", async (req, res) => {
 //         res.status(400).json({ message: error.message });
 //     }
 // });
+
+
 
 module.exports = app;
 

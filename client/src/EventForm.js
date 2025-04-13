@@ -47,7 +47,7 @@ const EventForm = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const investmentsResponse = await axiosClient.get("/api/investments", {
+                const investmentsResponse = await axiosClient.get('/api/getUserInvestments', {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`,
                     },
@@ -187,12 +187,14 @@ const EventForm = () => {
                 // Find the referenced EventSeries from the eventSeries
                 const referencedEventSame = eventSeries.find((series) => series.name === event.anotherEventSeries);
                 eventData.startYear = referencedEventSame.startYear;
+                eventData.anotherEventSeries = event.anotherEventSeries;
                 break;
             }
             case "yearAfterAnotherEvent": {
                 // Find the referenced EventSeries from the already fetched eventSeries
                 const referencedEventAfter = eventSeries.find((series) => series.name === event.anotherEventSeries);
                 eventData.startYear = referencedEventAfter.startYear + referencedEventAfter.duration;
+                eventData.anotherEventSeries = event.anotherEventSeries;
                 break;
             }
             default:
@@ -919,7 +921,7 @@ const EventForm = () => {
                                         <label>Enter Fixed Percentages for Each Investment (Sum must equal 100%)</label>
                                         {investments.map((investment, index) => (
                                             <div key={index} className="radio-group">
-                                                <label>{investment.name}</label>
+                                                <label>{investment.investmentType?.name ?? "Unnamed Investment"}</label>
                                                 <input
                                                     type="number"
                                                     name={`allocation_${index}`}
@@ -951,7 +953,7 @@ const EventForm = () => {
                                         <div className="radio-group">
                                             {investments.map((investment, index) => (
                                                 <div key={index}>
-                                                    <label>{investment.name}</label>
+                                                    <label>{investment.investmentType?.name ?? "Unnamed Investment"}</label>
                                                     <input
                                                         type="number"
                                                         name={`initialAllocation_${index}`}
@@ -966,7 +968,7 @@ const EventForm = () => {
                                         <div className="radio-group">
                                             {investments.map((investment, index) => (
                                                 <div key={index}>
-                                                    <label>{investment.name}</label>
+                                                    <label>{investment.investmentType?.name ?? "Unnamed Investment"}</label>
                                                     <input
                                                         type="number"
                                                         name={`finalAllocation_${index}`}
@@ -1018,7 +1020,7 @@ const EventForm = () => {
                                         {/* Add input fields for investments here */}
                                         {investments.map((investment, index) => (
                                             <div key={index} className="radio-group">
-                                                <label>{investment.name}</label>
+                                                <label>{investment.investmentType?.name ?? "Unnamed Investment"}</label>
                                                 <input
                                                     type="number"
                                                     name={`rebalanceAllocation_${index}`}
@@ -1050,7 +1052,7 @@ const EventForm = () => {
                                         <div className="radio-group">
                                             {investments.map((investment, index) => (
                                                 <div key={index}>
-                                                    <label>{investment.name}</label>
+                                                    <label>{investment.investmentType?.name ?? "Unnamed Investment"}</label>
                                                     <input
                                                         type="number"
                                                         name={`rebalanceInitialAllocation_${index}`}
@@ -1065,7 +1067,7 @@ const EventForm = () => {
                                         <div className="radio-group">
                                             {investments.map((investment, index) => (
                                                 <div key={index}>
-                                                    <label>{investment.name}</label>
+                                                    <label>{investment.investmentType?.name ?? "Unnamed Investment"}</label>
                                                     <input
                                                         type="number"
                                                         name={`rebalanceFinalAllocation_${index}`}
