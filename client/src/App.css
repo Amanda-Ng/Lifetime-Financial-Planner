@@ -36,7 +36,7 @@
   margin-left: 200px;
   /* Push content right */
   padding: 20px;
-  width: 100%;
+  width: auto;
 }
 
 .main-content {
@@ -55,6 +55,7 @@
   box-sizing: border-box;
   /* Ensures padding does not affect the width calculation */
   height: 100%;
+  overflow-x: auto;
 }
 
 .section_header {
