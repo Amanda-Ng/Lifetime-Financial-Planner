@@ -179,11 +179,11 @@ router.get("/api/event-series", verifyToken, async (req, res) => {
 });
 
 router.get("/api/getUserInvestments", verifyToken, async (req, res) => {
-    console.log("got req: getUserInvestments") 
+    console.log("got req: getUserInvestments")
     try {
         const user_id = req.user.userId;
         console.log("user id:" + user_id)
-        const investments = await Investment.find({ userId: user_id}).populate("investmentType"); 
+        const investments = await Investment.find({ userId: user_id }).populate("investmentType");
         res.json(investments);
     } catch (error) {
         console.error(error);
@@ -192,11 +192,11 @@ router.get("/api/getUserInvestments", verifyToken, async (req, res) => {
 });
 
 router.get("/api/getUserEvents", verifyToken, async (req, res) => {
-    console.log("got req: getUserEvents") 
+    console.log("got req: getUserEvents")
     try {
         const user_id = req.user.userId;
         console.log("user id:" + user_id)
-        const events = await EventSeries.find({ userId: user_id}); 
+        const events = await EventSeries.find({ userId: user_id });
         res.json(events);
     } catch (error) {
         console.error(error);
@@ -210,11 +210,11 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
     console.log(req.body)
     try {
         let roth_settings = [];
-        if(req.body.has_rothOptimizer==="rothOptimizer_on" ){
+        if (req.body.has_rothOptimizer === "rothOptimizer_on") {
             roth_settings = [
                 Number(req.body.target_taxBrac),
                 Number(req.body.roth_startYr),
-                Number(req.body.roth_endYr),] 
+                Number(req.body.roth_endYr),]
         }
         const scenario = new Scenario({
             name: req.body.name,
@@ -229,18 +229,18 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
             life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
- 
-            investments: req.body.investmentList, 
+
+            investments: req.body.investmentList,
             event_series: req.body.events,
             inflation_assumption: req.body.inflation,
             init_limit_pretax: req.body.pre_contribLimit,
             init_limit_aftertax: req.body.after_contribLimit,
             spending_strategy: req.body.spendingStrat,
             expense_withdrawal_strategy: req.body.withdrawStrat,
-            roth_conversion_optimizer_settings :roth_settings,
+            roth_conversion_optimizer_settings: roth_settings,
             roth_conversion_strategy: req.body.roth_conversion_strategy,
-            rmd_strategy: req.body.rmd_strategy,  
-                 
+            rmd_strategy: req.body.rmd_strategy,
+
             read_only: req.body.read_only,
             read_write: req.body.read_write,
             financial_goal: req.body.financialGoal,
@@ -252,26 +252,26 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
         });
         await scenario.save();
         res.status(201).json(scenario);
-    } catch (error) { 
+    } catch (error) {
         console.log(req.body)
         console.log({ message: error.message })
         res.status(400).json({ message: error.message });
     }
-});  
+});
 
 router.get("/api/tax-brackets", verifyToken, async (req, res) => {
     try {
         const { stateResidence, year } = req.query;
-        if (!stateResidence) 
-            return res.json(null); 
+        if (!stateResidence)
+            return res.json(null);
         state_str = stateResidence.replace(" ", "_").toLowerCase() + "_tax_rates"
- 
-        const stateTax = await StateTaxes.findOne({ state:state_str, year:year }) 
+
+        const stateTax = await StateTaxes.findOne({ state: state_str, year: year })
 
         if (!stateTax) {
-            console.log("No tax brackets found for that state and year: " + state_str + " " + year )
-            return res.status(404).json({ error: "No tax brackets found for that state and year"});
-        }  
+            console.log("No tax brackets found for that state and year: " + state_str + " " + year)
+            return res.status(404).json({ error: "No tax brackets found for that state and year" });
+        }
         res.json(stateTax);
     } catch (error) {
         console.error("Error fetching tax brackets:", error);
@@ -283,12 +283,13 @@ router.get("/api/tax-brackets", verifyToken, async (req, res) => {
 router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
     try {
         let roth_settings = [];
-        if(req.body.has_rothOptimizer==="rothOptimizer_on" ){
+        if (req.body.has_rothOptimizer === "rothOptimizer_on") {
             roth_settings = [
                 Number(req.body.target_taxBrac),
                 Number(req.body.roth_startYr),
-                Number(req.body.roth_endYr),] 
+                Number(req.body.roth_endYr),]
         }
+
         const scenario = await Scenario.findByIdAndUpdate(req.params.id, {
             name: req.body.name,
             marital_status: req.body.maritalStatus,
@@ -302,18 +303,18 @@ router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
             life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
             life_expectancy_stdv_spouse: req.body.life_expectancy_stdv_spouse,
- 
-            investments: req.body.investmentList, 
+
+            investments: req.body.investmentList,
             event_series: req.body.events,
             inflation_assumption: req.body.inflation,
             init_limit_pretax: req.body.pre_contribLimit,
             init_limit_aftertax: req.body.after_contribLimit,
             spending_strategy: req.body.spendingStrat,
             expense_withdrawal_strategy: req.body.withdrawStrat,
-            roth_conversion_optimizer_settings :roth_settings,
+            roth_conversion_optimizer_settings: roth_settings,
             roth_conversion_strategy: req.body.roth_conversion_strategy,
-            rmd_strategy: req.body.rmd_strategy,  
-                 
+            rmd_strategy: req.body.rmd_strategy,
+
             read_only: req.body.read_only,
             read_write: req.body.read_write,
             financial_goal: req.body.financialGoal,
@@ -326,6 +327,7 @@ router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
 
         res.status(200).json(scenario);
     } catch (error) {
+        console.error(error);
         res.status(400).json({ message: error.message });
     }
 });
