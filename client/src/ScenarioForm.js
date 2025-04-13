@@ -44,9 +44,44 @@ function ScenarioForm() {
         events: [],
 
         //fetched from db
+        tax_Brack:null, 
         userInvestments: [],
         userEvents: [],
     });
+
+    //update tax brackets based on state   
+    useEffect(() => {
+        if (scenario.stateResidence) {  
+            axiosClient
+                .get(`/api/tax-brackets?stateResidence=${scenario.stateResidence}&year=${scenario.roth_startYr}`) 
+                .then((response) => {
+                    const brackets = response.data ;
+                    setScenario((prev) => ({
+                        ...prev,
+                        tax_Brack: brackets, // Update with fetched brackets or no-brackets
+                    }));
+                    console.log("tax_Brack: " + brackets)
+                })
+                .catch((error) => {
+                    if (error.response && error.response.status === 404) {
+                        // No brackets found for state and year
+                        setScenario((prev) => ({
+                            ...prev,
+                            tax_Brack: null,  
+                        }));
+                        console.log("404 tax_Brack: " )
+                    } else {
+                        // Other errors 
+                        console.error("Error fetching tax brackets:", error);
+                        setScenario((prev) => ({
+                            ...prev,
+                            tax_Brack: ["Error"], // You can handle/display this as needed
+                        }));
+                    }
+                });
+        }
+    }, [scenario.stateResidence,scenario.roth_startYr]);
+
     const handleChange = (e) => { 
         const { name, value } = e.target;
         setScenario((prev) => ({ ...prev, [name]: value }));
@@ -563,7 +598,7 @@ function ScenarioForm() {
                 </label>
                 <select name="spendingStrat" defaultValue="" onChange={handleAddSpendingStrat}>
                     <option value="" disabled>
-                        Select a discretionary event
+                        Select a discretionary expense
                     </option>
                     {(scenario.events || []).filter(event => event.isDiscretionary).map(event => (
                         <option key={event._id} value={event._id}>
@@ -641,15 +676,6 @@ function ScenarioForm() {
                     {scenario.has_rothOptimizer === "rothOptimizer_on" && (
                         <>
                             <div className="radioOpt">
-                                <label>
-                                    Target Tax Bracket<span className="required"> *</span>
-                                </label>
-                                <select name="target_taxBrac" value={scenario.investmentList} onChange={handleChange} required>
-                                    <option value="index#">bracket 1</option>
-                                    {/*!!load options dynamically from db data*/}
-                                </select>
-                            </div>
-                            <div className="radioOpt">
                                 <label className="radioInput">Start Year</label>
                                 <input type="number" name="roth_startYr" value={scenario.roth_startYr} onChange={handleChange} required />
                             </div>
@@ -657,6 +683,36 @@ function ScenarioForm() {
                                 <label className="radioInput">End Year</label>
                                 <input type="number" name="roth_endYr" value={scenario.roth_endYr} onChange={handleChange} required />
                             </div>
+                            <div className="radioOpt">
+                                <label>
+                                    Target Tax Bracket<span className="required"> *</span>
+                                </label>
+                                <select name="target_taxBrac" value={scenario.target_taxBrac} onChange={handleChange} required>
+                                    {scenario.tax_Brack === null &&
+                                        (<option disabled>No data found for state and start year</option>)
+                                    } 
+                                    {/*single tax brackets*/}
+                                    {scenario.tax_Brack != null && scenario.maritalStatus === "single" &&
+                                        scenario.tax_Brack.single_tax_brackets.map((bracket, index) => (
+                                            <option key={index} value={index}>
+                                                {bracket.range[1] === "Infinity"
+                                                    ? `$${bracket.range[0]} and up`
+                                                    : `$${bracket.range[0]} - $${bracket.range[1]}`}
+                                            </option>
+                                        )
+                                    )}
+                                    {/*married tax brackets*/}
+                                    {scenario.tax_Brack != null && scenario.maritalStatus === "married" &&
+                                    scenario.tax_Brack.married_tax_brackets.map((bracket, index) => (
+                                        <option key={index} value={index}>
+                                            {bracket.range[1] === "Infinity"
+                                                ? `$${bracket.range[0]} and up`
+                                                : `$${bracket.range[0]} - $${bracket.range[1]}`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                             
                             <div className="radioOpt">
                                 <label className="radioInput">Roth Conversion Strategy</label>
                                 <select name="roth_conversion_strategy" defaultValue="" onChange={handleAddRothConversionStrategy}>
