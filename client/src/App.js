@@ -12,6 +12,7 @@ import Scenario from "./Scenario.js";
 import Simulation from "./Simulation.js";
 import Dashboard from "./Dashboard.js";
 import ScenarioForm from "./ScenarioForm.js";
+import useApp from "./hooks/useApp.js";
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 import Login from "./Login.js";
@@ -21,14 +22,15 @@ import PrivateRoute from "./PrivateRoute.jsx";
 // End TP
 
 function App() {
-    const [username, setUsername] = useState(() => {
-        return localStorage.getItem("username") || undefined;
-    });
+    const {username, handleUserUpdate} = useApp();
+    // const [username, setUsername] = useState(() => {
+    //     return localStorage.getItem("username") || undefined;
+    // });
 
-    const handleUserUpdate = (newUsername) => {
-        setUsername(newUsername);
-        localStorage.setItem("username", newUsername)
-    }
+    // const handleUserUpdate = (newUsername) => {
+    //     setUsername(newUsername);
+    //     localStorage.setItem("username", newUsername)
+    // }
 
     return (
         <Router>

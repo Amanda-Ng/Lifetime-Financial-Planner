@@ -6,11 +6,21 @@ import { React, createContext, useEffect, useState } from 'react';
 export const AppContext = createContext(null);
 
 export default function AppContextProvider({ children }) {
+  const [username, setUsername] = useState(() => {
+    return localStorage.getItem("username") || undefined; // REVIEW: should be null or undefined
+  });
+  
+  const handleUserUpdate = (newUsername) => {
+    setUsername(newUsername);
+    localStorage.setItem("username", newUsername)
+  }
+  
   const [token, setToken] = useState(localStorage.getItem('token') || null);
 
   const logout = () => {
     setToken(null);
     localStorage.removeItem('token');
+    handleUserUpdate("Guest")
   };
 
   useEffect(() => {
@@ -18,7 +28,7 @@ export default function AppContextProvider({ children }) {
   }, [token]);
 
   return (
-    <AppContext.Provider value={{ token, setToken, logout }}>
+    <AppContext.Provider value={{ token, setToken, logout, username, setUsername, handleUserUpdate}}>
       {children}
     </AppContext.Provider>
   );
