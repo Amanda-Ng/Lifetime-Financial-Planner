@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { axiosClient } from "./services/apiClient";
+import { useNavigate } from "react-router-dom";
 import "./InvestmentForm.css";
 
 const InvestmentForm = () => {
+    const navigate = useNavigate();
     const [investment, setInvestment] = useState({
         name: "",
         description: "",
@@ -55,6 +57,7 @@ const InvestmentForm = () => {
             value: "",
             taxStatus: "non-retirement",
         });
+        navigate("/investmentPage");
     };
 
     const handleSubmit = async (e) => {
@@ -151,6 +154,7 @@ const InvestmentForm = () => {
         <form className="investment-form" onSubmit={handleSubmit}>
             <h2>Add Investment</h2>
 
+            <h3>Investment Type Info</h3>
             {/* Name */}
             <label>
                 Name <span className="required">*</span>
@@ -382,6 +386,7 @@ const InvestmentForm = () => {
                 <option value="tax-exempt">Tax-Exempt</option>
             </select>
 
+            <h3>Investment Info</h3>
             {/* Value */}
             <label>
                 Value <span className="required">*</span>
