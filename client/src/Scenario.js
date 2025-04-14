@@ -56,7 +56,18 @@ function Scenario() {
     return (
         <div id="scenario-container" >
 
-            <h3>Your Editable Scenarios</h3>
+            <div className="scenario2">
+                <div>
+                    <img src="add.png" alt="add_icon" className="big_icon" />
+                    <Link to="/scenarioForm" className="subsub_header">Create New Scenario</Link>
+                </div>
+                <div>
+                    <img src="import.png" alt="import_icon" className="big_icon" />
+                    <span className="subsub_header">Import Scenario</span>
+                </div>
+            </div>
+
+            <h3>My Editable Scenarios</h3>
             {editableScenarios.map((scenario) => (
                 <div key={scenario._id} className="scenario1">
                     <div>
@@ -82,7 +93,7 @@ function Scenario() {
                 </div>
             ))}
 
-            <h3>Read-Only Scenarios Shared With You</h3>
+            <h3>Read-Only Scenarios Shared With Me</h3>
             {readOnlyScenarios.map((scenario) => (
                 <div key={scenario._id} className="scenario1">
                     <div>
@@ -108,19 +119,6 @@ function Scenario() {
                 </div>
             ))}
 
-            <div className="scenario2">
-                <div>
-                    <img src="add.png" alt="add_icon" className="big_icon" />
-                    <Link to="/scenarioForm" className="subsub_header">Create New Scenario</Link>
-                </div>
-                <div>
-                    <img src="import.png" alt="import_icon" className="big_icon" />
-                    <span className="subsub_header">Import Scenario</span>
-                </div>
-
-
-
-            </div>
         </div>
 
     )

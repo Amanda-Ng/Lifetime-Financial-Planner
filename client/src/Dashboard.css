@@ -1,0 +1,60 @@
+.dash_container {
+    min-height: 100vh;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 90%;
+    max-width: 800px;
+    margin: auto;
+}
+
+.dash_section {
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.dash_header {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    cursor: pointer;
+}
+
+.preview_cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.item_card {
+    background-color: #fff;
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    font-size: 0.95rem;
+}
+
+.item_card.more {
+    font-weight: 500;
+    background-color: #e0e0e0;
+}
+
+.dash_button {
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.dash_button:hover {
+    background-color: #0056b3;
+}

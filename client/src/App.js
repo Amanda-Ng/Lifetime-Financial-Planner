@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import InvestmentForm from "./InvestmentForm";
+import Investments from "./Investments";
 import EventForm from "./EventForm";
+import Events from "./Events";
 import "./App.css";
 import Navbar from "./Navbar.js";
 import ProfilePage from "./ProfilePage.js";
@@ -31,7 +33,7 @@ function App() {
     return (
         <Router>
             <div className="App">
-                <Navbar username={username}/>
+                <Navbar username={username} />
                 <Sidebar />
                 <div className="main-content">
                     <Routes>
@@ -44,7 +46,7 @@ function App() {
                             path="/home"
                             element={
                                 <PrivateRoute>
-                                    <Home onUserUpdate={handleUserUpdate}/>
+                                    <Home onUserUpdate={handleUserUpdate} />
                                 </PrivateRoute>
                             }
                         />
@@ -53,6 +55,14 @@ function App() {
                             element={
                                 <PrivateRoute>
                                     <InvestmentForm />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/investmentPage"
+                            element={
+                                <PrivateRoute>
+                                    <Investments />
                                 </PrivateRoute>
                             }
                         />
@@ -101,6 +111,14 @@ function App() {
                             element={
                                 <PrivateRoute>
                                     <EventForm />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/eventsPage"
+                            element={
+                                <PrivateRoute>
+                                    <Events />
                                 </PrivateRoute>
                             }
                         />

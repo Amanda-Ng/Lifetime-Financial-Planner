@@ -1,0 +1,47 @@
+#events-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 90vh;
+    margin: 10px;
+}
+
+.events-header {
+    background-color: #F0F1ED;
+    padding: 10px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.events-header div {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.event-card {
+    display: flex;
+    align-items: center;
+    background-color: #F0F1ED;
+    padding: 10px;
+    border-radius: 15px;
+}
+
+.event-card div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.event-details {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.subsub_header {
+    font-weight: 600;
+    font-size: 1rem;
+}
