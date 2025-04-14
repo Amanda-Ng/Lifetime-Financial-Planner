@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { axiosClient } from "./services/apiClient";
 import EditProfileForm from "./EditProfileForm";
+import useApp from "./hooks/useApp";
 import "./ProfilePage.css";
 import "./App.css";
 
@@ -8,6 +9,7 @@ function ProfilePage() {
     const [user, setUser] = useState(null);
     const [editing, setEditing] = useState(false);
     const [activity, setActivity] = useState(null);
+    const { logout } = useApp();
 
     const fetch_user_profile = async () => {
         try {
@@ -57,6 +59,7 @@ function ProfilePage() {
                     View and upload state tax files
                 </div>{" "}
                 {/* !!Add action to text above */}
+                <div><a onClick={logout} href="/login"> Logout </a></div>
             </div>
             <div className="profile2">
                 <div className="section_header">Personal Profile Info</div>

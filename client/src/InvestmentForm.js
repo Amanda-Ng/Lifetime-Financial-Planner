@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { axiosClient } from "./services/apiClient";
+import { useNavigate } from "react-router-dom";
 import "./InvestmentForm.css";
 
 const InvestmentForm = () => {
+    const navigate = useNavigate();
     const [investment, setInvestment] = useState({
         name: "",
         description: "",
@@ -55,6 +57,7 @@ const InvestmentForm = () => {
             value: "",
             taxStatus: "non-retirement",
         });
+        navigate("/investmentPage");
     };
 
     const handleSubmit = async (e) => {
