@@ -11,9 +11,9 @@ function Sidebar() {
       <ul>
         <li><Link to="/profile">Profile</Link></li>
         <li><Link to="/">Dashboard</Link></li> {/* Dashboard is now the / landing page for website */}
-        <li><Link to="/scenario">Scenario</Link></li>
-        <li><Link to="/investment">Investment</Link></li>
-        <li><Link to="/event">Event</Link></li>
+        <li><Link to="/scenario">Scenarios</Link></li>
+        <li><Link to="/investment">Investments</Link></li>
+        <li><Link to="/event">Events</Link></li>
         <li><Link to="/simulation">Simulation</Link></li>
         <li><a onClick={logout} href="/login"> Logout </a></li>
       </ul>

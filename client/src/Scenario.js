@@ -56,7 +56,7 @@ function Scenario() {
     return (
         <div id="scenario-container" >
 
-            <h3>Your Editable Scenarios</h3>
+            <h3>My Editable Scenarios</h3>
             {editableScenarios.map((scenario) => (
                 <div key={scenario._id} className="scenario1">
                     <div>
@@ -82,7 +82,7 @@ function Scenario() {
                 </div>
             ))}
 
-            <h3>Read-Only Scenarios Shared With You</h3>
+            <h3>Read-Only Scenarios Shared With Me</h3>
             {readOnlyScenarios.map((scenario) => (
                 <div key={scenario._id} className="scenario1">
                     <div>

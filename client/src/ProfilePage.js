@@ -75,7 +75,6 @@ function ProfilePage() {
             {/* !!Add action to text above */}
             <div className="profile4">
                 <div className="section_header">Recent Activity</div>
-                <div className="description">Recent changes or additions to your account.</div>
 
                 <div id="log_table">
                     <div>
@@ -85,7 +84,7 @@ function ProfilePage() {
 
                     {Array.isArray(activity) && activity.map((entry, index) => (
                         <div key={index}>
-                            <span className="leftEntry">
+                            <span className="activityDate">
                                 {new Date(entry.updatedAt || entry.createdAt).toLocaleDateString()}
                             </span>
                             <span>

@@ -151,6 +151,7 @@ const InvestmentForm = () => {
         <form className="investment-form" onSubmit={handleSubmit}>
             <h2>Add Investment</h2>
 
+            <h3>Investment Type Info</h3>
             {/* Name */}
             <label>
                 Name <span className="required">*</span>
@@ -382,6 +383,7 @@ const InvestmentForm = () => {
                 <option value="tax-exempt">Tax-Exempt</option>
             </select>
 
+            <h3>Investment Info</h3>
             {/* Value */}
             <label>
                 Value <span className="required">*</span>
