@@ -261,7 +261,7 @@ router.get("/api/tax-brackets", verifyToken, async (req, res) => {
     try {
         const { stateResidence, year } = req.query;
         if (!stateResidence) return res.json(null);
-        state_str = stateResidence.replace(" ", "_").toLowerCase() + "_tax_rates";
+        let state_str = stateResidence.replace(" ", "_").toLowerCase() + "_tax_rates";
 
         const stateTax = await StateTaxes.findOne({ state: state_str, year: year });
 
