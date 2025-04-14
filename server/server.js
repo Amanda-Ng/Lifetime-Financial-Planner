@@ -1,9 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const InvestmentType = require("./models/InvestmentType");
-const Investment = require("./models/Investment");
-const Scenario = require("./models/Scenario");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
@@ -17,7 +14,7 @@ const { spawn } = require("child_process"); // Import child_process
 const FederalTaxes = require("./models/FederalTaxes.js");
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = configs.serverPort;
 
 const allowed_origins = ["http://localhost:3000"];
 app.use(
@@ -187,8 +184,6 @@ app.get("/api/federalTaxes", async (req, res) => {
 //         res.status(400).json({ message: error.message });
 //     }
 // });
-
-
 
 module.exports = app;
 
