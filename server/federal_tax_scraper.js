@@ -7,14 +7,14 @@ puppeteer.use(StealthPlugin());
 const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
-const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
-mongoose.connect(mongodb);
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "Error with MongoDB connection"));
-
 const configs = require("./configs/config.js");
 const dotenv = require("dotenv");
 dotenv.config();
+
+const mongodb = configs.dbURL;
+mongoose.connect(mongodb);
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "Error with MongoDB connection"));
 
 async function scrape_federal_income_taxes() {
     const browser = await puppeteer.launch({
