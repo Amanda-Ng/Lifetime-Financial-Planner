@@ -91,7 +91,7 @@ function ProfilePage() {
                                 {new Date(entry.updatedAt || entry.createdAt).toLocaleDateString()}
                             </span>
                             <span>
-                                {entry.type}: {entry.name || ''}
+                                {entry.type}: {entry.name || entry.investmentType.name || ''}
                             </span>
                         </div>
                     ))}
