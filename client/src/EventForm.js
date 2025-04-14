@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { axiosClient } from "./services/apiClient";
+import { useNavigate } from "react-router-dom";
 import "./InvestmentForm.css";
 
 const EventForm = () => {
+    const navigate = useNavigate();
     const [event, setEvent] = useState({
         name: "",
         description: "",
@@ -156,6 +158,7 @@ const EventForm = () => {
             initialAllocation: [],
             finalAllocation: [],
         });
+        navigate("/eventsPage");
     };
 
     const handleSubmit = async (e) => {
