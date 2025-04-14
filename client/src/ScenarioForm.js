@@ -337,6 +337,10 @@ function ScenarioForm() {
                 .map(id => investmentList.find(inv => inv._id === id))
                 .filter(Boolean);
 
+            const rothStrat = (scenarioObject.roth_conversion_strategy || [])
+                .map(id => investmentList.find(inv => inv._id === id))
+                .filter(Boolean);
+
             setScenario(prev => ({
                 ...prev,
                 read_only: (scenarioObject.read_only || []).join(", "),
@@ -353,7 +357,7 @@ function ScenarioForm() {
                 lifeExpectancy_value_spouse: scenarioObject.life_expectancy_spouse || "",
                 life_expectancy_mean_spouse: scenarioObject.life_expectancy_mean_spouse || "",
                 life_expectancy_stdv_spouse: scenarioObject.life_expectancy_stdv_spouse || "",
-                roth_conversion_strategy: [...(scenarioObject.roth_conversion_strategy || [])],
+                rothStrat,
                 rmdStrat,
                 spendingStrat,
                 withdrawStrat,
