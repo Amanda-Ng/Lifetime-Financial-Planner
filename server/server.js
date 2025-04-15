@@ -70,6 +70,21 @@ parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
 
+const uploadStateTaxYaml = require("./routes/uploadStateTaxYaml");
+app.use("/api/uploadStateTaxYaml", uploadStateTaxYaml);
+
+const rmdProcess = spawn("node", ["scrape_rmd.js"]);
+rmdProcess.stdout.on("data", (data) => {
+    console.log(`scrape_rmd.js: ${data}`);
+});
+rmdProcess.stderr.on("data", (data) => {
+    console.error(`scrape_rmd.js error: ${data}`);
+});
+
+rmdProcess.on("close", (code) => {
+    console.log(`scrape_rmd.js process exited with code ${code}`);
+});
+
 app.get("/api/federalTaxes", async (req, res) => {
     console.log("Year: ", req.query.year);
     try {
