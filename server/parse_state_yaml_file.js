@@ -4,7 +4,11 @@ const yaml = require("js-yaml");
 const mongoose = require("mongoose");
 const StateTaxes = require("./models/StateTaxes");
 
-const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
+const configs = require("./configs/config.js");
+const dotenv = require("dotenv");
+dotenv.config();
+
+const mongodb = configs.dbURL;
 mongoose.connect(mongodb);
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
