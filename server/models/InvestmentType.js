@@ -19,7 +19,7 @@ const InvestmentTypeSchema = new Schema(
         expected_annual_income_mean: { type: mongoose.Schema.Types.Decimal128 },
         expected_annual_income_stdev: { type: mongoose.Schema.Types.Decimal128 },
 
-        taxability: {
+        taxability: {       //taxable, tax-exempt
             type: String,
             required: true
         },
