@@ -1,4 +1,4 @@
-// cypress/e2e/scenario-form.cy.js
+// TP Copilot Prompt: "Can you create tests for the scenario form?"
 
 describe('Scenario Form', () => {
     beforeEach(() => {
