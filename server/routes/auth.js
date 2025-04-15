@@ -736,9 +736,7 @@ router.get("/api/users/activity", verifyToken, async (req, res) => {
         const userId = req.user.userId;
 
         const [investments, eventSeries, scenarios] = await Promise.all([
-            Investment.find({ userId })
-                .populate("investmentType")
-                .sort({ updatedAt: -1 }),
+            Investment.find({ userId }).populate("investmentType").sort({ updatedAt: -1 }),
             EventSeries.find({ userId }).sort({ updatedAt: -1 }),
             Scenario.find({ userId }).sort({ updatedAt: -1 }),
         ]);

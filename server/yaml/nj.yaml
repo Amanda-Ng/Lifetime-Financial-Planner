@@ -1,0 +1,47 @@
+single:
+    brackets:
+      - range: [0, 20000]
+        rate: 0.014
+      - range: [20001, 35000]
+        rate: 0.0175
+        adjustment: -70
+      - range: [35001, 40000]
+        rate: 0.035
+        adjustment: -682.50
+      - range: [40001, 75000]
+        rate: 0.05525
+        adjustment: -1492.50
+      - range: [75001, 500000]
+        rate: 0.0637
+        adjustment: -2126.25
+      - range: [500001, 1000000]
+        rate: 0.0897
+        adjustment: -15126.25
+      - range: [1000001, Infinity]
+        rate: 0.1075
+        adjustment: -32926.25
+  married:
+    brackets:
+      - range: [0, 20000]
+        rate: 0.014
+      - range: [20001, 50000]
+        rate: 0.0175
+        adjustment: -70
+      - range: [50001, 70000]
+        rate: 0.0245
+        adjustment: -420
+      - range: [70001, 80000]
+        rate: 0.035
+        adjustment: -1154.50
+      - range: [80001, 150000]
+        rate: 0.05525
+        adjustment: -2775
+      - range: [150001, 500000]
+        rate: 0.0637
+        adjustment: -4042.50
+      - range: [500001, 1000000]
+        rate: 0.0897
+        adjustment: -17042.50
+      - range: [1000001, Infinity]
+        rate: 0.1075
+        adjustment: -34842.50
