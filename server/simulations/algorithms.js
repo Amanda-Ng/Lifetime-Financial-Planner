@@ -1,5 +1,6 @@
-const EventSeries = require("../../models/EventSeries");
-const Investment = require("../../models/Investment");
+const nodemon = require("nodemon");
+const EventSeries = require("../models/EventSeries");
+const Investment = require("../models/Investment");
 const seedRandom = require("seedrandom");
 
 //run income events series: return total income
@@ -123,6 +124,20 @@ function computeInvestmentValue(value, baseValue, type, rng = Math.random) {
     }
 }
 
+function updateInvestments(scenario, year, rng = Math.random) {
+    scenario.investments.forEach(investment => {
+        const investmentType = investment.investmentType;
+        const investmentValue = computeInvestmentValue(investmentType.expected_annual_return, investment.value, investmentType.returnType, rng);
+        const incomeValue = computeInvestmentValue(investmentType.expected_annual_income, investment.value, investmentType.incomeType, rng);
+
+        // Update the value of the investment
+        endValueBeforeExpenses = investment.value + investmentValue + incomeValue;
+        expenses = investmentType.expense_ratio * (endValueBeforeExpenses + investment.value)/2; // Average of beginning and end value
+        investment.value = endValueBeforeExpenses - expenses;
+    } );
+    return scenario.investments;
+}
+    
 // Does not account for percentage from the value of investment at beginning of year
 // function getInvestmentTypeParams(investmentTypeRandomMap, investmentType, rng = Math.random) {
 //     if (!investmentTypeRandomMap[investmentType._id]) {
@@ -151,5 +166,138 @@ function computeInvestmentValue(value, baseValue, type, rng = Math.random) {
 //         default:
 //             throw new Error(`Unknown distribution type: ${type}`);
 //     }
+// }
+
+function runIncomeEvents(scenario, eventRandomMap, year, rng = Math.random) {
+    let totalIncome = 0;
+    const events = scenario.event_series.filter(event => event.eventType === "Income");
+
+    for (const event of events) {
+        const { startYear, duration, expectedChange } = getEventParams(eventRandomMap, event, rng);
+        if (year >= startYear && year < startYear + duration) {
+            const inflationAdjustedAmount = inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - startYear);
+            totalIncome += inflationAdjustedAmount + expectedChange;
+        }
+    }
+
+    scenario.investments.find(investment => investment.investmentType.name === "Cash").value += totalIncome;
+
+    return totalIncome;
+}
+
+function performRMD(scenario, retirementInvestment, RMDTable, age, year) {
+    expectedAge = age + year - (new Date().getFullYear());
+    const rmd = retirementInvestment.value/ RMDTable.find(entry => entry.age === expectedAge);
+    transferredInvestment = scenario.rmd_strategy.shift();
+
+    if (transferredInvestment.tax_status === "non-retirement") {
+        transferredInvestment = scenario.rmd_strategy.shift();
+    }
+    if (transferredInvestment.value < rmd) {
+        rmd -= transferredInvestment.value;
+        transferredInvestment.tax_status = "non-retirement";
+    } else if (transferredInvestment.value > rmd) {
+        nonRetirementInvestments = scenario.investments.filter(investment => investment.tax_status === "non-retirement");
+        let target = nonRetirementInvestments.find(investment => investment.investmentType.name === transferredInvestment.investmentType.name) 
+        if (target) {
+            target.value += rmd;
+            transferredInvestment.value -= rmd;
+            rmd = 0;
+        } else {
+            transferredInvestment.value -= rmd;
+            scenario.investments.push({
+                investmentType: transferredInvestment.investmentType,
+                value: rmd,
+                tax_status: "non-retirement",
+                userId: scenario.userId,
+            });
+            rmd = 0;
+        }
+    } else {
+        rmd = 0;
+        transferredInvestment.tax_status = "non-retirement";
+    }
+    return rmd;
+}
+
+
+function runRothConversion(user, year, rng = Math.random) {
+    let taxableIncome = calcTaxableIncome(user);
+
+    // Query federal tax brackets from database using the current year
+    const taxBrackets = queryFederalTaxBrackets(year);
+
+    let remainingAmtToConvert = 0;
+
+    for (const bracket of taxBrackets) {
+        const bracketCeil = bracket.upperLimit;
+
+        if (bracketCeil === null) {
+            return 0; // At the highest bracket, cannot convert
+        }
+
+        if (taxableIncome > bracketCeil) {
+            taxableIncome -= bracketCeil;
+        } else {
+            remainingAmtToConvert = bracketCeil - taxableIncome;
+            break;
+        }
+    }
+
+    while (remainingAmtToConvert !== 0) {
+        const withdrawalOrigin = user.preTaxAccounts.find(account => account.value > 0);
+
+        if (!withdrawalOrigin) {
+            return 0; // Cannot do Roth conversion
+        }
+
+        let amtToConvert = 0;
+
+        if (withdrawalOrigin.value > remainingAmtToConvert) {
+            withdrawalOrigin.value -= remainingAmtToConvert;
+            amtToConvert = remainingAmtToConvert;
+            remainingAmtToConvert = 0;
+        } else {
+            amtToConvert = withdrawalOrigin.value;
+            remainingAmtToConvert -= withdrawalOrigin.value;
+            withdrawalOrigin.value = 0;
+        }
+
+        // Choose transfer destination
+        let hasSameTypeInvestment = false;
+
+        for (const account of user.afterTaxAccounts) {
+            if (withdrawalOrigin.investmentType === account.investmentType) {
+                hasSameTypeInvestment = true;
+                account.value += amtToConvert;
+                break;
+            }
+        }
+
+        if (!hasSameTypeInvestment) {
+            const newAfterTaxAccount = {
+                investmentType: withdrawalOrigin.investmentType,
+                value: amtToConvert
+            };
+            user.afterTaxAccounts.push(newAfterTaxAccount);
+        }
+
+        // Update withdrawalOrigin and newAfterTax account in database
+        updateAccountInDatabase(withdrawalOrigin);
+        if (!hasSameTypeInvestment) {
+            updateAccountInDatabase(user.afterTaxAccounts[user.afterTaxAccounts.length - 1]);
+        }
+    }
+
+    return 1; // Successful conversion
+}
+
+// function getCash(investments) {
+//     let cashInvestments = investments.filter(investment => investment.investmentType.name === "Cash");
+//     let totalCash = 0;
+//     cashInvestments.forEach(investment => {
+//         totalCash += investment.value;
+//     });
+//     return totalCash;
 // }
 
