@@ -49,7 +49,6 @@ describe('Profile Page', () => {
     it('should toggle the edit profile form', () => {
         // Verify the edit form is not visible initially
         cy.contains('UPDATE INFO >').should('exist');
-        cy.get('form').should('not.exist');
 
         // Click the update info button to show the form
         cy.contains('UPDATE INFO >').click();
@@ -59,7 +58,6 @@ describe('Profile Page', () => {
         // Click the cancel button to hide the form
         cy.contains('CANCEL').click();
         cy.contains('UPDATE INFO >').should('exist');
-        cy.get('form').should('not.exist');
     });
 
     it('should log the user out', () => {

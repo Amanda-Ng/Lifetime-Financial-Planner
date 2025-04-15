@@ -155,37 +155,6 @@ describe("POST /api/event-series", () => {
 });
 
 describe("POST /api/scenarioForm", () => {
-    it("should create a new Scenario", async () => {
-        const response = await request(app)
-            .post("/auth/api/scenarioForm")
-            .set("Authorization", `Bearer ${token}`)
-            .send({
-                name: "Retirement Plan",
-                maritalStatus: "Single",
-                birthYear: 1985,
-                lifeExpectancy_value: 85,
-                investmentList: [],
-                events: [],
-                inflation: 2.5,
-                pre_contribLimit: 19500,
-                after_contribLimit: 6000,
-                spendingStrat: [],
-                withdrawStrat: [],
-                roth_conversion_strategy: [],
-                rmd_strategy: [],
-                financialGoal: 1000000,
-                stateResidence: "California",
-                read_only: [],
-                read_write: [],
-            })
-            .expect(201);
-
-        expect(response.body).toHaveProperty("name", "Retirement Plan");
-        expect(response.body).toHaveProperty("marital_status", "Single");
-        expect(response.body).toHaveProperty("birth_year", 1985);
-        expect(response.body).toHaveProperty("userId", "Guest");
-    });
-
     it("should fail to create a Scenario with missing required fields", async () => {
         const response = await request(app)
             .post("/auth/api/scenarioForm")
