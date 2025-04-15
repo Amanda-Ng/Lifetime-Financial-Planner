@@ -70,6 +70,9 @@ parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
 });
 
+const uploadStateTaxYaml = require("./routes/uploadStateTaxYaml");
+app.use("/api/uploadStateTaxYaml", uploadStateTaxYaml);
+
 const rmdProcess = spawn("node", ["scrape_rmd.js"]);
 rmdProcess.stdout.on("data", (data) => {
     console.log(`scrape_rmd.js: ${data}`);
