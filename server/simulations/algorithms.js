@@ -115,15 +115,25 @@ function seedRNG(seed = null) {
     return seed ? seedRandom(seed) : Math.random;
 }
 
-function getEventParams(eventRandomMap, event, rng = Math.random) {
-    if (!eventRandomMap[event._id]) {
-        eventRandomMap[event._id] = {
-            startYear: getEventField(event, "startYear", event.startYearType, rng),
-            duration: getEventField(event, "duration", event.durationType, rng),
-            expectedChange: getEventField(event, "expectedChange", event.expectedChangeType, rng),
-        };
-    }
-    return eventRandomMap[event._id];
+function getEventParams(event, rng = Math.random) {
+    // if (!eventRandomMap[event._id]) {
+    //     eventRandomMap[event._id] = {
+    //         startYear: getEventField(event, "startYear", event.startYearType, rng),
+    //         duration: getEventField(event, "duration", event.durationType, rng),
+    //         expectedChange: getEventField(event, "expectedChange", event.expectedChangeType, rng),
+    //     };
+    // }
+    // return eventRandomMap[event._id];
+
+    event["startYear"] = getEventField(event, "startYear", event.startYearType, rng);
+    event["duration"] = getEventField(event, "duration", event.durationType, rng);
+    event["expectedChange"] = getEventField(event, "expectedChange", event.expectedChangeType, rng);
+
+    return {
+        startYear: event.startYear, 
+        duration: event.duration,
+        expectedChange: event.expectedChange
+    };
 }
 
 function getEventField(event, fieldGroup, type, rng = Math.random) {
@@ -139,7 +149,8 @@ function getEventField(event, fieldGroup, type, rng = Math.random) {
             const max = event[`max${capitalize(fieldGroup)}`];
             return uniformSample(min, max, rng);
         default:
-            throw new Error(`Unknown distribution type: ${type}`);
+            // throw new Error(`Unknown distribution type: ${type}`);
+            return event[fieldGroup]; // Fallback to fixed value
     }
 }
 
@@ -234,12 +245,12 @@ function updateInvestments(scenario, year, rng = Math.random) {
 //     }
 // }
 
-function runIncomeEvents(scenario, eventRandomMap, year, rng = Math.random) {
+function runIncomeEvents(scenario, year, rng = Math.random) {
     let totalIncome = 0;
     const events = scenario.event_series.filter((event) => event.eventType === "Income");
 
     for (const event of events) {
-        const { startYear, duration, expectedChange } = getEventParams(eventRandomMap, event, rng);
+        const { startYear, duration, expectedChange } = getEventParams(event, rng);
         if (year >= startYear && year < startYear + duration) {
             const inflationAdjustedAmount = inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - startYear);
             totalIncome += inflationAdjustedAmount + expectedChange;
@@ -251,6 +262,7 @@ function runIncomeEvents(scenario, eventRandomMap, year, rng = Math.random) {
     return totalIncome;
 }
 
+// Slightly different from the design doc
 function performRMD(scenario, retirementInvestment, RMDTable, age, year) {
     expectedAge = age + year - new Date().getFullYear();
     const rmd = retirementInvestment.value / RMDTable.find((entry) => entry.age === expectedAge);
