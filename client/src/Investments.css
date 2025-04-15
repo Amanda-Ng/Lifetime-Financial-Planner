@@ -1,0 +1,42 @@
+#investment-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    height: auto;
+    width: 90vh;
+    margin: 10px;
+    margin-bottom: 40px;
+}
+
+.investment-card {
+    background-color: #F0F1ED;
+    padding: 10px;
+    border-radius: 15px;
+}
+
+.investment-card div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.investment-details {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.investment-footer {
+    background-color: #F0F1ED;
+    padding: 10px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.investment-footer div {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
