@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { axiosClient } from "./services/apiClient";
+import { axiosClientImport } from "./services/apiClient"; 
 import axios from "axios";
 import "./Scenario.css";
 import { Link } from "react-router-dom";
@@ -9,6 +10,7 @@ function Scenario() {
 
     const [editableScenarios, setEditableScenarios] = useState([]);
     const [readOnlyScenarios, setReadOnlyScenarios] = useState([]);
+    const [importFile, setFile] = useState(null);
 
     useEffect(() => {
         const fetchScenarios = async () => {
@@ -28,7 +30,7 @@ function Scenario() {
         };
 
         fetchScenarios();
-    }, []);
+    }, []); 
 
     const handleExportScenario = async (scenario) => {
         try {
@@ -49,6 +51,43 @@ function Scenario() {
             link.remove();
         } catch (error) {
             console.error("Error exporting scenario:", error);
+        }
+    };
+
+    const handleUploadImport = (e) => {
+        setFile(e.target.files[0]);
+    };
+
+    //make request to import scenario
+    const handleImportScenario = async (e) => {
+        e.preventDefault();
+        if (!importFile) { 
+            alert("Please select a file first!");
+            return;
+        } 
+        try {
+            const headers = {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            };
+            const formData = new FormData();
+            formData.append('file', importFile);  
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+              }
+            const response = await axiosClientImport.post("api/importScenario", formData, {
+                headers 
+            }); 
+            alert(response.data.message);
+            console.log("upload success")
+        } catch (error) { 
+            if (error.response) {
+                //server send back err
+                alert(`Error: ${error.response.data.message}`);
+                console.log("upload err: " + error.response.data.message)
+            } else {
+                alert("Unexpected error occurred.");
+                console.log("upload err")
+            }
         }
     };
 
@@ -116,6 +155,10 @@ function Scenario() {
                 <div>
                     <img src="import.png" alt="import_icon" className="big_icon" />
                     <span className="subsub_header">Import Scenario</span>
+                    <form id="uploadForm" onSubmit={handleImportScenario} encType="multipart/form-data">
+                        <input type="file" id="scenarioYaml" name="file" accept=".yaml,.yml" onChange={handleUploadImport} required />
+                        <button type="submit">Upload</button>
+                    </form>
                 </div>
 
 

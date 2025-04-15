@@ -33,6 +33,7 @@ const InvestmentTypeSchema = new Schema(
             enum: ["fixedAmount", "fixedPercentage", "randomAmount", "randomPercentage"],
             required: true,
         },
+        userId: { type: String, required: true },
         createdAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
         isAdmin: { type: Boolean, default: false },

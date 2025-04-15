@@ -212,12 +212,12 @@ exports.exportScenarioToYAML = async (req, res) => {
                 ? scenario.rmd_strategy.map(inv => inv._id.toString())
                 : [],
 
-            RothConversionOpt: scenario.has_rothOptimizer === "rothOptimizer_on",
-            RothConversionStart: scenario.has_rothOptimizer === "rothOptimizer_on"
-                ? scenario.roth_startYr ?? null
+            RothConversionOpt: scenario.roth_conversion_optimizer_settings.length > 0,
+            RothConversionStart: scenario.roth_conversion_optimizer_settings.length > 1
+                ? scenario.roth_conversion_optimizer_settings[1]
                 : null,
-            RothConversionEnd: scenario.has_rothOptimizer === "rothOptimizer_on"
-                ? scenario.roth_endYr ?? null
+            RothConversionEnd: scenario.roth_conversion_optimizer_settings.length > 2
+                ? scenario.roth_conversion_optimizer_settings[2]
                 : null,
 
             RothConversionStrategy: Array.isArray(scenario.roth_conversion_strategy)

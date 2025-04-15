@@ -13,6 +13,14 @@ export const axiosClient = axios.create({
   },
 });
 
+export const axiosClientImport = axios.create({
+  baseURL: "http://localhost:8000/auth",
+  headers: {
+    Accept: 'application/json', 
+    Authorization: `Bearer ${localStorage.getItem('token') || null}`,
+  },
+});
+
 axiosClient.interceptors.response.use(
   function (response) {
     return response;

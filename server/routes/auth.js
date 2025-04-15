@@ -7,6 +7,21 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../middlewares/jwt");
 const configs = require("../configs/config.js");
+
+const multer = require("multer");
+const fs = require("fs");
+const yaml = require("js-yaml");
+//storage for multer
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "/uploads");
+    } 
+});
+const upload = multer({ storage });
+if (!fs.existsSync("/uploads")) {
+    fs.mkdirSync("/uploads");
+  }
+
 const InvestmentType = require("../models/InvestmentType.js");
 const Investment = require("../models/Investment.js");
 const EventSeries = require("../models/EventSeries.js");
@@ -116,6 +131,7 @@ router.post("/api/investmentTypes", verifyToken, async (req, res) => {
     try {
         const investmentType = new InvestmentType({
             ...req.body,
+            userId: req.user.userId
         });
         await investmentType.save();
         res.status(201).json(investmentType);
@@ -332,6 +348,345 @@ router.put("/api/scenarioForm/:id", verifyToken, async (req, res) => {
     }
 });
 
+router.post("/api/importScenario", verifyToken, upload.single("file"), async (req, res) => {
+    console.log("importing scenario...") 
+    console.log("req.file is:", req.file);
+    const filePath = req.file.path;
+    try {
+        //read file
+        const yamlContent = fs.readFileSync(filePath, "utf8");
+        const data = yaml.load(yamlContent);
+        //parse file
+        let married
+        if(data.maritalStatus=="couple"){
+            maritalStatus="married"
+            married=true
+        } else{
+            maritalStatus="single"
+            married=false
+        }
+        let error = {};
+
+        //check dupe investment type name 
+        for (const invType of data.investmentTypes|| []) {
+            const exists = await InvestmentType.exists({ name: invType.name, userId:req.user.userId});
+            if (exists) {
+                error.message=`Investment Type with name: "${invType.name}" already exists.`;
+                console.log(error.message);
+                res.status(400).json({ message: error.message });
+                return;
+            }
+            //create investmentTypes
+            //!!map exported var names to schema var name
+            let returnType
+            let expected_annual_return_mean=null
+            let expected_annual_return_stdev = null
+            let expected_annual_return = null
+            if(invType.returnDistribution.type=="normal"){ 
+                expected_annual_return_mean =invType.returnDistribution.mean
+                expected_annual_return_stdev =invType.returnDistribution.stdev
+                returnType="random"
+            }else{ 
+                expected_annual_return=invType.returnDistribution.value
+                returnType="fixed"
+            }
+            if(invType.returnAmtOrPct=="amount"){
+                returnType+="Amount"
+            }else{
+                returnType+="Percent"
+            }
+
+            //income
+            let incomeType
+            let expected_annual_income_mean=null
+            let expected_annual_income_stdev = null
+            let expected_annual_income=null
+            if(invType.returnDistribution.type=="normal"){ 
+                expected_annual_income_mean =invType.incomeDistribution.mean
+                expected_annual_income_stdev =invType.incomeDistribution.stdev
+                incomeType="random"  
+            }else{ 
+                expected_annual_income=invType.incomeDistribution.value
+                incomeType="fixed"
+            }
+            if(invType.incomeAmtOrPct=="amount"){
+                incomeType+="Amount"
+            }else{
+                incomeType+="Percentage"
+            }
+            
+            const newType = new InvestmentType({...invType,
+                returnType:returnType, 
+                expected_annual_return: expected_annual_return,
+                expected_annual_return_mean: expected_annual_return_mean,
+                expected_annual_return_stdev: expected_annual_return_stdev , 
+                expense_ratio: invType.expenseRatio,
+                incomeType:incomeType,
+                expected_annual_income: expected_annual_income,
+                expected_annual_income_mean: expected_annual_income_mean,
+                expected_annual_income_stdev: expected_annual_income_stdev,
+                userId:req.user.userId,
+                isAdmin:false 
+             });
+            console.log("new investmentType")
+            console.log(newType) 
+            await newType.save()
+        }
+        //check if investments are valid 
+        let newInvests=[];
+        for (const inv of data.investments|| []) {
+            //check id
+            const exists = await Investment.exists({ _id: inv.id });
+            if (!exists) {
+                error.message="Investment with ID with type: ${inv.investmentType} and value: ${inv.value} not found.";
+                console.log(error.message)
+                res.status(400).json({ message: error.message });
+                return
+            }
+            //replace investmentType name with id
+            const invType = await InvestmentType.findOne({ name: inv.investmentType });
+            inv.investmentType = invType._id 
+            //save invest 
+            const newInv = new Investment({...inv,
+                tax_status: inv.taxStatus,
+                userId: req.user.userId
+             });
+            newInvests.push(newInv._id)
+            await newInv.save() 
+        }
+
+        //check if events are valid  
+        let newEvents = []
+        for (const event of data.eventSeries|| []) {
+            const exists = await EventSeries.exists({ name: event.name, userId: req.user.userId });
+            //check dupe
+            if (exists) {
+                error.message=`Event with name: "${event.name}" already exists.`;
+                console.log(error.message);
+                res.status(400).json({ message: error.message });
+                return;
+            }
+            //startYearType: 
+            //  schema： fixed, normal, uniform, sameAsAnotherEvent,yearAfterAnotherEvent
+            //  yaml:    fixed,  normal,uniform, startWith,         startAfter 
+            let startYearType=event.start.type
+            let startYear 
+            let anotherEventSeries
+            switch (event.start){ 
+                case "startWith" :
+                    startYearType= "sameAsAnotherEvent"  
+                    anotherEventSeries = await EventSeries.findOne({ name: event.name, userId: req.user.userId });
+                    if(!anotherEventSeries){
+                        error.message= `Event with name: "${data.name}" depends on undefined event "${event.name}".`;
+                        console.log(error.message) 
+                        res.status(400).json({ message: error.message });
+                    }  
+                    break;
+                case "startAfter" :
+                    startYearType= "sameAsAnotherEvent"  
+                    anotherEventSeries = await EventSeries.findOne({ name: event.name, userId: req.user.userId });
+                    if(!anotherEventSeries){
+                        error.message= `Event with name: "${data.name}" depends on undefined event "${event.name}".`;
+                        console.log(error.message) 
+                        res.status(400).json({ message: error.message });
+                    }    
+            } 
+            //expectedChangeType: 
+            //  schema: fixedAmount,fixedPercentage,randomAmount,uniformAmount,randomPercentage,uniformPercentage 
+            //yaml: changeDistribution.type: fixed, normal, uniform
+            //yaml: changeAmtOrPct: amount, percent
+            let expectedChangeType= ""
+            let path
+            let fixedAllocation
+            let initialAllocation
+            let allocArr1
+            let allocArr2
+            if(event.type=="income" ||event.type=="expense"){
+                if(event.changeDistribution.type=="normal"){
+                    expectedChangeType+= "uniform"
+                }else{
+                    expectedChangeType+=event.changeDistribution.type 
+                }
+                if(event.changeAmtOrPct=="amount"){
+                    expectedChangeType+="Amount"
+                }  else{
+                    expectedChangeType+="Percentage"
+                }  
+            } else{
+                const userInvests = await Investment.find({ userId: req.user.userId }).populate("investmentType");
+                console.log("IuserInvests:", userInvests);
+                const investmentTypeNames = userInvests.map(inv => inv.investmentType.name).filter(Boolean);
+                
+                console.log("Investment Type Names:", investmentTypeNames);
+
+                allocArr1 = Array(investmentTypeNames.size).fill(null);
+                for (const [assetName, allocationValue] of Object.entries(event.assetAllocation || {})) {
+                    console.log("alloc1: " + assetName)
+                    const index = investmentTypeNames.indexOf(assetName);
+                    if (index !== -1) {
+                        allocArr1[index] = allocationValue;
+                    }
+                }
+                allocArr2 = Array(investmentTypeNames.size).fill(null); 
+                for (const [assetName, allocationValue] of Object.entries(event.assetAllocation2 || {})) {
+                    console.log("alloc2: " + assetName)
+                    const index = investmentTypeNames.indexOf(assetName);
+                    if (index !== -1) {
+                        allocArr2[index] = allocationValue;
+                    }
+                }
+                if(event.glidePath == true){
+                    path = "glidepath"
+                    fixedAllocation=allocArr1
+                }else{
+                    path = "fixed"
+                    initialAllocation=allocArr1
+                }
+            }
+
+            let isMarried = false
+            if(data.maritalStatus=="couple"){
+                isMarried= true 
+            }  
+            //create new event
+            const newEvent = new EventSeries({
+                ...event,
+                startYearType:startYearType,
+                startYear:startYear ?? null,
+                meanStartYear:event.start.mean?? null, 
+                stdDevStartYear:event.start.stdev?? null,
+                minStartYear:event.start.lower?? null,
+                maxStartYear:event.start.upper?? null,
+                anotherEventSeries:anotherEventSeries?? null,
+
+                durationType:event.duration.type,   
+                duration: event.duration.value.value ?? null,
+                meanDuration:event.duration.mean?? null,
+                stdDevDuration:event.duration.std?? null,
+                minDuration:event.duration.min?? null,
+                maxDuration:event.duration.max?? null, 
+
+                eventType:event.type,
+                userId:req.user.userId,
+
+                initialAmount:event.initialAmount?? null, 
+
+                expectedChangeType:expectedChangeType?? null,
+                expectedChange: event.changeDistribution?.value?.value?? null,
+                expectedChangeMean:event.changeDistribution?.mean?? null,
+                expectedChangeStDev:event.changeDistribution?.stdev?? null,
+                expectedChangeMin:event.changeDistribution?.min?? null,
+                expectedChangeMax:event.changeDistribution?.max?? null,      
+
+                inflationAdjustment:event.inflationAdjusted?? null,
+                isMarried:isMarried, 
+                userPercentage:event.userFraction?? null,
+                isSocialSecurity:event.socialSecurity?? null,
+                isDiscretionary:event.discretionary?? null,
+
+                assetAllocationType:path?? null,
+                maxCash:event.maxCash?? null,
+                fixedAllocation:fixedAllocation?? null,
+                initialAllocation:allocArr1,
+                finalAllocation:allocArr2,
+
+                userId: req.user.userId 
+             });
+            newEvents.push(newEvent._id)
+            await newEvent.save()  
+        }
+        //check dupe scenario name
+        const scenarioExists = await Scenario.exists({ name: data.name, userId: req.user.userId }); 
+        if (scenarioExists) {
+            error.message= `Scenario with name: "${data.name}" already exists.`;
+            console.log(error.message) 
+            res.status(400).json({ message: error.message });
+            return;
+        }
+        //spending strategy: get list of obj id by name
+        let spending_strategy = []
+        for (const name of data.spendingStrategy || []) {
+            const event = await EventSeries.findOne({ name, userId: req.user.userId });
+            if (event) {
+                spending_strategy.push(event._id);
+            } else {
+                return res.status(400).json({ message: `Spending Strategy: event with name "${name}" not found.` });
+            } 
+        } 
+        //expenseWithdrawalStrategy: find investments 
+        let expenseWithdrawalStrategy = []
+        for (const id of data.expenseWithdrawalStrategy || []) {
+            const inv = await Investment.findById(id);
+            if (inv) {
+                expenseWithdrawalStrategy.push(inv._id);
+            } else {
+                return res.status(400).json({ message: `Expense Withdrawal Strategy: investment not found.` });
+            } 
+        } 
+        //RMDStrategy:find investments 
+        let RMDStrategy = []
+        for (const id of data.RMDStrategy || []) {
+            const inv = await Investment.findById(id);
+            if (inv) {
+                RMDStrategy.push(inv._id);
+            } else {
+                return res.status(400).json({ message: `RMD Strategy: investment not found.` });
+            } 
+        } 
+        //RothConversionStrategy: find investments 
+        let RothConversionStrategy = []
+        for (const id of data.RothConversionStrategy || []) {
+            const inv = await Investment.findById(id);
+            if (inv) {
+                RothConversionStrategy.push(inv._id);
+            } else {
+                return res.status(400).json({ message: `Roth Conversion Strategy: investment not found.` });
+            } 
+        } 
+
+        const scenario = new Scenario({
+            name: data.name,
+            marital_status: maritalStatus,
+            birth_year: data.birthYears[0],
+            birth_year_spouse: married ? data.birthYears[1] : null,
+
+            life_expectancy: data.lifeExpectancy[0].value ?? null,
+            life_expectancy_mean: data.lifeExpectancy[0].mean ?? null,
+            life_expectancy_stdv: data.lifeExpectancy[0].stdev ?? null,
+            life_expectancy_spouse: married
+                ? data.lifeExpectancy[1].value ?? null
+                : null,
+
+            // These will need to be populated via references
+            investments: newInvests,
+            event_series: newEvents,
+            inflation_assumption: data.inflationAssumption.value,
+            init_limit_pretax: 0,       //not in scenario yaml 
+            init_limit_aftertax: data.afterTaxContributionLimit,
+            spending_strategy: spending_strategy,   
+            expense_withdrawal_strategy: expenseWithdrawalStrategy,
+            roth_conversion_strategy: RothConversionStrategy,
+            rmd_strategy: RMDStrategy,
+            roth_conversion_optimizer_settings: [
+                data.RothConversionOpt ? 1 : 0,     //!! no tax brackets 
+                data.RothConversionStart,
+                data.RothConversionEnd,
+            ],
+            sharing_settings: new Map(),        //sharing isn't inherited
+            financial_goal: data.financialGoal,
+            state_of_residence: data.residenceState,
+            taxes: new Map(),
+            totalTaxedIncome: 0,
+            totalInvestmentValue: 0,
+            userId: req.user.userId
+        });
+        await scenario.save();
+        res.status(200).json({ message: "Scenario imported successfully!" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 router.get("/api/profile", verifyToken, async (req, res) => {
     try {

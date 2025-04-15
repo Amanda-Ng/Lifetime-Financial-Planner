@@ -2,16 +2,16 @@
 //run income events series: return total income
 function totalIncome_events(scenario, year){
     let totalIncome=0; 
-    const numYears = year- (new Date().getFullYear())
+    const numYears = year- (new Date().getFullYear());
     scenario.event_series.forEach((event) => {
         if(event.inflationAdjustment){ 
-            let eventIncome = event.initialAmount 
+            let eventIncome = event.initialAmount ;
             for (let i = 1; i <= numYears; i++) {
                 eventIncome = (eventIncome + event.expectedChange) * (1 + scenario.inflation_assumption / 100);
             }
-            totalIncome +=eventIncome
+            totalIncome +=eventIncome;
         }else{
-            totalIncome +=eventIncome+ numYears*event.expectedChange;
+            totalIncome +=event.initialAmount+ numYears*event.expectedChange;
         } 
     });
     return totalIncome;
