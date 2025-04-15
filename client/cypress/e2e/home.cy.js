@@ -20,9 +20,20 @@ describe('Home Page', () => {
       statusCode: 200,
       body: { message: 'Age updated successfully!' },
     }).as('postUpdateAge');
+
+    cy.intercept('GET', '/auth/api/profile', {
+      statusCode: 200,
+      body: {
+        username: 'mocked-user',
+        email: 'testuser@example.com',
+      },
+    }).as('getUserProfile');
   });
 
   it('should display the age modal and handle age submission correctly', () => {
+    // Wait for the API call to complete
+    cy.wait('@getIsAuthenticated');
+
     // Check if the age modal is visible
     cy.contains('Please Enter Your Age').should('be.visible');
 
