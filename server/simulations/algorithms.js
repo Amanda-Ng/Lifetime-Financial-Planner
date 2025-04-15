@@ -375,30 +375,40 @@ function withdrawal_next(withdrawStrat) {
     return null;
 }
 
-function pay_nonDiscretionary_helper(scenario, required_payment, user, year) {
-    cashInvest = scenario.investments.find((investment) => investment.investmentType.name === "Cash");
-    if (cashInvest.value > required_payment) {
-        //enough to pay with cash
-        cashInvest.value -= required_payment;
+//return boolean: if investment is a capital
+function isCapital(investment){
+    //any non retirement that's not cash
+    if (investment.investmentType.name !== "cash" && investment.tax_status === "non-retirement") {
+        return true;
     } else {
-        //need withdrawals
-        withdrawalOrigin = withdrawal_next(scenario.expense_withdrawal_strategy);
-        if (withdrawalOrigin == null) {
-            //user cannot pay, incur and create expense
+        return false;
+    }
+    
+} 
 
-            let newExpense = new EventSeries({
+//return 0 if required_payment cannot be paid and an expense is incurred
+//return 1 if successful
+function pay_nonDiscretionary_helper(scenario, required_payment, user, year){
+    cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash") 
+    if(cashInvest.value > required_payment){     //enough to pay with cash
+        cashInvest.value -= required_payment   
+    }else{  //need withdrawals 
+        withdrawalOrigin  = withdrawal_next(scenario.expense_withdrawal_strategy)
+        if(withdrawalOrigin == null){       //user cannot pay, incur and create expense  
+            let newExpense  = new EventSeries({
                 name: "Incurred Expense: Non Discretionary: " + year,
-                startYearType: "fixed",
-                startYear: year,
-                durationType: "fixed",
-                eventType: "expense",
-                userId: user.googleId,
-                initialAmount: required_payment,
-                expectedChangeType: "fixedAmount",
-                expectedChange: 0,
-                user_spouse_ratio: user.isMarried ? 0.5 : 1,
-            });
-            scenario.event_series.append(newExpense);
+                startYearType:"fixed",
+                startYear:year,
+                durationType:"fixed",
+                eventType:"expense",
+                userId:user.googleId,
+                initialAmount:required_payment,
+                expectedChangeType:"fixedAmount",
+                expectedChange:0,
+                user_spouse_ratio:user.isMarried ? 0.5 : 1
+            })  
+            scenario.event_series.append(newExpense)
+            return 0
         }
         calcAge = year - scenario.birth_year;
         earlyWithdrawal = false;
@@ -406,24 +416,32 @@ function pay_nonDiscretionary_helper(scenario, required_payment, user, year) {
             //early withdrawal tax
             earlyWithdrawal = true;
         }
+        if(withdrawalOrigin.value> required_payment){       //enough balance
+            if (earlyWithdrawal)
+                required_payment += required_payment *.1 
         if (withdrawalOrigin.value > required_payment) {
-            //enough balance
-            if (earlyWithdrawal) required_payment += required_payment * 0.1;
-            // If withdrawalOrigin.value> required_payment
-            //     If withdrawalOrigin is a capital                     ????
-            //         scenario.addCapitalsSold(copy of withdrawalOrigin, required_payment/withdrawalOrigin.value)
-            //         withdrawalOrigin.value-= required_payment
-            //         required_payment=0
-            //         Continue
+            if (isCapital(withdrawalOrigin)) {
+                scenario.capitalsSold[year].push({
+                    withdrawalOrigin: { ...withdrawalOrigin }, 
+                    percentSold: required_payment / withdrawalOrigin.value
+                });
+            }
+            withdrawalOrigin.value -= required_payment;
+            required_payment = 0;
+            continue;
         }
         if (earlyWithdrawal) {
             required_payment += withdrawalOrigin.value * 0.1;
         }
-        // if withdrawalOrigin is a capital                         ????
-        //     scenario.addCapitalsSold(copy of withdrawalOrigin,1)
-        required_payment -= withdrawalOrigin.value;
-        withdrawalOrigin.value = 0;
-        return 1;
+        if (isCapital(withdrawalOrigin)){                      
+            scenario.capitalsSold[year].push({
+                withdrawalOrigin: { ...withdrawalOrigin }, 
+                percentSold: required_payment / withdrawalOrigin.value
+            });
+        }
+        required_payment -= withdrawalOrigin.value 
+        withdrawalOrigin.value =0   
+        return 1
     }
 }
 
@@ -442,9 +460,15 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
         }
     }
     // required_payment+=calcFederalTaxes(user,year) + calcStateTaxes(user,year)
+        //required_payment+= calculateFederalTaxes(scenario, currentYear)
     // pay_nonDiscretionary_helper(required_payment, user, year,scenario)
-    //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
+        //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
     // required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year)
+        //required_payment+= calculateFederalTaxes(scenario, currentYear) 
     // pay_nonDiscretionary_helper(required_payment, user, year,scenario)
     //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
+}
+
+function pay_discretionary(scenario, user, year){
+    return false
 }
