@@ -61,7 +61,8 @@ async function parse_and_store_yaml_data(filePath) {
     if (db) db.close();
 }
 
-parse_and_store_yaml_data("yaml/init.yaml").catch((error) => {
+const filePath = process.argv[2] || "yaml/init.yaml";
+parse_and_store_yaml_data(filePath).catch((error) => {
     console.error("ERROR: " + error);
     if (db) db.close();
 });

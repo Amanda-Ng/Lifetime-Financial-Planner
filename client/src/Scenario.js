@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { axiosClient } from "./services/apiClient";
-import { axiosClientImport } from "./services/apiClient"; 
+import { axiosClientImport } from "./services/apiClient";
 import axios from "axios";
 import "./Scenario.css";
 import { Link } from "react-router-dom";
@@ -30,7 +30,7 @@ function Scenario() {
         };
 
         fetchScenarios();
-    }, []); 
+    }, []);
 
     const handleExportScenario = async (scenario) => {
         try {
@@ -61,25 +61,25 @@ function Scenario() {
     //make request to import scenario
     const handleImportScenario = async (e) => {
         e.preventDefault();
-        if (!importFile) { 
+        if (!importFile) {
             alert("Please select a file first!");
             return;
-        } 
+        }
         try {
             const headers = {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
             };
             const formData = new FormData();
-            formData.append('file', importFile);  
+            formData.append('file', importFile);
             for (let [key, value] of formData.entries()) {
                 console.log(key, value);
-              }
+            }
             const response = await axiosClientImport.post("api/importScenario", formData, {
-                headers 
-            }); 
+                headers
+            });
             alert(response.data.message);
             console.log("upload success")
-        } catch (error) { 
+        } catch (error) {
             if (error.response) {
                 //server send back err
                 alert(`Error: ${error.response.data.message}`);
@@ -103,6 +103,10 @@ function Scenario() {
                 <div>
                     <img src="import.png" alt="import_icon" className="big_icon" />
                     <span className="subsub_header">Import Scenario</span>
+                    <form id="uploadForm" onSubmit={handleImportScenario} encType="multipart/form-data">
+                        <input type="file" id="scenarioYaml" name="file" accept=".yaml,.yml" onChange={handleUploadImport} required />
+                        <button type="submit">Upload</button>
+                    </form>
                 </div>
             </div>
 
@@ -157,24 +161,6 @@ function Scenario() {
                     <div>{/* !!Display chart here */}</div>
                 </div>
             ))}
-
-            <div className="scenario2">
-                <div>
-                    <img src="add.png" alt="add_icon" className="big_icon" />
-                    <Link to="/scenarioForm" className="subsub_header">Create New Scenario</Link>
-                </div>
-                <div>
-                    <img src="import.png" alt="import_icon" className="big_icon" />
-                    <span className="subsub_header">Import Scenario</span>
-                    <form id="uploadForm" onSubmit={handleImportScenario} encType="multipart/form-data">
-                        <input type="file" id="scenarioYaml" name="file" accept=".yaml,.yml" onChange={handleUploadImport} required />
-                        <button type="submit">Upload</button>
-                    </form>
-                </div>
-
-
-
-            </div>
         </div>
 
     )
