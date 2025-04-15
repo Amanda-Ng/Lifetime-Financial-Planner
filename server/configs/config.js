@@ -12,6 +12,7 @@ const configs = {
     federalIncomeTaxURL: process.env.FEDERAL_INCOME_TAX_URL,
     standardDeductionsURL: process.env.STANDARD_DEDUCTIONS_URL,
     capitalGainsTaxURL: process.env.CAPITAL_GAINS_TAX_URL,
+    rmdURL: process.env.RMD_URL,
 };
 
 module.exports = configs;
