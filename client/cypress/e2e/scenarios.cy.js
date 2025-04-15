@@ -1,3 +1,5 @@
+// TP Copilot Prompt: "Can you create tests for the scenaios page?"
+
 describe('Scenarios Page', () => {
     beforeEach(() => {
         // Mock login and set token in localStorage
@@ -45,24 +47,6 @@ describe('Scenarios Page', () => {
         cy.contains('Create New Scenario').click();
         cy.url().should('include', '/scenarioForm');
     });
-
-    // it('should navigate to the edit page for an editable scenario', () => {
-    //     cy.contains('Retirement Plan').parent().find('.edit-button').click();
-    //     cy.url().should('include', '/scenarioForm');
-    //     cy.location('state').should((state) => {
-    //         expect(state.isEditing).to.be.true;
-    //         expect(state.isViewing).to.be.false;
-    //     });
-    // });
-
-    // it('should navigate to the view page for a read-only scenario', () => {
-    //     cy.contains('Shared Emergency Fund').parent().find('.edit-button').click();
-    //     cy.url().should('include', '/scenarioForm');
-    //     cy.location('state').should((state) => {
-    //         expect(state.isEditing).to.be.false;
-    //         expect(state.isViewing).to.be.true;
-    //     });
-    // });
 
     it('should export a scenario', () => {
         // Stub the export API call

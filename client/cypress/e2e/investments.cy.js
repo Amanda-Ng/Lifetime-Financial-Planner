@@ -1,3 +1,5 @@
+// TP Copilot Prompt: "Can you create tests for the investments page?"
+
 describe('Investments Page', () => {
     beforeEach(() => {
         // Mock login and set token in localStorage
