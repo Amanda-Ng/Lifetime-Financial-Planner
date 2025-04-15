@@ -405,55 +405,59 @@ function pay_nonDiscretionary_helper(scenario, required_payment, user, year){
     if(cashInvest.value > required_payment){     //enough to pay with cash
         cashInvest.value -= required_payment   
     }else{  //need withdrawals 
-        withdrawalOrigin  = withdrawal_next(scenario.expense_withdrawal_strategy)
-        if(withdrawalOrigin == null){       //user cannot pay, incur and create expense  
-            let newExpense  = new EventSeries({
-                name: "Incurred Expense: Non Discretionary: " + year,
-                startYearType:"fixed",
-                startYear:year,
-                durationType:"fixed",
-                eventType:"expense",
-                userId:user.googleId,
-                initialAmount:required_payment,
-                expectedChangeType:"fixedAmount",
-                expectedChange:0,
-                user_spouse_ratio:user.isMarried ? 0.5 : 1
-            })  
-            scenario.event_series.append(newExpense)
-            return 0
-        }
-        calcAge = year - scenario.birth_year;
-        earlyWithdrawal = false;
-        if ((withdrawalOrigin.tax_status === "pre-tax retirement" || withdrawalOrigin.tax_status === "after-tax retirement") && calcAge < 59.5) {
-            //early withdrawal tax
-            earlyWithdrawal = true;
-        }
-        if(withdrawalOrigin.value> required_payment){       //enough balance
-            if (earlyWithdrawal)
-                required_payment += required_payment *.1 
-        if (withdrawalOrigin.value > required_payment) {
-            if (isCapital(withdrawalOrigin)) {
+        while(required_payment != 0 ){
+            withdrawalOrigin  = withdrawal_next(scenario.expense_withdrawal_strategy)
+            if(withdrawalOrigin == null){       //user cannot pay, incur and create expense  
+                let newExpense  = new EventSeries({
+                    name: "Incurred Expense: Non Discretionary: " + year,
+                    startYearType:"fixed",
+                    startYear:year,
+                    durationType:"fixed",
+                    eventType:"expense",
+                    userId:user.googleId,
+                    initialAmount:required_payment,
+                    expectedChangeType:"fixedAmount",
+                    expectedChange:0,
+                    user_spouse_ratio:user.isMarried ? 0.5 : 1
+                })  
+                scenario.event_series.append(newExpense)
+                return 0
+            }
+            calcAge = year- scenario.birth_year
+                earlyWithdrawal=false 
+            if ((withdrawalOrigin.tax_status==="pre-tax retirement" ||
+                withdrawalOrigin.tax_status==="after-tax retirement")
+                &&calcAge < 59.5){	//early withdrawal tax
+                    earlyWithdrawal= true 
+            }
+            if(withdrawalOrigin.value> required_payment){       //enough balance
+                if (earlyWithdrawal)
+                    required_payment += required_payment *.1 
+            }
+            if (withdrawalOrigin.value > required_payment) {
+                if (isCapital(withdrawalOrigin)) {
+                    scenario.capitalsSold[year].push({
+                        withdrawalOrigin: { ...withdrawalOrigin }, 
+                        percentSold: required_payment / withdrawalOrigin.value
+                    });
+                }
+                withdrawalOrigin.value -= required_payment;
+                required_payment = 0;
+                continue;
+            }
+            if (earlyWithdrawal){
+                required_payment += withdrawalOrigin.value*.1 
+            }
+            if (isCapital(withdrawalOrigin)){                      
                 scenario.capitalsSold[year].push({
                     withdrawalOrigin: { ...withdrawalOrigin }, 
                     percentSold: required_payment / withdrawalOrigin.value
                 });
             }
-            withdrawalOrigin.value -= required_payment;
-            required_payment = 0;
-            continue;
+            required_payment -= withdrawalOrigin.value 
+            withdrawalOrigin.value =0   
         }
-        if (earlyWithdrawal) {
-            required_payment += withdrawalOrigin.value * 0.1;
-        }
-        if (isCapital(withdrawalOrigin)){                      
-            scenario.capitalsSold[year].push({
-                withdrawalOrigin: { ...withdrawalOrigin }, 
-                percentSold: required_payment / withdrawalOrigin.value
-            });
-        }
-        required_payment -= withdrawalOrigin.value 
-        withdrawalOrigin.value =0   
-        return 1
+        return 1 
     }
 }
 
@@ -481,6 +485,64 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
     //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
 }
 
-function pay_discretionary(scenario, user, year){
+//return list of events expenses appllicable for the year
+function getExpense_byYear(scenario, year) {
+    // copy of expenses
+    const expenses = scenario.event_series
+        .filter(event => event.eventType === "expense")
+        .map(expense => ({ ...expense })); 
+    let arr = []; 
+    for (const expense of expenses) { 
+        const endYear = expense.startYear + expense.duration; 
+        if (expense.startYear <= year && endYear >= year) {
+            arr.push(expense);
+        }
+    } 
+    return arr;
+}
+
+
+function pay_discretionary(scenario, user, year){ 
     return false
+    // totalInvestmentValue = 0
+    // For investment in scenario.investments
+    //     totalInvestmentValue += investment.value  
+    // const expenses = copy of scenario.event_series.filter(event => event.eventType === "expense"); 
+    // For expense in expenses:
+    //     While expense != 0 
+    //         If expense.inflation_adjustment
+    //             adjustedExpense =  expense * (1+scenario.inflationAssumption )^(year-currYear)
+    //         Else
+    //             adjustedExpense =  expense
+    //         If totalInvestmentValue  - adjustedExpense>=user.financialGoal 
+    //             If user’s cashInvestment>= adjustedExpense
+    //                 cashInvestment -= adjustedExpense 
+    //             Else 	//make withdrawal 
+    //                 withdrawalOrigin = first investment of the expense withdrawal strategy that does not have balance of 0
+    //                 If withdrawalOrigin == none
+    //                     Continue	//expense not paid 
+    //                 earlyWtihdrawal = false
+    //                 If withdrawalOrigin is a retirement account and calcAge < 59.5	//early withdrawal tax
+    //                     earlyWtihdrawal = true	
+    //                 If withdrawalOrigin.value > expense 		//enough balance 
+    //                     If earlyWithdrawal,  
+    //                         pay_nonDiscretionary_helper(expense*.1, user, year,scenario)
+    //                         totalInvestmentValue -= expense*.1 
+    //                     If withdrawalOrigin.value > expense
+    //                         If withdrawalOrigin is a capital
+    //                             scenario.addCapitalsSold(copy of withdrawalOrigin,expense/withdrawalOrigin.value) 
+    //                         withdrawalOrigin.value -= expense
+    //                         totalInvestmentValue -= expense
+    //                         expense=0  
+    //                         Continue 
+    //                 Else						//deplete investment 
+    //                     If earlyWithdrawal,  
+    //                         pay_nonDiscretionary_helper(withdrawalOrigin.value*.1, user, year,scenario)
+    
+    //                 If withdrawalOrigin is a capital
+    //                     scenario.addCapitalsSold(copy of withdrawalOrigin,1) 
+    //                 expense -= withdrawalOrigin.value
+    //                         totalInvestmentValue -= withdrawalOrigin.value
+    //                 withdrawalOrigin.value=0
+    //                 Update withdrawalOrigin in database 
 }
