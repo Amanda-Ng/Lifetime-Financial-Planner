@@ -1,0 +1,74 @@
+single:
+    brackets:
+      - range: [0, 8500]
+        adjustment: 0
+        rate: 0.04
+      - range: [8500, 11700]
+        adjustment: 340
+        rate: 0.045
+        excess_over: 8500
+      - range: [11700, 13900]
+        adjustment: 484
+        rate: 0.0525
+        excess_over: 11700
+      - range: [13900, 80650]
+        adjustment: 600
+        rate: 0.055
+        excess_over: 13900
+      - range: [80650, 215400]
+        adjustment: 4271
+        rate: 0.06
+        excess_over: 80650
+      - range: [215400, 1077550]
+        adjustment: 12356
+        rate: 0.0685
+        excess_over: 215400
+      - range: [1077550, 5000000]
+        adjustment: 71413
+        rate: 0.0965
+        excess_over: 1077550
+      - range: [5000000, 25000000]
+        adjustment: 449929
+        rate: 0.103
+        excess_over: 5000000
+      - range: [25000000, Infinity]
+        adjustment: 2509929
+        rate: 0.109
+        excess_over: 25000000
+  married:
+    brackets:
+      - range: [0, 17150]
+        adjustment: 0
+        rate: 0.04
+      - range: [17150, 23600]
+        adjustment: 686
+        rate: 0.045
+        excess_over: 17150
+      - range: [23600, 27900]
+        adjustment: 976
+        rate: 0.0525
+        excess_over: 23600
+      - range: [27900, 161550]
+        adjustment: 1202
+        rate: 0.055
+        excess_over: 27900
+      - range: [161550, 323200]
+        adjustment: 8553
+        rate: 0.06
+        excess_over: 161550
+      - range: [323200, 2155350]
+        adjustment: 18252
+        rate: 0.0685
+        excess_over: 323200
+      - range: [2155350, 5000000]
+        adjustment: 143754
+        rate: 0.0965
+        excess_over: 2155350
+      - range: [5000000, 25000000]
+        adjustment: 418263
+        rate: 0.103
+        excess_over: 5000000
+      - range: [25000000, Infinity]
+        adjustment: 2478263
+        rate: 0.109
+        excess_over: 25000000
