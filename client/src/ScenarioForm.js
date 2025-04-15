@@ -311,12 +311,7 @@ function ScenarioForm() {
     }, []);
 
     useEffect(() => {
-        if (
-            isEditing &&
-            scenarioObject &&
-            scenario.userInvestments.length > 0 &&
-            scenario.userEvents.length > 0
-        ) {
+        if (scenarioObject) {
             const investmentList = (scenarioObject.investments || [])
                 .map(id => scenario.userInvestments.find(inv => inv._id === id))
                 .filter(Boolean);
