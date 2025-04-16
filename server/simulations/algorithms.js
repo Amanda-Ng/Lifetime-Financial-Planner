@@ -143,7 +143,10 @@ function seedRNG(seed = null) {
     return seed ? seedRandom(seed) : Math.random;
 }
 
-function getEventParams(event, rng = Math.random) {
+function setEventParams(event, rng = Math.random) {
+
+    // FIXME: This is a temporary fix to avoid using the eventRandomMap
+    // const eventRandomMap = {}; // This should be a global variable or passed as an argument
     // if (!eventRandomMap[event._id]) {
     //     eventRandomMap[event._id] = {
     //         startYear: getEventField(event, "startYear", event.startYearType, rng),
@@ -201,16 +204,19 @@ function inflationAdjusted(initialAmount, inflationRate, yearsElapsed) {
     return initialAmount * Math.pow(1 + (inflationRate ?? 0) / 100, yearsElapsed);
 }
 
-function getScenarioLifeExpectancy(scenario, rng = Math.random) {
+function setScenarioLifeExpectancy(scenario, rng = Math.random) {
     const getLE = (mean, std, fixed) => {
         if (fixed !== undefined) return fixed;
         if (mean !== undefined && std !== undefined) return normalSample(mean, std, rng);
         return null;
     };
 
+    scenario.life_expectancy = getLE(scenario.life_expectancy_mean, scenario.life_expectancy_stdv, scenario.life_expectancy);
+    scenario.life_expectancy_spouse = getLE(scenario.life_expectancy_mean_spouse, scenario.life_expectancy_stdv_spouse, scenario.life_expectancy_spouse);
+
     return {
-        user: getLE(scenario.life_expectancy_mean, scenario.life_expectancy_stdv, scenario.life_expectancy),
-        spouse: getLE(scenario.life_expectancy_mean_spouse, scenario.life_expectancy_stdv_spouse, scenario.life_expectancy_spouse),
+        user: scenario.life_expectancy,
+        spouse: scenario.life_expectancy_spouse,
     };
 }
 
@@ -229,7 +235,7 @@ function computeInvestmentValue(value, baseValue, type, rng = Math.random) {
     }
 }
 
-function updateInvestments(scenario, year, rng = Math.random) {
+function updateInvestments(scenario, rng = Math.random) {
     scenario.investments.forEach((investment) => {
         const investmentType = investment.investmentType;
         const investmentValue = computeInvestmentValue(investmentType.expected_annual_return, investment.value, investmentType.returnType, rng);
@@ -280,7 +286,7 @@ function runIncomeEvents(scenario, year, rng = Math.random) {
     const events = scenario.event_series.filter((event) => event.eventType === "Income");
 
     for (const event of events) {
-        const { startYear, duration, expectedChange } = getEventParams(event, rng);
+        const { startYear, duration, expectedChange } = setEventParams(event, rng);
         if (year >= startYear && year < startYear + duration) {
             const inflationAdjustedAmount = inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - startYear);
             totalIncome += inflationAdjustedAmount + expectedChange;
