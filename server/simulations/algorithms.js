@@ -449,7 +449,7 @@ function isCapital(investment){
 
 //return 0 if required_payment cannot be paid and an expense is incurred
 //return 1 if successful
-function pay_nonDiscretionary_helper(scenario, required_payment, user, year){
+function pay_nonDiscretionary_helper(scenario, required_payment,year){
     cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash") 
     if(cashInvest.value > required_payment){     //enough to pay with cash
         cashInvest.value -= required_payment   
@@ -525,14 +525,12 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
             required_payment += adjustedExpense;
         }
     }
-    // required_payment+=calcFederalTaxes(user,year) + calcStateTaxes(user,year)
-        //required_payment+= calculateFederalTaxes(scenario, currentYear)
-    // pay_nonDiscretionary_helper(required_payment, user, year,scenario)
-        //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
-    // required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year)
-        //required_payment+= calculateFederalTaxes(scenario, currentYear) 
-    // pay_nonDiscretionary_helper(required_payment, user, year,scenario)
-    //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
+    //!! need to addcalcStateTaxes(user,year) 
+    required_payment += calculateFederalTaxes(scenario, year-1)
+    pay_nonDiscretionary_helper(scenario, required_payment,year)
+    //!!implement CapitalGains required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year) 
+    pay_nonDiscretionary_helper(scenario, required_payment,year)
+
 }
 
 //return list of events expenses appllicable for the year
@@ -591,12 +589,11 @@ function pay_discretionary(scenario, user, year){
             
                     if (withdrawalOrigin.value > adjustedExpense) {     //enough balance
                         if (earlyWithdrawal) {
-                            pay_nonDiscretionary_helper(scenario, adjustedExpense * 0.1, user, year);
+                            pay_nonDiscretionary_helper(scenario, adjustedExpense * 0.1,year);
                             totalInvestmentValue -= adjustedExpense * 0.1;
                         }
             
-                        if (isCapital(withdrawalOrigin)) {      //consider capital gains 
-                            scenario.addCapitalsSold({ ...withdrawalOrigin }, adjustedExpense / withdrawalOrigin.value);
+                        if (isCapital(withdrawalOrigin)) {      //consider capital gains  
                             if (!scenario.capitalsSold[year]) 
                                 scenario.capitalsSold[year] = [];
 
@@ -612,7 +609,7 @@ function pay_discretionary(scenario, user, year){
                         continue;
                     }else{						//deplete investment  
                         if (earlyWithdrawal) {
-                            pay_nonDiscretionary_helper(scenario, withdrawalOrigin.value * 0.1, user, year);
+                            pay_nonDiscretionary_helper(scenario, withdrawalOrigin.value * 0.1,year);
                             totalInvestmentValue -= adjustedExpense * 0.1;
                         }    
                         if (isCapital(withdrawalOrigin))  
