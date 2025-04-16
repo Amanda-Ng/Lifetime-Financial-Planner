@@ -3,6 +3,16 @@ const Investment = require("../models/Investment");
 const FederalTaxes = require("../models/FederalTaxes");
 const seedRandom = require("seedrandom");
 
+// Test imports
+const configs = require("../configs/config.js");
+const mongoose = require("mongoose");
+mongoose.connect(configs.dbURL, { useNewUrlParser: true, useUnifiedTopology: true });
+
+let db = mongoose.connection;
+db.on("error", console.error.bind(console, "Error with MongoDB connection"));
+db.once("open", () => console.log("Connected to MongoDB"));
+//
+
 async function checkLifeExpectancy(scenario, year) {
     const living = [];
     if (scenario.birth_year + scenario.life_expectancy - year <= 0) {
@@ -40,37 +50,55 @@ function totalIncome_events(scenario, year) {
     });
     return totalIncome;
 }
+function parseTaxBrackets(taxBrackets) {
+    const parsedBrackets = [];
+    taxBrackets.forEach((value, key) => {
+        const bounds = key.split(",");
+        const lowerBound = parseFloat(bounds[0]);
+        const upperBound = parseFloat(bounds[1]);
+        parsedBrackets.push({
+            lower_bound: lowerBound,
+            upper_bound: upperBound,
+            value: value,
+        });
+    });
+    return parsedBrackets;
+}
 
-async function calculateFederalTaxes(scenario, currentYear) {
-    const past_year_taxes = await FederalTaxes.find({ year: currentYear }); // get the tax data for the year that just passed
-    const marital_status = scenario.marital_status;
+async function queryFederalTaxBrackets(targetYear, marital_status) {
+    const past_year_taxes = await FederalTaxes.findOne({ year: targetYear }); // get the tax data for the year that just passed
     const tax_brackets = {};
     // get tax brackets based on the user's marital status
     if (marital_status.toLowerCase() === "single") {
-        tax_brackets["fit"] = past_year_taxes.single_federal_income_tax;
+        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.single_federal_income_tax);
         tax_brackets["std"] = past_year_taxes.single_standard_deductions;
-        tax_brackets["cgt"] = past_year_taxes.single_capital_gains_tax;
+        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.single_capital_gains_tax);
     } else if (marital_status.toLowerCase() === "married") {
-        tax_brackets["fit"] = past_year_taxes.married_federal_income_tax;
+        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.married_federal_income_tax);
         tax_brackets["std"] = past_year_taxes.married_standard_deductions;
-        tax_brackets["cgt"] = past_year_taxes.married_capital_gains_tax;
+        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.married_capital_gains_tax);
     } else {
         // if not single or married, just throw an error (this should not happen)
         throw new Error("Invalid marital status");
     }
+    return tax_brackets;
+}
+
+async function calculateFederalTaxes(scenario, currentYear) {
+    let tax_brackets = await queryFederalTaxBrackets(currentYear, scenario.marital_status); // get the tax brackets for the current year
 
     let taxable_income = scenario.totalTaxedIncome; // get the total taxable income (done in another function)
     let total_tax = 0;
     let federal_income_tax = 0;
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
-    for (const [key, value] of Object.entries(tax_brackets["fit"])) {
+    for (const {lower_bound, upper_bound, value} of tax_brackets["fit"]) {
         if (taxable_income === 0) {
             // if no more taxable income, break
             break;
         }
-        const bounds = key.split(",");
-        const lower_bound = Number(bounds[0]);
-        const upper_bound = Number(bounds[1]);
+        // const bounds = key.split(",");
+        // const lower_bound = Number(bounds[0]);
+        // const upper_bound = Number(bounds[1]);
         if (taxable_income >= lower_bound && taxable_income <= upper_bound) {
             // if taxable income is between the bounds, then that is all that is left --> taxable income = 0 afterwards so break
             const tax = taxable_income * (value / 100);
@@ -115,15 +143,25 @@ function seedRNG(seed = null) {
     return seed ? seedRandom(seed) : Math.random;
 }
 
-function getEventParams(eventRandomMap, event, rng = Math.random) {
-    if (!eventRandomMap[event._id]) {
-        eventRandomMap[event._id] = {
-            startYear: getEventField(event, "startYear", event.startYearType, rng),
-            duration: getEventField(event, "duration", event.durationType, rng),
-            expectedChange: getEventField(event, "expectedChange", event.expectedChangeType, rng),
-        };
-    }
-    return eventRandomMap[event._id];
+function getEventParams(event, rng = Math.random) {
+    // if (!eventRandomMap[event._id]) {
+    //     eventRandomMap[event._id] = {
+    //         startYear: getEventField(event, "startYear", event.startYearType, rng),
+    //         duration: getEventField(event, "duration", event.durationType, rng),
+    //         expectedChange: getEventField(event, "expectedChange", event.expectedChangeType, rng),
+    //     };
+    // }
+    // return eventRandomMap[event._id];
+
+    event["startYear"] = getEventField(event, "startYear", event.startYearType, rng);
+    event["duration"] = getEventField(event, "duration", event.durationType, rng);
+    event["expectedChange"] = getEventField(event, "expectedChange", event.expectedChangeType, rng);
+
+    return {
+        startYear: event.startYear, 
+        duration: event.duration,
+        expectedChange: event.expectedChange
+    };
 }
 
 function getEventField(event, fieldGroup, type, rng = Math.random) {
@@ -139,7 +177,8 @@ function getEventField(event, fieldGroup, type, rng = Math.random) {
             const max = event[`max${capitalize(fieldGroup)}`];
             return uniformSample(min, max, rng);
         default:
-            throw new Error(`Unknown distribution type: ${type}`);
+            // throw new Error(`Unknown distribution type: ${type}`);
+            return event[fieldGroup]; // Fallback to fixed value
     }
 }
 
@@ -196,6 +235,8 @@ function updateInvestments(scenario, year, rng = Math.random) {
         const investmentValue = computeInvestmentValue(investmentType.expected_annual_return, investment.value, investmentType.returnType, rng);
         const incomeValue = computeInvestmentValue(investmentType.expected_annual_income, investment.value, investmentType.incomeType, rng);
 
+        investment["calculatedAnnualReturn"] = investmentValue;
+        investment["calculatedAnnualIncome"] = incomeValue;
         // Update the value of the investment
         endValueBeforeExpenses = investment.value + investmentValue + incomeValue;
         expenses = (investmentType.expense_ratio * (endValueBeforeExpenses + investment.value)) / 2; // Average of beginning and end value
@@ -234,12 +275,12 @@ function updateInvestments(scenario, year, rng = Math.random) {
 //     }
 // }
 
-function runIncomeEvents(scenario, eventRandomMap, year, rng = Math.random) {
+function runIncomeEvents(scenario, year, rng = Math.random) {
     let totalIncome = 0;
     const events = scenario.event_series.filter((event) => event.eventType === "Income");
 
     for (const event of events) {
-        const { startYear, duration, expectedChange } = getEventParams(eventRandomMap, event, rng);
+        const { startYear, duration, expectedChange } = getEventParams(event, rng);
         if (year >= startYear && year < startYear + duration) {
             const inflationAdjustedAmount = inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - startYear);
             totalIncome += inflationAdjustedAmount + expectedChange;
@@ -251,6 +292,7 @@ function runIncomeEvents(scenario, eventRandomMap, year, rng = Math.random) {
     return totalIncome;
 }
 
+// Slightly different from the design doc
 function performRMD(scenario, retirementInvestment, RMDTable, age, year) {
     expectedAge = age + year - new Date().getFullYear();
     const rmd = retirementInvestment.value / RMDTable.find((entry) => entry.age === expectedAge);
@@ -286,16 +328,31 @@ function performRMD(scenario, retirementInvestment, RMDTable, age, year) {
     return rmd;
 }
 
-function runRothConversion(user, year, rng = Math.random) {
-    let taxableIncome = calcTaxableIncome(user);
+function calcTaxableIncome(scenario) {
+    let taxableIncome = 0;
+    const incomeEvents = scenario.event_series.filter((event) => event.eventType === "Income");
+    const taxableInvestments = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" || investment.investmentType.taxability === "taxable");
+    taxableInvestments.forEach((investment) => {
+        taxableIncome += investment["calculatedAnnualIncome"];
+    });
+    incomeEvents.forEach((event) => {
+        taxableIncome += event.expectedChange;
+    });
+
+    return taxableIncome;
+}
+
+
+function runRothConversion(scenario, year) {
+    let taxableIncome = calcTaxableIncome(scenario);
 
     // Query federal tax brackets from database using the current year
     const taxBrackets = queryFederalTaxBrackets(year);
 
     let remainingAmtToConvert = 0;
 
-    for (const bracket of taxBrackets) {
-        const bracketCeil = bracket.upperLimit;
+    for (const bracket of taxBrackets["fit"]) {
+        const bracketCeil = bracket.upper_bound;
 
         if (bracketCeil === null) {
             return 0; // At the highest bracket, cannot convert
@@ -309,8 +366,10 @@ function runRothConversion(user, year, rng = Math.random) {
         }
     }
 
+    let preTaxAccounts = scenario.roth_conversion_strategy.filter((account) => account.tax_status === "pre-tax retirement");
+    let afterTaxAccounts = scenario.investments.filter((account) => account.tax_status === "after-tax retirement");
     while (remainingAmtToConvert !== 0) {
-        const withdrawalOrigin = user.preTaxAccounts.find((account) => account.value > 0);
+        const withdrawalOrigin = preTaxAccounts.find((account) => account.value > 0);
 
         if (!withdrawalOrigin) {
             return 0; // Cannot do Roth conversion
@@ -322,36 +381,38 @@ function runRothConversion(user, year, rng = Math.random) {
             withdrawalOrigin.value -= remainingAmtToConvert;
             amtToConvert = remainingAmtToConvert;
             remainingAmtToConvert = 0;
+
+            // Choose transfer destination
+            let hasSameTypeInvestment = false;
+
+            for (const account of afterTaxAccounts) {
+                if (withdrawalOrigin.investmentType === account.investmentType) {
+                    hasSameTypeInvestment = true;
+                    account.value += amtToConvert;
+                    break;
+                }
+            }
+
+            if (!hasSameTypeInvestment) {
+                const newAfterTaxAccount = {
+                    investmentType: withdrawalOrigin.investmentType,
+                    value: amtToConvert,
+                };
+                scenario.investments.push(newAfterTaxAccount);
+            }
+
+            //REVIEW: Don't need this Update withdrawalOrigin and newAfterTax account in database
+            // updateAccountInDatabase(withdrawalOrigin);
+            // if (!hasSameTypeInvestment) {
+            //     updateAccountInDatabase(user.afterTaxAccounts[user.afterTaxAccounts.length - 1]);
+            // }
         } else {
             amtToConvert = withdrawalOrigin.value;
-            remainingAmtToConvert -= withdrawalOrigin.value;
-            withdrawalOrigin.value = 0;
+            remainingAmtToConvert -= amtToConvert;
+            withdrawalOrigin.tax_status = "after-tax retirement";
         }
 
-        // Choose transfer destination
-        let hasSameTypeInvestment = false;
-
-        for (const account of user.afterTaxAccounts) {
-            if (withdrawalOrigin.investmentType === account.investmentType) {
-                hasSameTypeInvestment = true;
-                account.value += amtToConvert;
-                break;
-            }
-        }
-
-        if (!hasSameTypeInvestment) {
-            const newAfterTaxAccount = {
-                investmentType: withdrawalOrigin.investmentType,
-                value: amtToConvert,
-            };
-            user.afterTaxAccounts.push(newAfterTaxAccount);
-        }
-
-        // Update withdrawalOrigin and newAfterTax account in database
-        updateAccountInDatabase(withdrawalOrigin);
-        if (!hasSameTypeInvestment) {
-            updateAccountInDatabase(user.afterTaxAccounts[user.afterTaxAccounts.length - 1]);
-        }
+        
     }
 
     return 1; // Successful conversion
