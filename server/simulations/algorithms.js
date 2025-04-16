@@ -58,7 +58,7 @@ function parseTaxBrackets(taxBrackets) {
         const upperBound = parseFloat(bounds[1]);
         parsedBrackets.push({
             lower_bound: lowerBound,
-            upper_limit: upperBound,
+            upper_bound: upperBound,
             value: value,
         });
     });
@@ -70,13 +70,13 @@ async function queryFederalTaxBrackets(targetYear, marital_status) {
     const tax_brackets = {};
     // get tax brackets based on the user's marital status
     if (marital_status.toLowerCase() === "single") {
-        tax_brackets["fit"] = past_year_taxes.single_federal_income_tax;
+        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.single_federal_income_tax);
         tax_brackets["std"] = past_year_taxes.single_standard_deductions;
-        tax_brackets["cgt"] = past_year_taxes.single_capital_gains_tax;
+        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.single_capital_gains_tax);
     } else if (marital_status.toLowerCase() === "married") {
-        tax_brackets["fit"] = past_year_taxes.married_federal_income_tax;
+        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.married_federal_income_tax);
         tax_brackets["std"] = past_year_taxes.married_standard_deductions;
-        tax_brackets["cgt"] = past_year_taxes.married_capital_gains_tax;
+        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.married_capital_gains_tax);
     } else {
         // if not single or married, just throw an error (this should not happen)
         throw new Error("Invalid marital status");
@@ -91,7 +91,7 @@ async function calculateFederalTaxes(scenario, currentYear) {
     let total_tax = 0;
     let federal_income_tax = 0;
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
-    for (const {lower_bound, upper_bound, value} of parseTaxBrackets(tax_brackets["fit"])) {
+    for (const {lower_bound, upper_bound, value} of tax_brackets["fit"]) {
         if (taxable_income === 0) {
             // if no more taxable income, break
             break;
