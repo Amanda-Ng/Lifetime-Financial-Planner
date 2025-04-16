@@ -423,6 +423,7 @@ function pay_nonDiscretionary_helper(scenario, required_payment, user, year){
                 scenario.event_series.append(newExpense)
                 return 0
             }
+            let earlyWithdrawal
             calcAge = year- scenario.birth_year
                 earlyWithdrawal=false 
             if ((withdrawalOrigin.tax_status==="pre-tax retirement" ||
@@ -486,7 +487,7 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
 }
 
 //return list of events expenses appllicable for the year
-function getExpense_byYear(scenario, year) {
+function getExpenses_byYear(scenario, year) {
     // copy of expenses
     const expenses = scenario.event_series
         .filter(event => event.eventType === "expense")
@@ -501,48 +502,84 @@ function getExpense_byYear(scenario, year) {
     return arr;
 }
 
+//return -1 if violated financial goal
+//return 0 for success
+function pay_discretionary(scenario, user, year){   
+    let totalInvestmentValue = 0; 
+    for (const investment of scenario.investments) {
+        totalInvestmentValue += investment.value;
+    } 
+    const expenses = getExpenses_byYear(scenario, year);
+   
+    for (const expense of expenses) { 
+        let adjustedExpense 
+        if (expense.inflationAdjustment) {
+            yearsElapsed = year - new Date().getFullYear();
+            adjustedExpense = inflationAdjusted(expense.initialAmount, expense.inflationAdjustment, yearsElapsed);
+        } else {
+            adjustedExpense = expense.initialAmount;
+        }    
+        let cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash")
+        let withdrawalOrigin
+        let earlyWithdrawal 
+        while (adjustedExpense != 0){     
+            if (totalInvestmentValue - adjustedExpense >= scenario.financial_goal) {
+                if (cashInvest.value >= adjustedExpense) {
+                    cashInvest.value -= adjustedExpense;
+                } else {
+                    // make withdrawal
+                    let withdrawalOrigin = withdrawal_next(scenario.expense_withdrawal_strategy);
+                    if (withdrawalOrigin == null) continue; // expense not paid
+            
+                    let earlyWithdrawal = false;
+                    if (
+                        (withdrawalOrigin.tax_status === "pre-tax retirement" ||
+                            withdrawalOrigin.tax_status === "after-tax retirement") &&
+                        calcAge < 59.5
+                    ) {
+                        earlyWithdrawal = true; // early withdrawal tax
+                    }
+            
+                    if (withdrawalOrigin.value > adjustedExpense) {     //enough balance
+                        if (earlyWithdrawal) {
+                            pay_nonDiscretionary_helper(scenario, adjustedExpense * 0.1, user, year);
+                            totalInvestmentValue -= adjustedExpense * 0.1;
+                        }
+            
+                        if (isCapital(withdrawalOrigin)) {      //consider capital gains 
+                            scenario.addCapitalsSold({ ...withdrawalOrigin }, adjustedExpense / withdrawalOrigin.value);
+                            if (!scenario.capitalsSold[year]) 
+                                scenario.capitalsSold[year] = [];
 
-function pay_discretionary(scenario, user, year){ 
-    return false
-    // totalInvestmentValue = 0
-    // For investment in scenario.investments
-    //     totalInvestmentValue += investment.value  
-    // const expenses = copy of scenario.event_series.filter(event => event.eventType === "expense"); 
-    // For expense in expenses:
-    //     While expense != 0 
-    //         If expense.inflation_adjustment
-    //             adjustedExpense =  expense * (1+scenario.inflationAssumption )^(year-currYear)
-    //         Else
-    //             adjustedExpense =  expense
-    //         If totalInvestmentValue  - adjustedExpense>=user.financialGoal 
-    //             If user’s cashInvestment>= adjustedExpense
-    //                 cashInvestment -= adjustedExpense 
-    //             Else 	//make withdrawal 
-    //                 withdrawalOrigin = first investment of the expense withdrawal strategy that does not have balance of 0
-    //                 If withdrawalOrigin == none
-    //                     Continue	//expense not paid 
-    //                 earlyWtihdrawal = false
-    //                 If withdrawalOrigin is a retirement account and calcAge < 59.5	//early withdrawal tax
-    //                     earlyWtihdrawal = true	
-    //                 If withdrawalOrigin.value > expense 		//enough balance 
-    //                     If earlyWithdrawal,  
-    //                         pay_nonDiscretionary_helper(expense*.1, user, year,scenario)
-    //                         totalInvestmentValue -= expense*.1 
-    //                     If withdrawalOrigin.value > expense
-    //                         If withdrawalOrigin is a capital
-    //                             scenario.addCapitalsSold(copy of withdrawalOrigin,expense/withdrawalOrigin.value) 
-    //                         withdrawalOrigin.value -= expense
-    //                         totalInvestmentValue -= expense
-    //                         expense=0  
-    //                         Continue 
-    //                 Else						//deplete investment 
-    //                     If earlyWithdrawal,  
-    //                         pay_nonDiscretionary_helper(withdrawalOrigin.value*.1, user, year,scenario)
-    
-    //                 If withdrawalOrigin is a capital
-    //                     scenario.addCapitalsSold(copy of withdrawalOrigin,1) 
-    //                 expense -= withdrawalOrigin.value
-    //                         totalInvestmentValue -= withdrawalOrigin.value
-    //                 withdrawalOrigin.value=0
-    //                 Update withdrawalOrigin in database 
+                            scenario.capitalsSold[year].push({
+                                withdrawalOrigin: { ...withdrawalOrigin },
+                                percentSold: adjustedExpense / withdrawalOrigin.value
+                            });
+                        }
+            
+                        withdrawalOrigin.value -= adjustedExpense;
+                        totalInvestmentValue -= adjustedExpense;
+                        adjustedExpense = 0;
+                        continue;
+                    }else{						//deplete investment  
+                        if (earlyWithdrawal) {
+                            pay_nonDiscretionary_helper(scenario, withdrawalOrigin.value * 0.1, user, year);
+                            totalInvestmentValue -= adjustedExpense * 0.1;
+                        }    
+                        if (isCapital(withdrawalOrigin))  
+                            scenario.capitalsSold[year].push({
+                                withdrawalOrigin: { ...withdrawalOrigin }, 
+                                percentSold: 1
+                            }); 
+                        adjustedExpense -= withdrawalOrigin.value
+                        totalInvestmentValue -= withdrawalOrigin.value
+                        withdrawalOrigin.value=0 
+                    } 
+                }
+            }else{
+                return -1       //violated financial goal
+            }
+        }
+    }  
+    return 0    
 }
