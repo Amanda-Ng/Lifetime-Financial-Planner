@@ -90,6 +90,7 @@ async function calculateFederalTaxes(scenario, currentYear) {
     let taxable_income = calcTaxableIncome(scenario); //REVIEW: is this better to calc again instead of read from saved value? cuz it could possibly be undefined// scenario.totalTaxedIncome; // get the total taxable income (done in another function)
     let total_tax = 0;
     let federal_income_tax = 0;
+    
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
     for (const {lower_bound, upper_bound, value} of tax_brackets["fit"]) {
         if (taxable_income === 0) {
@@ -280,6 +281,38 @@ function updateInvestments(scenario, rng = Math.random) {
 //             throw new Error(`Unknown distribution type: ${type}`);
 //     }
 // }
+
+//return amt of capital gains tax that should be paid
+async function calculateCapitalGainsTax(scenario, year) {
+    let tax_brackets = await queryFederalTaxBrackets(currentYear, scenario.marital_status); // get the tax brackets for the current year
+
+    let netCapitalGain  = 0;   
+    for (const capital of scenario.capitalsSold[year] || []) {
+        const expectedValue = capital.withdrawalOrigin.value * capital.percentSold; // value already inflation-adjusted
+        const invest = await Investment.findById(capital.withdrawalOrigin._id).exec();
+        netCapitalGain = expectedValue - invest.initialValue; // current - initial value
+    }  
+    let total_tax = 0; 
+    // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
+    for (const {lower_bound, upper_bound, value} of tax_brackets["cgt"]) {
+        if (netCapitalGain === 0) { 
+            break;  // if no more taxable gains, break
+        } 
+        if (taxable_income >= lower_bound && taxable_income <= upper_bound) {
+            // if remaining taxable gain is between the bounds, then that is all that is left --> taxable gains = 0 afterwards so break
+            const tax = netCapitalGain * (value / 100);
+            total_tax += tax;
+            netCapitalGain -= taxable_income;
+            break;
+        } else if (netCapitalGain > upper_bound) {
+            // exceeds upper bound of this bracket --> take the maximum value, calculate and subtract
+            const tax = upper_bound * (value / 100);
+            total_tax += tax; 
+            netCapitalGain -= upper_bound;
+        }
+    } 
+    return total_tax;
+}
 
 function runIncomeEvents(scenario, year, rng = Math.random) {
     let totalIncome = 0;
@@ -531,10 +564,10 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
             required_payment += adjustedExpense;
         }
     }
-    //!! need to addcalcStateTaxes(user,year) 
+    //!! need to addcalcStateTaxes(user,year)     
     required_payment += calculateFederalTaxes(scenario, year-1)
-    pay_nonDiscretionary_helper(scenario, required_payment,year)
-    //!!implement CapitalGains required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year) 
+    pay_nonDiscretionary_helper(scenario, required_payment,year) 
+    required_payment=calculateCapitalGainsTax(scenario, year)
     pay_nonDiscretionary_helper(scenario, required_payment,year)
 
 }
