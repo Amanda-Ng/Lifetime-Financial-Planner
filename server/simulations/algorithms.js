@@ -87,7 +87,7 @@ async function queryFederalTaxBrackets(targetYear, marital_status) {
 async function calculateFederalTaxes(scenario, currentYear) {
     let tax_brackets = await queryFederalTaxBrackets(currentYear, scenario.marital_status); // get the tax brackets for the current year
 
-    let taxable_income = scenario.totalTaxedIncome; // get the total taxable income (done in another function)
+    let taxable_income = calcTaxableIncome(scenario); //REVIEW: is this better to calc again instead of read from saved value? cuz it could possibly be undefined// scenario.totalTaxedIncome; // get the total taxable income (done in another function)
     let total_tax = 0;
     let federal_income_tax = 0;
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
