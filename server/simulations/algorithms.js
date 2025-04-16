@@ -464,14 +464,11 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
             required_payment += adjustedExpense;
         }
     }
-    // required_payment+=calcFederalTaxes(user,year) + calcStateTaxes(user,year)
-        //required_payment+= calculateFederalTaxes(scenario, currentYear)
-    // pay_nonDiscretionary_helper(required_payment, user, year,scenario)
-        //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
-    // required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year)
-        //required_payment+= calculateFederalTaxes(scenario, currentYear) 
-    // pay_nonDiscretionary_helper(required_payment, user, year,scenario)
-    //pay_nonDiscretionary_helper(required_payment, user, year,scenario)
+    // required_payment+=calcFederalTaxes(user,year) + calcStateTaxes(user,year) 
+    pay_nonDiscretionary_helper(scenario, required_payment, user, year)
+    // required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year) 
+    pay_nonDiscretionary_helper(scenario, required_payment, user, year)
+
 }
 
 //return list of events expenses appllicable for the year
@@ -534,8 +531,7 @@ function pay_discretionary(scenario, user, year){
                             totalInvestmentValue -= adjustedExpense * 0.1;
                         }
             
-                        if (isCapital(withdrawalOrigin)) {      //consider capital gains 
-                            scenario.addCapitalsSold({ ...withdrawalOrigin }, adjustedExpense / withdrawalOrigin.value);
+                        if (isCapital(withdrawalOrigin)) {      //consider capital gains  
                             if (!scenario.capitalsSold[year]) 
                                 scenario.capitalsSold[year] = [];
 
