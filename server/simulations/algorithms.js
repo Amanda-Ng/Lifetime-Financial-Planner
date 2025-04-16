@@ -525,9 +525,10 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
             required_payment += adjustedExpense;
         }
     }
-    // required_payment+=calcFederalTaxes(user,year) + calcStateTaxes(user,year) 
+    //!! need to addcalcStateTaxes(user,year) 
+    required_payment += calculateFederalTaxes(scenario, year-1)
     pay_nonDiscretionary_helper(scenario, required_payment, user, year)
-    // required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year) 
+    //!!implement CapitalGains required_payment=calcCapitalGainsTaxes(scenario.getCapitalsSold(year), year) 
     pay_nonDiscretionary_helper(scenario, required_payment, user, year)
 
 }
