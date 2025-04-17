@@ -18,7 +18,7 @@ const {
 async function runSimulation(scenario, age, username) {
     const currentDatetime = new Date().toISOString().replace(/[:.]/g, "-");
     const logFolder = path.join(__dirname, "../../logs");
-    const csvFile = path.join(logFolder, `${usenamer}_${currentDatetime}.csv`);
+    const csvFile = path.join(logFolder, `${username}_${currentDatetime}.csv`);
     const logFile = path.join(logFolder, `${username}_${currentDatetime}.log`);
 
     if (!fs.existsSync(logFolder)) {
