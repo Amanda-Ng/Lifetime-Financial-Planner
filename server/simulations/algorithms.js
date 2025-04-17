@@ -290,7 +290,7 @@ async function calculateCapitalGainsTax(scenario, year) {
     for (const capital of scenario.capitalsSold[year] || []) {
         const expectedValue = capital.withdrawalOrigin.value * capital.percentSold; // value already inflation-adjusted
         const invest = await Investment.findById(capital.withdrawalOrigin._id).exec();
-        netCapitalGain = expectedValue - invest.initialValue; // current - initial value
+        netCapitalGain = expectedValue - invest.value; // current - initial value
     }  
     let total_tax = 0; 
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
@@ -667,4 +667,77 @@ function pay_discretionary(scenario, user, year){
         }
     }  
     return 0    
+}
+
+//allocate excess cash for all InvestEvents
+//stop running when there's no excess cash and return  
+//return 0 for success 
+async function runScheduled_investEvent(InvestEvents, scenario){ 
+    const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash"); 
+    for (const InvestEvent of InvestEvents) {
+        let excessCash;
+        if(!InvestEvent.fixedAllocation){   //nothing to reallocate 
+            return 0;
+        }
+        if (cashInvest.value < InvestEvent.maxCash) {
+            return 0; // no excess cash to invest
+        } else {
+            excessCash = cashInvest.value - InvestEvent.maxCash;
+        }
+        //match percent to investment based on index if not done so 
+        //{Investment, percent}
+        let userInvestments = await Investment.find({ userId: scenario.userId }).populate("investmentType");
+        if(InvestEvent.fixedAllocation[0].Investment){ 
+            //handle assetAllocation: an arr of values, index corresponds to each of the user's investments
+            for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
+                if (InvestEvent.fixedAllocation[i] != null) {
+                    let percent = InvestEvent.initialAllocation[i];
+                    let invest = userInvestments[i]; //find the matching investment 
+            
+                    invest = scenario.investments.find(inv => inv._id.toString() === invest._id.toString()); //find local copy of the investment  
+                    InvestEvent.initialAllocation[i] = { investment:invest, percent:percent };
+                }
+            }        
+            //handle assetAllocation2
+            if (InvestEvent.assetAllocationType=="glidepath"){
+                for (let i = 0; i < InvestEvent.finalAllocation.length; i++) {
+                    if (InvestEvent.finalAllocation[i] != null) {
+                        let percent = InvestEvent.finalAllocation[i];
+                        let invest = userInvestments[i]; //find the matching investment 
+                
+                        invest = scenario.investments.find(inv => inv._id.toString() === invest._id.toString()); //find local copy of the investment  
+                        InvestEvent.finalAllocation[i] = { investment:invest, percent:percent };
+                    }
+                } 
+            }
+        }  
+        let startYear = new Date().getFullYear() 
+        let endYear = scenario.birth_year+scenario.life_expectancy 
+        let yearsLapsed = scenario.year - startYear  
+        for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
+            let investment = InvestEvent.initialAllocation[i].investment
+            let adjustedPercent = initialAllocation[i].percent  //will account for linear change in glidepath
+            //adjust inflation investment value elsewhere
+            let adjustedAnnualLimit = null 
+            if (InvestEvent.assetAllocationType=="glidepath"){   
+                let endPercent= InvestEvent.finalAllocation[i].percent 
+                adjustedPercent = adjustedPercent + ((endPercent - adjustedPercent) * yearsLapsed) / (endYear - startYear);
+            }    
+            if (investment.tax_status === "pre-tax retirement" || investment.tax_status === "after-tax retirement") { 
+                if (investment.tax_status === "pre-tax retirement") {
+                    adjustedAnnualLimit = inflationAdjusted(scenario.init_limit_pretax, scenario.inflationAssumption, yearsLapsed);
+                } else {
+                    adjustedAnnualLimit = inflationAdjusted(scenario.init_limit_aftertax, scenario.inflationAssumption, yearsLapsed);
+                }
+            }
+            let investAmt;
+            if (adjustedAnnualLimit != null && (excessCash * adjustedPercent) < adjustedAnnualLimit) {
+                investAmt = excessCash * adjustedPercent;
+            } else {
+                investAmt = excessCash*adjustedPercent;
+            }
+            investment.value += investAmt;      
+        }
+    }
+    return 0
 }
