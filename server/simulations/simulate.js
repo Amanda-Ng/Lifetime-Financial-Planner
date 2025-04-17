@@ -7,10 +7,19 @@ const {
     pay_nonDiscretionaryTaxes, 
     pay_discretionary, 
     runScheduled_investEvent, 
-    rebalanceInvestments 
+    rebalanceInvestments,
+    setScenarioLifeExpectancy,
+    setEventParams,
+    checkLifeExpectancy
 } = require("./algorithms");
 
 function runSimulation(scenario) {
+    // Step 0: Initialize scenario variables
+    setScenarioLifeExpectancy(scenario);
+    scenario.event_series.forEach((event) => {
+        setEventParams(event, scenario);
+    });
+
     const currentYear = new Date().getFullYear();
     const endYear = Math.max(
         scenario.birth_year + scenario.life_expectancy,
@@ -18,6 +27,13 @@ function runSimulation(scenario) {
     );
 
     for (let year = currentYear; year <= endYear; year++) {
+        // Check life expectancy
+        const lifeStatus = checkLifeExpectancy(scenario, year);
+        if (lifeStatus.user === "dead" && lifeStatus.spouse === "dead") {
+            console.log(`Simulation ends in year ${year} as both user and spouse are deceased.`);
+            break;
+        }
+
         // Step 1: Run income events
         runIncomeEvents(scenario, year);
 
@@ -61,11 +77,11 @@ function runSimulation(scenario) {
         });
 
         // Handle life expectancy and marital status changes
-        if (year === scenario.birth_year + scenario.life_expectancy) {
+        if (lifeStatus.user === "dead") {
             scenario.user_alive = false;
             scenario.marital_status = "single";
         }
-        if (year === scenario.birth_year_spouse + scenario.life_expectancy_spouse) {
+        if (lifeStatus.spouse === "dead") {
             scenario.spouse_alive = false;
             scenario.marital_status = "single";
         }

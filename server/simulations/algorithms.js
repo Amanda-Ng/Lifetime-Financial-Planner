@@ -14,17 +14,17 @@ db.once("open", () => console.log("Connected to MongoDB"));
 //
 
 async function checkLifeExpectancy(scenario, year) {
-    const living = [];
+    const living = {};
     if (scenario.birth_year + scenario.life_expectancy - year <= 0) {
-        living.push({ user: "dead" });
+        living["user"] = "dead";
     } else {
-        living.push({ user: "alive" });
+        living["user"] = "alive";
     }
 
     if (scenario.birth_year_spouse + scenario.life_expectancy_spouse - year <= 0) {
-        living.push({ spouse: "dead" });
+        living["spouse"] = "dead";
     } else {
-        living.push({ spouse: "alive" });
+        living["spouse"] = "alive";
     }
 
     return living;
