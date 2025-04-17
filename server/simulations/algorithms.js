@@ -1,6 +1,7 @@
 const EventSeries = require("../models/EventSeries");
 const Investment = require("../models/Investment");
 const FederalTaxes = require("../models/FederalTaxes");
+const RMD = require("../models/RMD");
 const seedRandom = require("seedrandom");
 
 // Test imports
@@ -331,11 +332,24 @@ function runIncomeEvents(scenario, year, rng = Math.random) {
     return totalIncome;
 }
 
-// Slightly different from the design doc
-function performRMD(scenario, retirementInvestment, RMDTable, age, year) {
-    expectedAge = age + year - new Date().getFullYear();
-    const rmd = retirementInvestment.value / RMDTable.find((entry) => entry.age === expectedAge);
-    transferredInvestment = scenario.rmd_strategy.shift();
+async function queryRMDTable(year) {
+    const rmdData = await RMD.findOne({ year });
+    if (!rmdData) {
+        throw new Error(`RMD table for year ${year} not found.`);
+    }
+    return rmdData.distributions;
+}
+
+async function performRMD(scenario, retirementInvestment, age, year) {
+    const rmdTable = await queryRMDTable(year); // Query RMD table for the given year
+    const expectedAge = age + year - new Date().getFullYear();
+    const rmdFactor = rmdTable.get(expectedAge.toString());
+    if (!rmdFactor) {
+        throw new Error(`RMD factor for age ${expectedAge} not found in year ${year}.`);
+    }
+
+    const rmd = retirementInvestment.value / rmdFactor;
+    let transferredInvestment = scenario.rmd_strategy.shift();
 
     if (transferredInvestment.tax_status === "non-retirement") {
         transferredInvestment = scenario.rmd_strategy.shift();
@@ -344,8 +358,12 @@ function performRMD(scenario, retirementInvestment, RMDTable, age, year) {
         rmd -= transferredInvestment.value;
         transferredInvestment.tax_status = "non-retirement";
     } else if (transferredInvestment.value > rmd) {
-        nonRetirementInvestments = scenario.investments.filter((investment) => investment.tax_status === "non-retirement");
-        let target = nonRetirementInvestments.find((investment) => investment.investmentType.name === transferredInvestment.investmentType.name);
+        const nonRetirementInvestments = scenario.investments.filter(
+            (investment) => investment.tax_status === "non-retirement"
+        );
+        let target = nonRetirementInvestments.find(
+            (investment) => investment.investmentType.name === transferredInvestment.investmentType.name
+        );
         if (target) {
             target.value += rmd;
             transferredInvestment.value -= rmd;
@@ -787,6 +805,7 @@ module.exports = {
     updateInvestments,
     calculateCapitalGainsTax,
     runIncomeEvents,
+    queryRMDTable,
     performRMD,
     calcTaxableIncome,
     runRothConversion,

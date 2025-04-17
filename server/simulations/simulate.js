@@ -13,7 +13,7 @@ const {
     checkLifeExpectancy
 } = require("./algorithms");
 
-function runSimulation(scenario) {
+async function runSimulation(scenario, age) {
     // Step 0: Initialize random scenario/ event parameters
     setScenarioLifeExpectancy(scenario);
     scenario.event_series.forEach((event) => {
@@ -28,7 +28,7 @@ function runSimulation(scenario) {
 
     for (let year = currentYear; year <= endYear; year++) {
         // Check life expectancy
-        const lifeStatus = checkLifeExpectancy(scenario, year);
+        const lifeStatus = await checkLifeExpectancy(scenario, year);
         if (lifeStatus.user === "dead" && lifeStatus.spouse === "dead") {
             console.log(`Simulation ends in year ${year} as both user and spouse are deceased.`);
             break;
@@ -39,9 +39,9 @@ function runSimulation(scenario) {
 
         // Step 2: Perform RMD for the previous year
         if (year > currentYear) {
-            scenario.investments.forEach((investment) => {
+            scenario.investments.forEach(async (investment) => {
                 if (investment.tax_status === "pre-tax retirement") {
-                    performRMD(scenario, investment, scenario.RMDTable, scenario.age, year - 1);
+                    await performRMD(scenario, investment, age, year - 1);
                 }
             });
         }
