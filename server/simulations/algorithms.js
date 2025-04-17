@@ -741,3 +741,61 @@ async function runScheduled_investEvent(InvestEvents, scenario){
     }
     return 0
 }
+
+function rebalanceInvestments(scenario, rebalanceEvent) {
+    const totalValue = scenario.investments.reduce((sum, investment) => sum + investment.value, 0);
+
+    rebalanceEvent.assetAllocation.forEach(({ investmentType, targetPercentage }) => {
+        const targetValue = totalValue * (targetPercentage / 100);
+        const investment = scenario.investments.find((inv) => inv.investmentType.name === investmentType.name);
+
+        if (investment) {
+            const difference = targetValue - investment.value;
+
+            if (difference > 0) {
+                // Buy more of this investment
+                const cashInvestment = scenario.investments.find((inv) => inv.investmentType.name === "Cash");
+                if (cashInvestment.value >= difference) {
+                    cashInvestment.value -= difference;
+                    investment.value += difference;
+                }
+            } else if (difference < 0) {
+                // Sell excess of this investment
+                investment.value += difference; // difference is negative
+                const cashInvestment = scenario.investments.find((inv) => inv.investmentType.name === "Cash");
+                cashInvestment.value -= difference; // add the sold amount to cash
+            }
+        }
+    });
+}
+
+module.exports = {
+    checkLifeExpectancy,
+    totalIncome_events,
+    parseTaxBrackets,
+    queryFederalTaxBrackets,
+    calculateFederalTaxes,
+    seedRNG,
+    setEventParams,
+    getEventField,
+    uniformSample,
+    normalSample,
+    capitalize,
+    inflationAdjusted,
+    setScenarioLifeExpectancy,
+    computeInvestmentValue,
+    updateInvestments,
+    calculateCapitalGainsTax,
+    runIncomeEvents,
+    performRMD,
+    calcTaxableIncome,
+    runRothConversion,
+    withdrawal_next,
+    isCapital,
+    pay_nonDiscretionary_helper,
+    pay_nonDiscretionaryTaxes,
+    getExpenses_byYear,
+    pay_discretionary,
+    runScheduled_investEvent,
+    rebalanceInvestments,
+};
