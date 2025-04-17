@@ -285,7 +285,11 @@ function updateInvestments(scenario, rng = Math.random) {
 
 //return amt of capital gains tax that should be paid
 async function calculateCapitalGainsTax(scenario, year) {
-    let tax_brackets = await queryFederalTaxBrackets(currentYear, scenario.marital_status); // get the tax brackets for the current year
+    let tax_brackets = await queryFederalTaxBrackets(year, scenario.marital_status); // get the tax brackets for the current year
+
+    // scenario.capitalsSold = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" && investment.investmentType.name !== "Cash"); // get the capital gains investments that were sold
+    scenario.capitalsSold = {} // initialize capitalsSold for the year
+    scenario.capitalsSold[year] = [] // initialize capitalsSold for the year
 
     let netCapitalGain  = 0;   
     for (const capital of scenario.capitalsSold[year] || []) {
@@ -507,6 +511,14 @@ function isCapital(investment){
 //return 0 if required_payment cannot be paid and an expense is incurred
 //return 1 if successful
 function pay_nonDiscretionary_helper(scenario, required_payment,year){
+    if (!scenario.capitalsSold) {
+        scenario.capitalsSold = {}; // Initialize capitalsSold if it doesn't exist
+    }
+    if (!scenario.capitalsSold[year]) {
+        scenario.capitalsSold[year] = []; // Initialize capitalsSold for the year
+    }
+
+    
     cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash") 
     if(cashInvest.value > required_payment){     //enough to pay with cash
         cashInvest.value -= required_payment   
@@ -568,7 +580,7 @@ function pay_nonDiscretionary_helper(scenario, required_payment,year){
     }
 }
 
-function pay_nonDiscretionaryTaxes(scenario, user, year) {
+async function pay_nonDiscretionaryTaxes(scenario, year) {
     let required_payment = 0;
     const expenses = scenario.event_series.filter((event) => event.eventType === "expense");
     for (const expense of expenses) {
@@ -583,7 +595,7 @@ function pay_nonDiscretionaryTaxes(scenario, user, year) {
         }
     }
     //!! need to addcalcStateTaxes(user,year)     
-    required_payment += calculateFederalTaxes(scenario, year-1)
+    required_payment += await calculateFederalTaxes(scenario, year-1)
     pay_nonDiscretionary_helper(scenario, required_payment,year) 
     required_payment=calculateCapitalGainsTax(scenario, year)
     pay_nonDiscretionary_helper(scenario, required_payment,year)
