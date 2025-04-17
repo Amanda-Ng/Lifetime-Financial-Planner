@@ -14,7 +14,7 @@ const {
 } = require("./algorithms");
 
 function runSimulation(scenario) {
-    // Step 0: Initialize scenario variables
+    // Step 0: Initialize random scenario/ event parameters
     setScenarioLifeExpectancy(scenario);
     scenario.event_series.forEach((event) => {
         setEventParams(event, scenario);
