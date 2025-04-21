@@ -1,9 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const InvestmentType = require("./models/InvestmentType");
-const Investment = require("./models/Investment");
-const Scenario = require("./models/Scenario");
 
 // TP: Google OAuth Tutorial https://coderdinesh.hashnode.dev/how-to-implement-google-login-in-the-mern-based-applications
 require("./passport/passport");
@@ -17,7 +14,7 @@ const { spawn } = require("child_process"); // Import child_process
 const FederalTaxes = require("./models/FederalTaxes.js");
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = configs.serverPort;
 
 const allowed_origins = ["http://localhost:3000"];
 app.use(
@@ -33,6 +30,7 @@ app.use(
 );
 app.use(express.json());
 app.use(morgan("dev"));
+app.use("/api/scenarios", require("./routes/scenario.js"));
 
 // const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
 // mongoose.connect(mongodb);
@@ -70,6 +68,21 @@ parseStateYamlProcess.stderr.on("data", (data) => {
 });
 parseStateYamlProcess.on("close", (code) => {
     console.log(`parse_state_yaml_file.js process exited with code ${code}`);
+});
+
+const uploadStateTaxYaml = require("./routes/uploadStateTaxYaml");
+app.use("/api/uploadStateTaxYaml", uploadStateTaxYaml);
+
+const rmdProcess = spawn("node", ["scrape_rmd.js"]);
+rmdProcess.stdout.on("data", (data) => {
+    console.log(`scrape_rmd.js: ${data}`);
+});
+rmdProcess.stderr.on("data", (data) => {
+    console.error(`scrape_rmd.js error: ${data}`);
+});
+
+rmdProcess.on("close", (code) => {
+    console.log(`scrape_rmd.js process exited with code ${code}`);
 });
 
 app.get("/api/federalTaxes", async (req, res) => {

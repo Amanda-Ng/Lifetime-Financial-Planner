@@ -45,7 +45,6 @@
     border-top: 2px solid #D9D9D9;
     margin-top: 10px;
     padding-top: 10px;
-    color: blue;
 }
 
 .profile2 {
@@ -96,7 +95,11 @@
 
 .leftEntry {
     margin-left: 10px;
-    margin-right: 150px;
+    margin-right: 100px;
+}
+
+.activityDate {
+    margin-right: 80px;
 }
 
 .description {
@@ -108,4 +111,18 @@
 .update_info_option,
 .change_password_option {
     color: blue;
+}
+
+.logout-button {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: #dc2626;
+    color: white;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.entry-label {
+    font-size: 0.875rem;
 }

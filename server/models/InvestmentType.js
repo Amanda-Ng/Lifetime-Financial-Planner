@@ -19,7 +19,7 @@ const InvestmentTypeSchema = new Schema(
         expected_annual_income_mean: { type: mongoose.Schema.Types.Decimal128 },
         expected_annual_income_stdev: { type: mongoose.Schema.Types.Decimal128 },
 
-        taxability: {
+        taxability: {       //taxable, tax-exempt
             type: String,
             required: true
         },
@@ -33,6 +33,7 @@ const InvestmentTypeSchema = new Schema(
             enum: ["fixedAmount", "fixedPercentage", "randomAmount", "randomPercentage"],
             required: true,
         },
+        userId: { type: String, required: true },
         createdAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
         isAdmin: { type: Boolean, default: false },

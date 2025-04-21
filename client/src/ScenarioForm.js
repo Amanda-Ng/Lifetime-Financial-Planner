@@ -44,18 +44,18 @@ function ScenarioForm() {
         events: [],
 
         //fetched from db
-        tax_Brack:null, 
+        tax_Brack: null,
         userInvestments: [],
         userEvents: [],
     });
 
     //update tax brackets based on state   
     useEffect(() => {
-        if (scenario.stateResidence) {  
+        if (scenario.stateResidence) {
             axiosClient
-                .get(`/api/tax-brackets?stateResidence=${scenario.stateResidence}&year=${scenario.roth_startYr}`) 
+                .get(`/api/tax-brackets?stateResidence=${scenario.stateResidence}&year=${scenario.roth_startYr}`)
                 .then((response) => {
-                    const brackets = response.data ;
+                    const brackets = response.data;
                     setScenario((prev) => ({
                         ...prev,
                         tax_Brack: brackets, // Update with fetched brackets or no-brackets
@@ -67,9 +67,9 @@ function ScenarioForm() {
                         // No brackets found for state and year
                         setScenario((prev) => ({
                             ...prev,
-                            tax_Brack: null,  
+                            tax_Brack: null,
                         }));
-                        console.log("404 tax_Brack: " )
+                        console.log("404 tax_Brack: ")
                     } else {
                         // Other errors 
                         console.error("Error fetching tax brackets:", error);
@@ -80,9 +80,9 @@ function ScenarioForm() {
                     }
                 });
         }
-    }, [scenario.stateResidence,scenario.roth_startYr]);
+    }, [scenario.stateResidence, scenario.roth_startYr]);
 
-    const handleChange = (e) => { 
+    const handleChange = (e) => {
         const { name, value } = e.target;
         setScenario((prev) => ({ ...prev, [name]: value }));
     };
@@ -311,12 +311,7 @@ function ScenarioForm() {
     }, []);
 
     useEffect(() => {
-        if (
-            isEditing &&
-            scenarioObject &&
-            scenario.userInvestments.length > 0 &&
-            scenario.userEvents.length > 0
-        ) {
+        if (scenarioObject) {
             const investmentList = (scenarioObject.investments || [])
                 .map(id => scenario.userInvestments.find(inv => inv._id === id))
                 .filter(Boolean);
@@ -333,6 +328,14 @@ function ScenarioForm() {
                 .map(id => events.find(evt => evt._id === id))
                 .filter(Boolean);
 
+            const rmdStrat = (scenarioObject.rmd_strategy || [])
+                .map(id => investmentList.find(inv => inv._id === id))
+                .filter(Boolean);
+
+            const rothStrat = (scenarioObject.roth_conversion_strategy || [])
+                .map(id => investmentList.find(inv => inv._id === id))
+                .filter(Boolean);
+
             setScenario(prev => ({
                 ...prev,
                 read_only: (scenarioObject.read_only || []).join(", "),
@@ -347,8 +350,10 @@ function ScenarioForm() {
                 life_expectancy_mean: scenarioObject.life_expectancy_mean || "",
                 life_expectancy_stdv: scenarioObject.life_expectancy_stdv || "",
                 lifeExpectancy_value_spouse: scenarioObject.life_expectancy_spouse || "",
-                roth_conversion_strategy: [...(scenarioObject.roth_conversion_strategy || [])],
-                rmd_strategy: [...(scenarioObject.rmd_strategy || [])],
+                life_expectancy_mean_spouse: scenarioObject.life_expectancy_mean_spouse || "",
+                life_expectancy_stdv_spouse: scenarioObject.life_expectancy_stdv_spouse || "",
+                rothStrat,
+                rmdStrat,
                 spendingStrat,
                 withdrawStrat,
                 inflation: scenarioObject.inflation_assumption || "",
@@ -707,7 +712,7 @@ function ScenarioForm() {
                                 <select name="target_taxBrac" value={scenario.target_taxBrac} onChange={handleChange} required>
                                     {scenario.tax_Brack === null &&
                                         (<option disabled>No data found for state and start year</option>)
-                                    } 
+                                    }
                                     {/*single tax brackets*/}
                                     {scenario.tax_Brack != null && scenario.maritalStatus === "single" &&
                                         scenario.tax_Brack.single_tax_brackets.map((bracket, index) => (
@@ -717,19 +722,19 @@ function ScenarioForm() {
                                                     : `$${bracket.range[0]} - $${bracket.range[1]}`}
                                             </option>
                                         )
-                                    )}
+                                        )}
                                     {/*married tax brackets*/}
                                     {scenario.tax_Brack != null && scenario.maritalStatus === "married" &&
-                                    scenario.tax_Brack.married_tax_brackets.map((bracket, index) => (
-                                        <option key={index} value={index}>
-                                            {bracket.range[1] === "Infinity"
-                                                ? `$${bracket.range[0]} and up`
-                                                : `$${bracket.range[0]} - $${bracket.range[1]}`}
-                                        </option>
-                                    ))}
+                                        scenario.tax_Brack.married_tax_brackets.map((bracket, index) => (
+                                            <option key={index} value={index}>
+                                                {bracket.range[1] === "Infinity"
+                                                    ? `$${bracket.range[0]} and up`
+                                                    : `$${bracket.range[0]} - $${bracket.range[1]}`}
+                                            </option>
+                                        ))}
                                 </select>
                             </div>
-                             
+
                             <div className="radioOpt">
                                 <label className="radioInput">Roth Conversion Strategy</label>
                                 <select name="roth_conversion_strategy" defaultValue="" onChange={handleAddRothConversionStrategy}>

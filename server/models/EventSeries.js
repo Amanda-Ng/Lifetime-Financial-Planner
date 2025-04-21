@@ -14,6 +14,7 @@ const EventSeriesSchema = new Schema(
         stdDevStartYear: { type: Number },
         minStartYear: { type: Number },
         maxStartYear: { type: Number },
+        anotherEventSeries: { type: String },
 
         // Duration
         durationType: { type: String, required: true },

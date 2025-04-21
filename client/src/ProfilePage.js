@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { axiosClient } from "./services/apiClient";
+import axios from "axios";
 import EditProfileForm from "./EditProfileForm";
+import useApp from "./hooks/useApp";
 import "./ProfilePage.css";
 import "./App.css";
 
@@ -8,6 +10,9 @@ function ProfilePage() {
     const [user, setUser] = useState(null);
     const [editing, setEditing] = useState(false);
     const [activity, setActivity] = useState(null);
+    const [file, setFile] = useState(null);
+    const [status, setStatus] = useState("");
+    const { logout } = useApp();
 
     const fetch_user_profile = async () => {
         try {
@@ -19,6 +24,22 @@ function ProfilePage() {
             setUser(user.data);
         } catch (error) {
             console.error("Error fetching user profile: ", error);
+        }
+    };
+
+    const handleUpload = async (e) => {
+        e.preventDefault();
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("stateTaxYaml", file);
+
+        try {
+            const response = await axios.post("http://localhost:8000/api/uploadStateTaxYaml", formData);
+            setStatus(response.data.message || "Upload successful!");
+        } catch (error) {
+            setStatus("Error uploading file.");
+            console.error(error);
         }
     };
 
@@ -55,8 +76,18 @@ function ProfilePage() {
                 <div className="profile_lower">
                     <img src="file.png" alt="file_icon" className="small_icon" />
                     View and upload state tax files
-                </div>{" "}
+                </div>
+                <form onSubmit={handleUpload}>
+                    <input
+                        type="file"
+                        accept=".yaml,.yml"
+                        onChange={(e) => setFile(e.target.files[0])}
+                    />
+                    <button type="submit">Upload YAML</button>
+                </form>
+                {status && <p>{status}</p>}
                 {/* !!Add action to text above */}
+                <div><a onClick={logout} href="/login" className="logout-button"> Logout </a></div>
             </div>
             <div className="profile2">
                 <div className="section_header">Personal Profile Info</div>
@@ -75,7 +106,6 @@ function ProfilePage() {
             {/* !!Add action to text above */}
             <div className="profile4">
                 <div className="section_header">Recent Activity</div>
-                <div className="description">Recent changes or additions to your account.</div>
 
                 <div id="log_table">
                     <div>
@@ -85,11 +115,11 @@ function ProfilePage() {
 
                     {Array.isArray(activity) && activity.map((entry, index) => (
                         <div key={index}>
-                            <span className="leftEntry">
+                            <span className="activityDate">
                                 {new Date(entry.updatedAt || entry.createdAt).toLocaleDateString()}
                             </span>
-                            <span>
-                                {entry.type}: {entry.name || ''}
+                            <span className="entry-label">
+                                {entry.type}: {entry.name || entry.investmentType.name || ''}
                             </span>
                         </div>
                     ))}

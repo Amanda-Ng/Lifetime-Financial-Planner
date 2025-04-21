@@ -7,7 +7,11 @@ puppeteer.use(StealthPlugin());
 const AdblockerPlugin = require("puppeteer-extra-plugin-adblocker");
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
-const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
+const configs = require("./configs/config.js");
+const dotenv = require("dotenv");
+dotenv.config();
+
+const mongodb = configs.dbURL;
 mongoose.connect(mongodb);
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "Error with MongoDB connection"));
@@ -19,7 +23,7 @@ async function scrape_federal_income_taxes() {
     });
 
     const page = await browser.newPage();
-    await page.goto("https://www.irs.gov/filing/federal-income-tax-rates-and-brackets", {
+    await page.goto(configs.federalIncomeTaxURL, {
         waitUntil: "domcontentloaded",
     });
 
@@ -89,7 +93,7 @@ async function scrape_standard_deductions() {
     });
 
     const page = await browser.newPage();
-    await page.goto("https://www.irs.gov/publications/p17", {
+    await page.goto(configs.standardDeductionsURL, {
         waitUntil: "domcontentloaded",
     });
 
@@ -135,7 +139,7 @@ async function scrape_capital_gains_tax() {
     });
 
     const page = await browser.newPage();
-    await page.goto("https://www.irs.gov/taxtopics/tc409", {
+    await page.goto(configs.capitalGainsTaxURL, {
         waitUntil: "domcontentloaded",
     });
 

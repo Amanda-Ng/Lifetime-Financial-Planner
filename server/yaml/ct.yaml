@@ -1,0 +1,32 @@
+single:
+  brackets:
+    - range: [0, 10000]
+      rate: 0.02
+    - range: [10001, 50000]
+      rate: 0.045
+    - range: [50001, 100000]
+      rate: 0.055
+    - range: [100001, 200000]
+      rate: 0.06
+    - range: [200001, 250000]
+      rate: 0.065
+    - range: [250001, 500000]
+      rate: 0.069
+    - range: [500001, Infinity]
+      rate: 0.0699
+married:
+  brackets:
+    - range: [0, 20000]
+      rate: 0.02
+    - range: [20001, 100000]
+      rate: 0.045
+    - range: [100001, 200000]
+      rate: 0.055
+    - range: [200001, 400000]
+      rate: 0.06
+    - range: [400001, 500000]
+      rate: 0.065
+    - range: [500001, 1000000]
+      rate: 0.069
+    - range: [1000001, Infinity]
+      rate: 0.0699
