@@ -19,14 +19,14 @@ const User = require("../models/User");
 // TP: Generated with Copilot: Prompt: "using the algorithms and the correctly implemented flow from the simulation create a funciton to run the algorithms in the correct order."
 const fs = require("fs");
 const path = require("path");
-const { 
-    runIncomeEvents, 
-    performRMD, 
-    updateInvestments, 
-    runRothConversion, 
-    pay_nonDiscretionaryTaxes, 
-    pay_discretionary, 
-    runScheduled_investEvent, 
+const {
+    runIncomeEvents,
+    performRMD,
+    updateInvestments,
+    runRothConversion,
+    pay_nonDiscretionaryTaxes,
+    pay_discretionary,
+    runScheduled_investEvent,
     rebalanceInvestments,
     setScenarioLifeExpectancy,
     setEventParams,
