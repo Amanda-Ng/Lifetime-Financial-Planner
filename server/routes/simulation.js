@@ -52,13 +52,30 @@ router.post("/runSimulation", async (req, res) => {
 
         const currentYear = new Date().getFullYear();
         const age = currentYear - scenario.birth_year;
+        const financialGoal = scenario.financial_goal;
 
         const workers = Array.from({ length: numSimulations }, () =>
             runWorker(scenario, age, username)
         );
 
         const results = await Promise.all(workers);
-        return res.status(200).json({ message: "Simulations complete", results });
+
+        // Aggregate results to calculate success probability
+        const yearlySuccess = {};
+        results.forEach(({ yearlyInvestments }) => {
+            yearlyInvestments.forEach(({ year, totalInvestmentValue }) => {
+                if (!yearlySuccess[year]) yearlySuccess[year] = { successCount: 0, totalCount: 0 };
+                if (totalInvestmentValue >= financialGoal) yearlySuccess[year].successCount++;
+                yearlySuccess[year].totalCount++;
+            });
+        });
+
+        const successProbability = Object.entries(yearlySuccess).map(([year, { successCount, totalCount }]) => ({
+            year: parseInt(year, 10),
+            probability: (successCount / totalCount) * 100,
+        }));
+
+        return res.status(200).json({ message: "Simulations complete", successProbability });
     } catch (error) {
         console.error("Simulation error:", error);
         res.status(500).send("Simulation failed");
