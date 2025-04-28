@@ -1,48 +1,20 @@
-// import React from "react"; 
-// import "./Simulation.css";  
-
-// function Simulation(){
-//     return(
-//     <div id="simulation-container" >
-//          <div className="sim1">
-//             <div className="section_header"><strong>Simulation</strong></div>
-//             <div className="optionLine">
-//                 <span>Choose scenario</span>
-//                 <span>Parameter</span>
-//                 <span>Step</span>
-//             </div>
-//             <div className="optionLine">
-//                 <span>Upper bound</span>
-//                 <span>Lower bound</span> 
-//             </div>
-//             <div className="optionLine" id="genSimLine">
-//                 <span>View</span> 
-//                 <button id="gen_button">Generate</button>
-//             </div>
-
-//         </div>
-//         <div className="sim2">
-//             <div className="subsub_header"><strong>Scenario Name</strong></div> 
-//             <div className="chart-container">
-//                 {/* !!Display chart here */}
-//             </div>
-
-
-
-//         </div> 
-//     </div>
-
-//     )
-// } 
-
-// export default Simulation
-
-
-
 import React, { useEffect, useState } from "react";
 import "./Simulation.css";
 import axios from "axios";
 import { axiosClient } from "./services/apiClient";
+import {
+    Chart as ChartJS,
+    LineElement,
+    PointElement,
+    LinearScale,
+    Title,
+    CategoryScale,
+    Tooltip,
+    Legend,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+
+ChartJS.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend);
 
 function Simulation() {
     const [editableScenarios, setEditableScenarios] = useState([]);
@@ -52,6 +24,7 @@ function Simulation() {
     const [result, setResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [numSimulations, setNumSimulations] = useState(1);
+    const [showSuccessChart, setShowSuccessChart] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -94,6 +67,59 @@ function Simulation() {
         }
     };
 
+    const successChartData = result?.successProbability
+        ? {
+            labels: result.successProbability.map((d) => d.year),
+            datasets: [
+                {
+                    label: "Probability of Success",
+                    data: result.successProbability.map((d) => d.probability),
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    tension: 0.4,
+                    fill: true,
+                },
+            ],
+        }
+        : null;
+
+    const successChartOptions = {
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        plugins: {
+            tooltip: {
+                enabled: true,
+                callbacks: {
+                    label: function (context) {
+                        const year = context.label;
+                        const probability = context.parsed.y;
+                        return `Year: ${year}, Success Probability: ${probability.toFixed(2)}%`;
+                    },
+                },
+            },
+            legend: {
+                position: "top",
+            },
+            title: {
+                display: true,
+                text: "Probability of Success Over Time",
+            },
+        },
+        scales: {
+            x: {
+                title: { display: true, text: "Year" },
+            },
+            y: {
+                title: { display: true, text: "Probability (%)" },
+                min: 0,
+                max: 100,
+            },
+        },
+    };
+
     return (
         <div id="simulation-container">
             <div className="sim1">
@@ -131,6 +157,19 @@ function Simulation() {
                     />
                 </div>
 
+                <div className="optionLine" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <input
+                        id="showSuccessChart"
+                        type="checkbox"
+                        checked={showSuccessChart}
+                        onChange={(e) => setShowSuccessChart(e.target.checked)}
+                        style={{ margin: 0 }}
+                    />
+                    <label htmlFor="showSuccessChart" style={{ margin: 0 }}>
+                        Show Probability of Success Chart
+                    </label>
+                </div>
+
                 <div className="optionLine" id="genSimLine">
                     <button id="gen_button" onClick={handleGenerate} disabled={!selectedScenarioId || !user}>
                         {isLoading ? "Running..." : "Generate"}
@@ -142,9 +181,15 @@ function Simulation() {
                 <div className="subsub_header"><strong>Scenario Output</strong></div>
                 <div className="chart-container">
                     {result ? (
-                        <pre style={{ fontSize: "0.9rem", overflowX: "scroll" }}>
-                            {JSON.stringify(result, null, 2)}
-                        </pre>
+                        <>
+                            {showSuccessChart && successChartData ? (
+                                <Line data={successChartData} options={successChartOptions} />
+                            ) : (
+                                <pre style={{ fontSize: "0.9rem", overflowX: "scroll" }}>
+                                    {JSON.stringify(result, null, 2)}
+                                </pre>
+                            )}
+                        </>
                     ) : (
                         <p>No data yet. Run the simulation to see results.</p>
                     )}

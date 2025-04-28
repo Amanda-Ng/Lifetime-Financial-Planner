@@ -88,6 +88,7 @@ async function runSimulation(scenario, age, username) {
         setEventParams(event, scenario);
     });
 
+    const yearlyInvestments = [];
     const currentYear = new Date().getFullYear();
     const endYear = Math.max(
         scenario.birth_year + scenario.life_expectancy,
@@ -169,6 +170,10 @@ async function runSimulation(scenario, age, username) {
             logStream.write(`Rebalanced investments: ${JSON.stringify(rebalanceEvent)}\n`);
         });
 
+        // Collect total investment value at the end of the year
+        const totalInvestmentValue = scenario.investments.reduce((sum, inv) => sum + Number(inv.value), 0);
+        yearlyInvestments.push({ year, totalInvestmentValue: Number.isFinite(totalInvestmentValue) ? totalInvestmentValue : 0 });
+
         // Write investment values to CSV
         console.log("Writing investment values to CSV...");
         const investmentValues = scenario.investments.map(inv => Number(inv.value).toFixed(2)).join(",");
@@ -192,6 +197,7 @@ async function runSimulation(scenario, age, username) {
     console.log("Simulation completed.");
     csvStream.end();
     logStream.end();
+    return yearlyInvestments;
 }
 
 module.exports = { runSimulation };
