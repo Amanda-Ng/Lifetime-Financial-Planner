@@ -30,7 +30,10 @@ const {
     rebalanceInvestments,
     setScenarioLifeExpectancy,
     setEventParams,
-    checkLifeExpectancy
+    checkLifeExpectancy,
+    getExpenses_byYear,
+    resetEarlyWithdrawalTax,
+    getEarlyWithdrawalTax
 } = require("./algorithms");
 
 let testScenario = Scenario.findOne({ name: "Test Scenario2" })
@@ -89,6 +92,7 @@ async function runSimulation(scenario, age, username) {
     });
 
     const yearlyInvestments = [];
+    const yearlyData = [];
     const currentYear = new Date().getFullYear();
     const endYear = Math.max(
         scenario.birth_year + scenario.life_expectancy,
@@ -98,6 +102,7 @@ async function runSimulation(scenario, age, username) {
     for (let year = currentYear; year <= endYear; year++) {
         console.log(`Processing year: ${year}`);
         logStream.write(`Year: ${year}\n`);
+        resetEarlyWithdrawalTax();
 
         // Check life expectancy
         const lifeStatus = await checkLifeExpectancy(scenario, year);
@@ -174,6 +179,28 @@ async function runSimulation(scenario, age, username) {
         const totalInvestmentValue = scenario.investments.reduce((sum, inv) => sum + Number(inv.value), 0);
         yearlyInvestments.push({ year, totalInvestmentValue: Number.isFinite(totalInvestmentValue) ? totalInvestmentValue : 0 });
 
+        // Calculate total expenses
+        const totalExpenses = getExpenses_byYear(scenario, year).reduce((sum, exp) => sum + exp.initialAmount, 0);
+
+        // Calculate early withdrawal tax
+        const earlyWithdrawalTax = getEarlyWithdrawalTax();
+
+        // Calculate percentage of discretionary expenses incurred
+        const discretionaryExpenses = getExpenses_byYear(scenario, year).filter(exp => exp.isDiscretionary);
+        const totalInitial = discretionaryExpenses.reduce((sum, exp) => sum + exp.initialAmount, 0);
+        const discretionaryPercentage = totalInitial
+            ? (discretionaryResult / totalInitial) * 100
+            : 0;
+
+        // Collect yearly data for selected quantities
+        yearlyData.push({
+            year,
+            totalIncome: income,
+            totalExpenses,
+            earlyWithdrawalTax,
+            discretionaryPercentage,
+        });
+
         // Write investment values to CSV
         console.log("Writing investment values to CSV...");
         const investmentValues = scenario.investments.map(inv => Number(inv.value).toFixed(2)).join(",");
@@ -197,7 +224,7 @@ async function runSimulation(scenario, age, username) {
     console.log("Simulation completed.");
     csvStream.end();
     logStream.end();
-    return yearlyInvestments;
+    return { yearlyInvestments, yearlyData };
 }
 
 module.exports = { runSimulation };

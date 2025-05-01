@@ -50,3 +50,15 @@
     padding: 10px;
     border-radius: 15px;
 }
+
+.chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.chart-wrapper {
+    height: 400px;
+}

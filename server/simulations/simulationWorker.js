@@ -3,8 +3,8 @@ const { runSimulation } = require("./simulate");
 
 (async () => {
     try {
-        const yearlyInvestments = await runSimulation(workerData.scenario, workerData.age, workerData.username);
-        parentPort.postMessage({ status: "done", yearlyInvestments });
+        const { yearlyInvestments, yearlyData } = await runSimulation(workerData.scenario, workerData.age, workerData.username);
+        parentPort.postMessage({ status: "done", yearlyInvestments, yearlyData });
     } catch (err) {
         console.error("Error in simulation worker:", err);
         parentPort.postMessage({ status: "error", error: err.message });

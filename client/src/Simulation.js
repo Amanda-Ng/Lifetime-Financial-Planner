@@ -25,6 +25,10 @@ function Simulation() {
     const [isLoading, setIsLoading] = useState(false);
     const [numSimulations, setNumSimulations] = useState(1);
     const [showSuccessChart, setShowSuccessChart] = useState(false);
+    const [showShadedChart, setShowShadedChart] = useState(false);
+    const [selectedQuantity, setSelectedQuantity] = useState("totalInvestments");
+    const [shadedChartData, setShadedChartData] = useState(null);
+    const [financialGoal, setFinancialGoal] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -53,13 +57,26 @@ function Simulation() {
         setIsLoading(true);
 
         try {
-            const response = await axios.post("http://localhost:8000/api/runSimulation", {
-                scenarioId: selectedScenarioId,
-                username: user.username,
-                numSimulations,
-            });
-
-            setResult(response.data);
+            let response;
+            if (showShadedChart) {
+                // API call for shaded chart
+                response = await axios.post("http://localhost:8000/api/runSimulationWithRanges", {
+                    scenarioId: selectedScenarioId,
+                    username: user.username,
+                    numSimulations,
+                    selectedQuantity,
+                });
+                setShadedChartData(response.data.aggregatedData);
+            }
+            if (showSuccessChart) {
+                // Success probability simulation
+                response = await axios.post("http://localhost:8000/api/runSimulation", {
+                    scenarioId: selectedScenarioId,
+                    username: user.username,
+                    numSimulations,
+                });
+                setResult(response.data);
+            }
         } catch (error) {
             console.error("Simulation failed:", error);
         } finally {
@@ -120,6 +137,77 @@ function Simulation() {
         },
     };
 
+    const shadedChartDataObject = shadedChartData
+        ? {
+            labels: shadedChartData.map((d) => d.year),
+            datasets: [
+                {
+                    label: "Median",
+                    data: shadedChartData.map((d) => d.median),
+                    borderColor: "blue",
+                    borderWidth: 2,
+                    fill: false,
+                },
+                {
+                    label: "10%-90%",
+                    data: shadedChartData.map((d) => d?.ranges?.["10-90"]?.[1] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.1)",
+                    fill: "-1",
+                },
+                {
+                    label: "20%-80%",
+                    data: shadedChartData.map((d) => d?.ranges?.["20-80"]?.[1] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.2)",
+                    fill: "-1",
+                },
+                {
+                    label: "30%-70%",
+                    data: shadedChartData.map((d) => d?.ranges?.["30-70"]?.[1] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.3)",
+                    fill: "-1",
+                },
+                {
+                    label: "40%-60%",
+                    data: shadedChartData.map((d) => d?.ranges?.["40-60"]?.[1] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.4)",
+                    fill: "-1",
+                },
+                ...(selectedQuantity === "totalInvestments" && financialGoal !== null
+                    ? [{
+                        label: "Financial Goal",
+                        data: shadedChartData.map(() => financialGoal),
+                        borderColor: "red",
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                    }]
+                    : [])
+            ],
+        }
+        : null;
+
+    const shadedChartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: "top",
+            },
+            title: {
+                display: true,
+                text: "Shaded Probability Ranges Over Time",
+            },
+        },
+        scales: {
+            x: {
+                title: { display: true, text: "Year" },
+            },
+            y: {
+                title: { display: true, text: "Value" },
+            },
+        },
+    };
+
     return (
         <div id="simulation-container">
             <div className="sim1">
@@ -130,8 +218,17 @@ function Simulation() {
                     <select
                         id="scenarioSelect"
                         value={selectedScenarioId}
-                        onChange={(e) => setSelectedScenarioId(e.target.value)}
-                    >
+                        onChange={(e) => {
+                            const scenarioId = e.target.value;
+                            setSelectedScenarioId(scenarioId);
+
+                            const scenario = [...editableScenarios, ...readOnlyScenarios].find(sc => sc._id === scenarioId);
+                            if (scenario?.financial_goal) {
+                                setFinancialGoal(scenario.financial_goal.$numberDecimal);
+                            } else {
+                                setFinancialGoal(null);
+                            }
+                        }}                    >
                         <option value="">-- Select Scenario --</option>
                         {editableScenarios.map((sc) => (
                             <option key={sc._id} value={sc._id}>
@@ -170,6 +267,36 @@ function Simulation() {
                     </label>
                 </div>
 
+                <div className="optionLine" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <input
+                        id="showShadedChart"
+                        type="checkbox"
+                        checked={showShadedChart}
+                        onChange={(e) => setShowShadedChart(e.target.checked)}
+                        style={{ margin: 0 }}
+                    />
+                    <label htmlFor="showShadedChart" style={{ margin: 0 }}>
+                        Show Shaded Line Chart
+                    </label>
+                </div>
+
+                {showShadedChart && (
+                    <div className="optionLine">
+                        <label htmlFor="quantitySelect">Select Quantity:</label>
+                        <select
+                            id="quantitySelect"
+                            value={selectedQuantity}
+                            onChange={(e) => setSelectedQuantity(e.target.value)}
+                        >
+                            <option value="totalInvestments">Total Investments</option>
+                            <option value="totalIncome">Total Income</option>
+                            <option value="totalExpenses">Total Expenses</option>
+                            <option value="earlyWithdrawalTax">Early Withdrawal Tax</option>
+                            <option value="discretionaryExpensePercentage">Discretionary Expense %</option>
+                        </select>
+                    </div>
+                )}
+
                 <div className="optionLine" id="genSimLine">
                     <button id="gen_button" onClick={handleGenerate} disabled={!selectedScenarioId || !user}>
                         {isLoading ? "Running..." : "Generate"}
@@ -180,11 +307,19 @@ function Simulation() {
             <div className="sim2">
                 <div className="subsub_header"><strong>Scenario Output</strong></div>
                 <div className="chart-container">
-                    {result ? (
+                    {result || shadedChartData ? (
                         <>
-                            {showSuccessChart && successChartData ? (
-                                <Line data={successChartData} options={successChartOptions} />
-                            ) : (
+                            {showSuccessChart && successChartData && (
+                                <div className="chart-wrapper">
+                                    <Line data={successChartData} options={successChartOptions} />
+                                </div>
+                            )}
+                            {showShadedChart && shadedChartData && (
+                                <div className="chart-wrapper">
+                                    <Line data={shadedChartDataObject} options={shadedChartOptions} />
+                                </div>
+                            )}
+                            {!showSuccessChart && !showShadedChart && (
                                 <pre style={{ fontSize: "0.9rem", overflowX: "scroll" }}>
                                     {JSON.stringify(result, null, 2)}
                                 </pre>
