@@ -11,10 +11,11 @@ import {
     CategoryScale,
     Tooltip,
     Legend,
+    BarElement,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 
-ChartJS.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend);
+ChartJS.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend, BarElement);
 
 function Simulation() {
     const [editableScenarios, setEditableScenarios] = useState([]);
@@ -29,6 +30,11 @@ function Simulation() {
     const [selectedQuantity, setSelectedQuantity] = useState("totalInvestments");
     const [shadedChartData, setShadedChartData] = useState(null);
     const [financialGoal, setFinancialGoal] = useState(null);
+    const [showStackedBarChart, setShowStackedBarChart] = useState(false);
+    const [stackedChartQuantity, setStackedChartQuantity] = useState("investments");
+    const [useMedianForStacked, setUseMedianForStacked] = useState(true);
+    const [aggregationThreshold, setAggregationThreshold] = useState(1000);
+    const [stackedChartData, setStackedChartData] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -59,7 +65,7 @@ function Simulation() {
         try {
             let response;
             if (showShadedChart) {
-                // API call for shaded chart
+                // Shaded chart simulation
                 response = await axios.post("http://localhost:8000/api/runSimulationWithRanges", {
                     scenarioId: selectedScenarioId,
                     username: user.username,
@@ -76,6 +82,20 @@ function Simulation() {
                     numSimulations,
                 });
                 setResult(response.data);
+            }
+            if (showStackedBarChart) {
+                // Stacked bar chart simulation
+                response = await axios.post("http://localhost:8000/api/runStackedBarChart", {
+                    scenarioId: selectedScenarioId,
+                    username: user.username,
+                    numSimulations,
+                    selectedQuantity: stackedChartQuantity,
+                    aggregationThreshold,
+                    useMedian: useMedianForStacked,
+                });
+
+                const data = await response.json();
+                setStackedChartData(data.aggregatedData);
             }
         } catch (error) {
             console.error("Simulation failed:", error);
@@ -208,6 +228,60 @@ function Simulation() {
         },
     };
 
+    const getRandomColor = () =>
+        `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(
+            Math.random() * 255
+        )}, 0.7)`;
+
+    const getStackedBarData = (aggregatedData, quantity) => {
+        const labels = aggregatedData.map((data) => data.year);
+        const categoryMap = {};
+
+        aggregatedData.forEach((data) => {
+            data[quantity].forEach(({ name }) => {
+                if (!categoryMap[name]) {
+                    categoryMap[name] = {
+                        label: name,
+                        backgroundColor: getRandomColor(),
+                        data: [],
+                    };
+                }
+            });
+        });
+
+        aggregatedData.forEach((data) => {
+            const categoryValues = {};
+            data[quantity].forEach(({ name, value }) => {
+                categoryValues[name] = value;
+            });
+
+            Object.keys(categoryMap).forEach((name) => {
+                categoryMap[name].data.push(categoryValues[name] || 0);
+            });
+        });
+
+        return {
+            labels,
+            datasets: Object.values(categoryMap),
+        };
+    };
+
+    const stackedBarOptions = {
+        responsive: true,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)}`,
+                },
+            },
+            legend: { position: "top" },
+        },
+        scales: {
+            x: { stacked: true },
+            y: { stacked: true },
+        },
+    };
+
     return (
         <div id="simulation-container">
             <div className="sim1">
@@ -281,7 +355,7 @@ function Simulation() {
                 </div>
 
                 {showShadedChart && (
-                    <div className="optionLine">
+                    <div className="optionLine2">
                         <label htmlFor="quantitySelect">Select Quantity:</label>
                         <select
                             id="quantitySelect"
@@ -295,6 +369,57 @@ function Simulation() {
                             <option value="discretionaryExpensePercentage">Discretionary Expense %</option>
                         </select>
                     </div>
+                )}
+
+                <div className="optionLine" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <input
+                        id="showStackedBarChart"
+                        type="checkbox"
+                        checked={showStackedBarChart}
+                        onChange={(e) => setShowStackedBarChart(e.target.checked)}
+                        style={{ margin: 0 }}
+                    />
+                    <label htmlFor="showStackedBarChart" style={{ margin: 0 }}>
+                        Show Stacked Bar Chart
+                    </label>
+                </div>
+
+                {showStackedBarChart && (
+                    <>
+                        <div className="optionLine2">
+                            <label htmlFor="stackedQuantitySelect">Quantity:</label>
+                            <select
+                                id="stackedQuantitySelect"
+                                value={stackedChartQuantity}
+                                onChange={(e) => setStackedChartQuantity(e.target.value)}
+                            >
+                                <option value="investments">Investments</option>
+                                <option value="income">Income</option>
+                                <option value="expenses">Expenses</option>
+                            </select>
+                        </div>
+
+                        <div className="optionLine2">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={useMedianForStacked}
+                                    onChange={(e) => setUseMedianForStacked(e.target.checked)}
+                                />
+                                Use Median (unchecked = Average)
+                            </label>
+                        </div>
+
+                        <div className="optionLine2">
+                            <label htmlFor="aggregationThreshold">Aggregation Threshold:</label>
+                            <input
+                                id="aggregationThreshold"
+                                type="number"
+                                value={aggregationThreshold}
+                                onChange={(e) => setAggregationThreshold(parseFloat(e.target.value))}
+                            />
+                        </div>
+                    </>
                 )}
 
                 <div className="optionLine" id="genSimLine">
@@ -323,6 +448,11 @@ function Simulation() {
                                 <pre style={{ fontSize: "0.9rem", overflowX: "scroll" }}>
                                     {JSON.stringify(result, null, 2)}
                                 </pre>
+                            )}
+                            {showStackedBarChart && stackedChartData && (
+                                <div className="chart-wrapper">
+                                    <Bar data={getStackedBarData(stackedChartData, stackedChartQuantity)} options={stackedBarOptions} />
+                                </div>
                             )}
                         </>
                     ) : (

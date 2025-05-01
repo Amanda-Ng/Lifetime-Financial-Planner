@@ -28,6 +28,13 @@
     margin-top: 30px;
 }
 
+.optionLine2 {
+    display: flex;
+    gap: 100px;
+    margin-left: 50px;
+    margin-top: 30px;
+}
+
 #genSimLine {
     justify-content: space-between;
 }

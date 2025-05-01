@@ -33,7 +33,8 @@ const {
     checkLifeExpectancy,
     getExpenses_byYear,
     resetEarlyWithdrawalTax,
-    getEarlyWithdrawalTax
+    getEarlyWithdrawalTax,
+    calculateFederalTaxes
 } = require("./algorithms");
 
 let testScenario = Scenario.findOne({ name: "Test Scenario2" })
@@ -93,6 +94,8 @@ async function runSimulation(scenario, age, username) {
 
     const yearlyInvestments = [];
     const yearlyData = [];
+    const yearlyBreakdown = [];
+
     const currentYear = new Date().getFullYear();
     const endYear = Math.max(
         scenario.birth_year + scenario.life_expectancy,
@@ -175,30 +178,58 @@ async function runSimulation(scenario, age, username) {
             logStream.write(`Rebalanced investments: ${JSON.stringify(rebalanceEvent)}\n`);
         });
 
-        // Collect total investment value at the end of the year
+        // Used for line chart of probability of success
         const totalInvestmentValue = scenario.investments.reduce((sum, inv) => sum + Number(inv.value), 0);
         yearlyInvestments.push({ year, totalInvestmentValue: Number.isFinite(totalInvestmentValue) ? totalInvestmentValue : 0 });
 
-        // Calculate total expenses
+        // Used for shaded line chart
         const totalExpenses = getExpenses_byYear(scenario, year).reduce((sum, exp) => sum + exp.initialAmount, 0);
 
-        // Calculate early withdrawal tax
         const earlyWithdrawalTax = getEarlyWithdrawalTax();
 
-        // Calculate percentage of discretionary expenses incurred
         const discretionaryExpenses = getExpenses_byYear(scenario, year).filter(exp => exp.isDiscretionary);
         const totalInitial = discretionaryExpenses.reduce((sum, exp) => sum + exp.initialAmount, 0);
         const discretionaryPercentage = totalInitial
             ? (discretionaryResult / totalInitial) * 100
             : 0;
 
-        // Collect yearly data for selected quantities
         yearlyData.push({
             year,
             totalIncome: income,
             totalExpenses,
             earlyWithdrawalTax,
             discretionaryPercentage,
+        });
+
+        // Used for stacked bar chart
+        const federalTaxes = await calculateFederalTaxes(scenario, year);
+
+        const investmentBreakdown = scenario.investments.map((inv) => ({
+            investmentType: inv.investmentType.name,
+            value: inv.value,
+        }));
+
+        const incomeBreakdown = scenario.event_series
+            .filter((event) => event.eventType === "income")
+            .map((event) => ({
+                eventName: event.name,
+                value: inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - event.startYear),
+            }));
+
+        const expenseBreakdown = scenario.event_series
+            .filter((event) => event.eventType === "expense")
+            .map((event) => ({
+                eventName: expense.name,
+                value: expense.initialAmount,
+            }));
+
+        expenseBreakdown.push({ eventName: "Taxes", value: federalTaxes });
+
+        yearlyBreakdown.push({
+            year,
+            investments: investmentBreakdown,
+            income: incomeBreakdown,
+            expenses: expenseBreakdown,
         });
 
         // Write investment values to CSV
@@ -224,7 +255,7 @@ async function runSimulation(scenario, age, username) {
     console.log("Simulation completed.");
     csvStream.end();
     logStream.end();
-    return { yearlyInvestments, yearlyData };
+    return { yearlyInvestments, yearlyData, yearlyBreakdown };
 }
 
 module.exports = { runSimulation };

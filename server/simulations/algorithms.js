@@ -46,8 +46,8 @@ function totalIncome_events(scenario, year) {
     let totalIncome = 0;
     const numYears = year - new Date().getFullYear();
     scenario.event_series.forEach((event) => {
-        // Check if the event is of type "Income"
-        if (event.eventType === "Income") {
+        // Check if the event is of type "income"
+        if (event.eventType === "income") {
             let eventIncome = event.initialAmount;
             if (event.inflationAdjustment) {
                 for (let i = 1; i <= numYears; i++) {
@@ -331,7 +331,7 @@ async function calculateCapitalGainsTax(scenario, year) {
 
 function runIncomeEvents(scenario, year, rng = Math.random) {
     let totalIncome = 0;
-    const events = scenario.event_series.filter((event) => event.eventType === "Income");
+    const events = scenario.event_series.filter((event) => event.eventType === "income");
 
     for (const event of events) {
         const { startYear, duration, expectedChange } = setEventParams(event, rng);
@@ -401,7 +401,7 @@ async function performRMD(scenario, retirementInvestment, age, year) {
 
 function calcTaxableIncome(scenario) {
     let taxableIncome = 0;
-    const incomeEvents = scenario.event_series.filter((event) => event.eventType === "Income");
+    const incomeEvents = scenario.event_series.filter((event) => event.eventType === "income");
     const taxableInvestments = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" || investment.investmentType.taxability === "taxable");
     taxableInvestments.forEach((investment) => {
         taxableIncome += investment["calculatedAnnualIncome"];
