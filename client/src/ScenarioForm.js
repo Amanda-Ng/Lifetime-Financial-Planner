@@ -31,8 +31,15 @@ function ScenarioForm() {
         withdrawStrat: [] /*list, should load investments dynamically*/,
         roth_conversion_strategy: [],
         rmd_strategy: [],
-        inflation: "",
         pre_contribLimit: "",
+        //inflation  
+        infl_type:"fixed" ,//fixed, normal, uniform 
+        infl_value:"",
+        infl_mean:"",
+        infl_stdev:"", 
+        infl_min:"",
+        infl_max:"",
+
         /*Roth conversion*/
         target_taxBrac: 0 /*load dynamically withh scraped tax brackets */,
         has_rothOptimizer: "",
@@ -665,7 +672,73 @@ function ScenarioForm() {
                 <label>
                     Inflation<span className="required"> *</span>
                 </label>
-                <input type="number" name="inflation" value={scenario.inflation} onChange={handleChange} placeholder="%" required />
+                <div className="radio-group2">
+                    {/*opt: fixed*/}
+                    <div className="radioOpt">
+                        <label>
+                            <input
+                                className="radioInput"
+                                type="radio"
+                                name="infl_type"
+                                value="fixed"
+                                checked={scenario.infl_type === "fixed"}
+                                onChange={handleChange}
+                            />
+                            Fixed Value
+                        </label>
+                        {scenario.infl_type === "fixed" && (
+                            <>
+                                <input type="number" name="infl_value" value={scenario.infl_value} onChange={handleChange} required />
+                            </>
+                        )}
+                    </div>
+                    {/*opt: normal distribution*/}
+                    <label className="radioInput">
+                        <input
+                            type="radio" 
+                            name="infl_type"
+                            value="normal"
+                            checked={scenario.infl_type === "normal"}
+                            onChange={handleChange}  
+                        />
+                        Sample from normal distribution
+                    </label>
+                    {scenario.infl_type === "normal" && (
+                        <>
+                            <div className="radioOpt">
+                                <label className="radioInput">Mean</label>  
+                                <input type="number" name="infl_mean" value={scenario.infl_mean} onChange={handleChange} required />
+                            </div>
+                            <div className="radioOpt">
+                                <label className="radioInput">Standard Deviation</label>
+                                <input type="number" name="infl_stdev" value={scenario.infl_stdev} onChange={handleChange} required />
+                            </div>
+                        </>
+                    )}
+                    {/*opt: uniform*/}
+                    <label className="radioInput">
+                        <input
+                            type="radio"
+                            name="infl_type"
+                            value="uniform"
+                            checked={scenario.infl_type === "uniform"}
+                            onChange={handleChange}  
+                        />
+                        Sample from uniform distribution
+                    </label>
+                    {scenario.infl_type === "uniform" && (
+                        <>
+                            <div className="radioOpt">
+                                <label className="radioInput">Min</label>  
+                                <input type="number" name="infl_min" value={scenario.infl_min} onChange={handleChange} required />
+                            </div>
+                            <div className="radioOpt">
+                                <label className="radioInput">Max</label>
+                                <input type="number" name="infl_max" value={scenario.infl_max} onChange={handleChange} required />
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
             {/*pre-tax retirement account contribution limit*/}
             <div>

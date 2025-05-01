@@ -20,7 +20,13 @@ const ScenarioSchema = new Schema(
         investments: { type: [mongoose.Schema.Types.ObjectId], ref: "Investment", required: true },
         event_series: { type: [mongoose.Schema.Types.ObjectId], ref: "EventSeries", required: true },
 
-        inflation_assumption: { type: Number, required: true },
+        infl_type:{ type: String, required: true },       //fixed, normal, uniform
+	    infl_value: { type: Number, required: false },
+        infl_mean: { type: Number, required: false },
+        infl_stdev: { type: Number, required: false }, 
+        infl_min: { type: Number, required: false },
+        infl_max: { type: Number, required: false },
+
         init_limit_pretax: { type: mongoose.Schema.Types.Decimal128, required: true },
         init_limit_aftertax: { type: mongoose.Schema.Types.Decimal128, required: true },
         spending_strategy: { type: [mongoose.Schema.Types.ObjectId], ref: "EventSeries", required: true },
