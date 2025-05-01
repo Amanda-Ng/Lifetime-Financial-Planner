@@ -28,6 +28,13 @@
     margin-top: 30px;
 }
 
+.optionLine2 {
+    display: flex;
+    gap: 100px;
+    margin-left: 50px;
+    margin-top: 30px;
+}
+
 #genSimLine {
     justify-content: space-between;
 }
@@ -49,4 +56,16 @@
     background-color: #F0F1ED;
     padding: 10px;
     border-radius: 15px;
+}
+
+.chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.chart-wrapper {
+    height: 400px;
 }
