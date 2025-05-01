@@ -29,6 +29,22 @@ exports.exportScenarioToYAML = async (req, res) => {
         const user_id = req.user.userId;
         const userInvestments = await Investment.find({ userId: user_id }).populate("investmentType");
 
+        const mapDistribution = (type, obj) => {
+            if (type.includes("fixed")) {
+                return { type: "fixed", value: obj };
+            } else if (type.includes("normal") || type.includes("random")) {
+                return { type: "normal", mean: obj.mean, stdev: obj.std };
+            } else if (type.includes("uniform")) {
+                return { type: "uniform", lower: obj.min, upper: obj.max };
+            } else if (type.includes("sameAsAnotherEvent")) {
+                return { type: "startWith", eventSeries: obj.anotherEventSeries };
+            } else if (type.includes("yearAfterAnotherEvent")) {
+                return { type: "startAfter", eventSeries: obj.anotherEventSeries };
+            } else {
+                return { type: "fixed", value: 0 };
+            }
+        };
+
         // Extract unique investment types from the populated investments
         const investmentTypesSet = new Map();
         scenario.investments.forEach(inv => {
@@ -85,22 +101,6 @@ exports.exportScenarioToYAML = async (req, res) => {
         const buildEventSeriesYaml = (eventSeriesList, userInvestments) => {
             // Build a map from investment index to name
             const investmentIdToName = (inv) => inv.investmentType?.name || "Unnamed Investment";
-
-            const mapDistribution = (type, obj) => {
-                if (type.includes("fixed")) {
-                    return { type: "fixed", value: obj };
-                } else if (type.includes("normal") || type.includes("random")) {
-                    return { type: "normal", mean: obj.mean, stdev: obj.std };
-                } else if (type.includes("uniform")) {
-                    return { type: "uniform", lower: obj.min, upper: obj.max };
-                } else if (type.includes("sameAsAnotherEvent")) {
-                    return { type: "startWith", eventSeries: obj.anotherEventSeries };
-                } else if (type.includes("yearAfterAnotherEvent")) {
-                    return { type: "startAfter", eventSeries: obj.anotherEventSeries };
-                } else {
-                    return { type: "fixed", value: 0 };
-                }
-            };
 
             const buildAllocationMap = (allocationArray) => {
                 const result = {};
@@ -200,6 +200,15 @@ exports.exportScenarioToYAML = async (req, res) => {
                 type: "fixed",
                 value: scenario.inflation_assumption,
             },
+
+            inflationAssumption: mapDistribution(scenario.infl_type, {
+                value: scenario.infl_value,
+                mean: scenario.infl_mean,
+                std: scenario.infl_stdev,
+                min: scenario.infl_min,
+                max: scenario.infl_max,
+            }),
+
             afterTaxContributionLimit: parseFloat(scenario.init_limit_aftertax.toString()),
 
             spendingStrategy: Array.isArray(scenario.spending_strategy)
