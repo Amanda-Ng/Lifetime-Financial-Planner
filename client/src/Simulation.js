@@ -298,7 +298,7 @@ function Simulation() {
 
                             const scenario = [...editableScenarios, ...readOnlyScenarios].find(sc => sc._id === scenarioId);
                             if (scenario?.financial_goal) {
-                                setFinancialGoal(scenario.financial_goal.$numberDecimal);
+                                setFinancialGoal(scenario.financial_goal);
                             } else {
                                 setFinancialGoal(null);
                             }

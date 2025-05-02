@@ -15,13 +15,13 @@ describe('Scenario Form', () => {
                 {
                     _id: 'investment1',
                     investmentType: { name: 'Stocks' },
-                    value: { $numberDecimal: '10000' },
+                    value: 10000,
                     tax_status: 'pre-tax retirement',
                 },
                 {
                     _id: 'investment2',
                     investmentType: { name: 'Bonds' },
-                    value: { $numberDecimal: '5000' },
+                    value: 5000,
                     tax_status: 'taxable',
                 },
             ],
@@ -72,7 +72,7 @@ describe('Scenario Form', () => {
         cy.get('input[name="birthYear"]').type('1980');
         cy.get('input[name="financialGoal"]').type('1000000');
         cy.get('input[name="stateResidence"]').type('California');
-        cy.get('input[name="inflation"]').type('2');
+        cy.get('input[name="infl_value"]').type('2');
         cy.get('input[name="pre_contribLimit"]').type('19500');
         cy.get('input[name="after_contribLimit"]').type('6000');
 
