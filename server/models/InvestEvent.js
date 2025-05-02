@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 const InvestEventSchema = new Schema(
     {
         asset_allocation: { type: Map, required: true },
-        max_cash: { type: mongoose.Schema.Types.Decimal128, required: true },
+        max_cash: { type: Number, required: true },
     },
     { timestamps: true }
 );

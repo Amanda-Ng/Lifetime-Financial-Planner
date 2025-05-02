@@ -58,23 +58,23 @@ exports.exportScenarioToYAML = async (req, res) => {
             const returnDist = it.expected_annual_return_mean && it.expected_annual_return_stdev
                 ? {
                     type: "normal",
-                    mean: parseFloat(it.expected_annual_return_mean.toString()),
-                    stdev: parseFloat(it.expected_annual_return_stdev.toString()),
+                    mean: it.expected_annual_return_mean,
+                    stdev: it.expected_annual_return_stdev,
                 }
                 : {
                     type: "fixed",
-                    value: parseFloat(it.expected_annual_return?.toString() ?? 0),
+                    value: it.expected_annual_return ?? 0,
                 };
 
             const incomeDist = it.expected_annual_income_mean && it.expected_annual_income_stdev
                 ? {
                     type: "normal",
-                    mean: parseFloat(it.expected_annual_income_mean.toString()),
-                    stdev: parseFloat(it.expected_annual_income_stdev.toString()),
+                    mean: it.expected_annual_income_mean,
+                    stdev: it.expected_annual_income_stdev,
                 }
                 : {
                     type: "fixed",
-                    value: parseFloat(it.expected_annual_income?.toString() ?? 0),
+                    value: it.expected_annual_income ?? 0,
                 };
 
             return {
@@ -82,7 +82,7 @@ exports.exportScenarioToYAML = async (req, res) => {
                 description: it.description ?? "",
                 returnAmtOrPct: it.returnType?.includes("Percent") ? "percent" : "amount",
                 returnDistribution: returnDist,
-                expenseRatio: parseFloat(it.expense_ratio.toString()),
+                expenseRatio: it.expense_ratio,
                 incomeAmtOrPct: it.incomeType?.includes("Percent") ? "percent" : "amount",
                 incomeDistribution: incomeDist,
                 taxability: it.taxability === "taxable",
@@ -92,7 +92,7 @@ exports.exportScenarioToYAML = async (req, res) => {
         // Format Investments
         const investments = scenario.investments.map(inv => ({
             investmentType: inv.investmentType.name,
-            value: parseFloat(inv.value.toString()),
+            value: inv.value,
             taxStatus: inv.tax_status,
             id: inv._id.toString()
         }));
@@ -209,7 +209,7 @@ exports.exportScenarioToYAML = async (req, res) => {
                 max: scenario.infl_max,
             }),
 
-            afterTaxContributionLimit: parseFloat(scenario.init_limit_aftertax.toString()),
+            afterTaxContributionLimit: scenario.init_limit_aftertax,
 
             spendingStrategy: Array.isArray(scenario.spending_strategy)
                 ? scenario.spending_strategy.map(ev => ev.name)
@@ -233,7 +233,7 @@ exports.exportScenarioToYAML = async (req, res) => {
                 ? scenario.roth_conversion_strategy.map(inv => inv._id.toString())
                 : [],
 
-            financialGoal: parseFloat(scenario.financial_goal.toString()),
+            financialGoal: scenario.financial_goal,
             residenceState: scenario.state_of_residence,
         };
 
