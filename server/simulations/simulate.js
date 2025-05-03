@@ -33,7 +33,7 @@ const {
     checkLifeExpectancy
 } = require("./algorithms");
 
-let testScenario = Scenario.findOne({ name: "Test Scenario2" })
+let testScenario = Scenario.findOne({ name: "Test Simulation" })
     .populate({
         path: "investments", // Populate investments
         populate: {
@@ -81,18 +81,29 @@ async function runSimulation(scenario, age, username) {
     logStream.write(`Simulation log for user: ${username}\n`);
     logStream.write(`Start time: ${new Date().toISOString()}\n\n`);
 
+    // Log initial investment values
+    console.log("[DEBUG] Initial Investments:");
+    scenario.investments.forEach((investment) => {
+        console.log(`[DEBUG] Investment: Type=${investment.investmentType.name}, Value=${investment.value}`);
+    });
+
     // Step 0: Initialize random scenario/ event parameters
+    const currentYear = new Date().getFullYear();
+    
     console.log("Initializing scenario parameters...");
-    setScenarioLifeExpectancy(scenario);
+    setScenarioLifeExpectancy(scenario, currentYear);
     scenario.event_series.forEach((event) => {
         setEventParams(event, scenario);
     });
 
-    const currentYear = new Date().getFullYear();
+    
     const endYear = Math.max(
         scenario.birth_year + scenario.life_expectancy,
         scenario.birth_year_spouse + scenario.life_expectancy_spouse
     );
+
+    console.log(`Simulation will run from ${currentYear} to ${endYear}.`);
+    logStream.write(`Simulation will run from ${currentYear} to ${endYear}.\n`);
 
     for (let year = currentYear; year <= endYear; year++) {
         console.log(`Processing year: ${year}`);
@@ -156,7 +167,7 @@ async function runSimulation(scenario, age, username) {
         const investEvents = scenario.event_series.filter(
             (event) => event.eventType === "Invest" && event.startYear === year
         );
-        runScheduled_investEvent(investEvents, scenario);
+        runScheduled_investEvent(investEvents, scenario, year);
         logStream.write("Ran scheduled invest events.\n");
 
         // Step 10: Run rebalance events

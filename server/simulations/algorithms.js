@@ -51,33 +51,33 @@ function totalIncome_events(scenario, year) {
     });
     return totalIncome;
 }
-function parseTaxBrackets(taxBrackets) {
+function parseTaxBrackets(taxBrackets, inflationRate = 0) {
     const parsedBrackets = [];
     taxBrackets.forEach((value, key) => {
         const bounds = key.split(",");
         const lowerBound = parseFloat(bounds[0]);
         const upperBound = parseFloat(bounds[1]);
         parsedBrackets.push({
-            lower_bound: lowerBound,
-            upper_bound: upperBound,
+            lower_bound: lowerBound * (1 + inflationRate / 100),
+            upper_bound: upperBound * (1 + inflationRate / 100),
             value: value,
         });
     });
     return parsedBrackets;
 }
 
-async function queryFederalTaxBrackets(targetYear, marital_status) {
-    const past_year_taxes = await FederalTaxes.findOne({ year: targetYear }); // get the tax data for the year that just passed
+async function queryFederalTaxBrackets(scenario, targetYear) {
+    const past_year_taxes = await FederalTaxes.findOne({ year: scenario.startYear }); // get the tax data for the year that just passed
     const tax_brackets = {};
     // get tax brackets based on the user's marital status
-    if (marital_status.toLowerCase() === "single") {
-        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.single_federal_income_tax);
-        tax_brackets["std"] = past_year_taxes.single_standard_deductions;
-        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.single_capital_gains_tax);
+    if (scenario.marital_status.toLowerCase() === "single") {
+        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.single_federal_income_tax, scenario.inflation[targetYear]);
+        tax_brackets["std"] = past_year_taxes.single_standard_deductions * (1 + scenario.inflation[targetYear] / 100);
+        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.single_capital_gains_tax, scenario.inflation[targetYear]);
     } else if (marital_status.toLowerCase() === "married") {
-        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.married_federal_income_tax);
-        tax_brackets["std"] = past_year_taxes.married_standard_deductions;
-        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.married_capital_gains_tax);
+        tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.married_federal_income_tax, scenario.inflation[targetYear]);
+        tax_brackets["std"] = past_year_taxes.married_standard_deductions * (1 + scenario.inflation[targetYear] / 100);
+        tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.married_capital_gains_tax, scenario.inflation[targetYear]);
     } else {
         // if not single or married, just throw an error (this should not happen)
         throw new Error("Invalid marital status");
@@ -85,8 +85,8 @@ async function queryFederalTaxBrackets(targetYear, marital_status) {
     return tax_brackets;
 }
 
-async function calculateFederalTaxes(scenario, currentYear) {
-    let tax_brackets = await queryFederalTaxBrackets(currentYear, scenario.marital_status); // get the tax brackets for the current year
+async function calculateFederalTaxes(scenario, targetYear) {
+    let tax_brackets = await queryFederalTaxBrackets(scenario, targetYear); // get the tax brackets for the current year
 
     let taxable_income = calcTaxableIncome(scenario); //REVIEW: is this better to calc again instead of read from saved value? cuz it could possibly be undefined// scenario.totalTaxedIncome; // get the total taxable income (done in another function)
     let total_tax = 0;
@@ -157,10 +157,11 @@ function setEventParams(event, rng = Math.random) {
     //     };
     // }
     // return eventRandomMap[event._id];
-
-    event["startYear"] = getEventField(event, "startYear", event.startYearType, rng);
-    event["duration"] = getEventField(event, "duration", event.durationType, rng);
-    event["expectedChange"] = getEventField(event, "expectedChange", event.expectedChangeType, rng);
+    if (event["startYear"] == null || event["duration"] == null || event["expectedChange"] == null) {
+        event["startYear"] = getEventField(event, "startYear", event.startYearType, rng);
+        event["duration"] = getEventField(event, "duration", event.durationType, rng);
+        event["expectedChange"] = getEventField(event, "expectedChange", event.expectedChangeType, rng);
+    }
 
     return {
         startYear: event.startYear, 
@@ -202,17 +203,18 @@ function capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function inflationAdjusted(initialAmount, inflationRate, yearsElapsed) {
-    return initialAmount * Math.pow(1 + (inflationRate ?? 0) / 100, yearsElapsed);
+
+function inflationAdjusted(initialAmount, inflationRate) { //FIXME: Inflation changes per year (yearsElapse = 1)
+    return initialAmount * (1 + inflationRate / 100);
 }
 
-function setScenarioLifeExpectancy(scenario, rng = Math.random) {
+function setScenarioLifeExpectancy(scenario, currentYear, rng = Math.random) {
     const getLE = (mean, std, fixed) => {
-        if (fixed !== undefined) return fixed;
-        if (mean !== undefined && std !== undefined) return normalSample(mean, std, rng);
-        return null;
+        if (mean !== null && std !== null) return normalSample(mean, std, rng);
+        if (fixed !== null) return fixed;
+        return 0;
     };
-
+    scenario.startYear = currentYear;
     scenario.life_expectancy = getLE(scenario.life_expectancy_mean, scenario.life_expectancy_stdv, scenario.life_expectancy);
     scenario.life_expectancy_spouse = getLE(scenario.life_expectancy_mean_spouse, scenario.life_expectancy_stdv_spouse, scenario.life_expectancy_spouse);
 
@@ -222,16 +224,16 @@ function setScenarioLifeExpectancy(scenario, rng = Math.random) {
     };
 }
 
-function computeInvestmentValue(value, baseValue, type, rng = Math.random) {
+function computeInvestmentValue(investmentType, baseValue, type, rng = Math.random) {
     switch (type) {
         case "fixedAmount":
-            return parseFloat(value);
+            return parseFloat(investmentType.expected_annual);
         case "fixedPercentage":
-            return (parseFloat(value) / 100) * baseValue;
+            return (parseFloat(investmentType.expected_annual) / 100) * baseValue;
         case "randomAmount":
-            return normalSample(value.mean, value.stddev, rng);
+            return normalSample(investmentType.expected_annual_mean, investmentType.expected_annual_stdev, rng);
         case "randomPercentage":
-            return (normalSample(value.mean, value.stddev, rng) / 100) * baseValue;
+            return (normalSample(investmentType.expected_annual_mean, investmentType.expected_annual_stdev, rng) / 100) * baseValue;
         default:
             throw new Error(`Unknown value type: ${type}`);
     }
@@ -240,8 +242,8 @@ function computeInvestmentValue(value, baseValue, type, rng = Math.random) {
 function updateInvestments(scenario, rng = Math.random) {
     scenario.investments.forEach((investment) => {
         const investmentType = investment.investmentType;
-        const investmentValue = computeInvestmentValue(investmentType.expected_annual_return, investment.value, investmentType.returnType, rng);
-        const incomeValue = computeInvestmentValue(investmentType.expected_annual_income, investment.value, investmentType.incomeType, rng);
+        const investmentValue = computeInvestmentValue({expected_annual: investmentType.expected_annual_return, expected_annual_mean: investmentType.expected_annual_return_mean, expected_annual_stdev: investmentType.expected_annual_return_stdev}, investment.value, investmentType.returnType, rng);
+        const incomeValue = computeInvestmentValue({expected_annual: investmentType.expected_annual_income, expected_annual_mean: investmentType.expected_annual_income_mean, expected_annual_stdev: investmentType.expected_annual_income_stdev}, investment.value, investmentType.incomeType, rng);
 
         investment["calculatedAnnualReturn"] = investmentValue;
         investment["calculatedAnnualIncome"] = incomeValue;
@@ -285,39 +287,74 @@ function updateInvestments(scenario, rng = Math.random) {
 
 //return amt of capital gains tax that should be paid
 async function calculateCapitalGainsTax(scenario, year) {
-    let tax_brackets = await queryFederalTaxBrackets(year, scenario.marital_status); // get the tax brackets for the current year
+    let tax_brackets = await queryFederalTaxBrackets(scenario, year);
+    let netCapitalGain = 0;
 
-    // scenario.capitalsSold = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" && investment.investmentType.name !== "Cash"); // get the capital gains investments that were sold
-    scenario.capitalsSold = {} // initialize capitalsSold for the year
-    scenario.capitalsSold[year] = [] // initialize capitalsSold for the year
-
-    let netCapitalGain  = 0;   
+    console.log('capitals sold:', scenario.capitalsSold[year]);
     for (const capital of scenario.capitalsSold[year] || []) {
-        const expectedValue = capital.withdrawalOrigin.value * capital.percentSold; // value already inflation-adjusted
+        const expectedValue = capital.withdrawalOrigin.value * capital.percentSold;
         const invest = await Investment.findById(capital.withdrawalOrigin._id).exec();
-        netCapitalGain = expectedValue - invest.value; // current - initial value
-    }  
-    let total_tax = 0; 
-    // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
-    for (const {lower_bound, upper_bound, value} of tax_brackets["cgt"]) {
-        if (netCapitalGain === 0) { 
-            break;  // if no more taxable gains, break
-        } 
-        if (taxable_income >= lower_bound && taxable_income <= upper_bound) {
-            // if remaining taxable gain is between the bounds, then that is all that is left --> taxable gains = 0 afterwards so break
+        const gain = expectedValue - invest.value;
+        netCapitalGain += gain;
+        console.log(`[DEBUG] Capital Gains: Investment=${capital.withdrawalOrigin.investmentType.name}, Sold=${expectedValue}, Initial=${invest.value}, Gain=${gain}`);
+    }
+
+    let total_tax = 0;
+    for (const { lower_bound, upper_bound, value } of tax_brackets["cgt"]) {
+        if (netCapitalGain === 0) break;
+
+        if (netCapitalGain >= lower_bound && netCapitalGain <= upper_bound) {
             const tax = netCapitalGain * (value / 100);
             total_tax += tax;
-            netCapitalGain -= taxable_income;
+            console.log(`[DEBUG] Capital Gains Tax: Bracket=[${lower_bound}, ${upper_bound}], Rate=${value}, Tax=${tax}`);
+            netCapitalGain = 0;
             break;
         } else if (netCapitalGain > upper_bound) {
-            // exceeds upper bound of this bracket --> take the maximum value, calculate and subtract
             const tax = upper_bound * (value / 100);
-            total_tax += tax; 
+            total_tax += tax;
             netCapitalGain -= upper_bound;
+            console.log(`[DEBUG] Capital Gains Tax: Bracket=[${lower_bound}, ${upper_bound}], Rate=${value}, Tax=${tax}`);
         }
-    } 
+    }
+
     return total_tax;
 }
+
+// //return amt of capital gains tax that should be paid
+// async function calculateCapitalGainsTax(scenario, year) {
+//     let tax_brackets = await queryFederalTaxBrackets(year, scenario.marital_status); // get the tax brackets for the current year
+
+//     // scenario.capitalsSold = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" && investment.investmentType.name !== "Cash"); // get the capital gains investments that were sold
+//     scenario.capitalsSold = {} // initialize capitalsSold for the year
+//     scenario.capitalsSold[year] = [] // initialize capitalsSold for the year
+
+//     let netCapitalGain  = 0;   
+//     for (const capital of scenario.capitalsSold[year] || []) {
+//         const expectedValue = capital.withdrawalOrigin.value * capital.percentSold; // value already inflation-adjusted
+//         const invest = await Investment.findById(capital.withdrawalOrigin._id).exec();
+//         netCapitalGain = expectedValue - invest.value; // current - initial value
+//     }  
+//     let total_tax = 0; 
+//     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
+//     for (const {lower_bound, upper_bound, value} of tax_brackets["cgt"]) {
+//         if (netCapitalGain === 0) { 
+//             break;  // if no more taxable gains, break
+//         } 
+//         if (taxable_income >= lower_bound && taxable_income <= upper_bound) {
+//             // if remaining taxable gain is between the bounds, then that is all that is left --> taxable gains = 0 afterwards so break
+//             const tax = netCapitalGain * (value / 100);
+//             total_tax += tax;
+//             netCapitalGain -= taxable_income;
+//             break;
+//         } else if (netCapitalGain > upper_bound) {
+//             // exceeds upper bound of this bracket --> take the maximum value, calculate and subtract
+//             const tax = upper_bound * (value / 100);
+//             total_tax += tax; 
+//             netCapitalGain -= upper_bound;
+//         }
+//     } 
+//     return total_tax;
+// }
 
 function runIncomeEvents(scenario, year, rng = Math.random) {
     let totalIncome = 0;
@@ -326,7 +363,7 @@ function runIncomeEvents(scenario, year, rng = Math.random) {
     for (const event of events) {
         const { startYear, duration, expectedChange } = setEventParams(event, rng);
         if (year >= startYear && year < startYear + duration) {
-            const inflationAdjustedAmount = inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - startYear);
+            const inflationAdjustedAmount = inflationAdjusted(event.initialAmount, scenario.inflation[year]);
             totalIncome += inflationAdjustedAmount + expectedChange;
         }
     }
@@ -346,7 +383,7 @@ async function queryRMDTable(year) {
 
 async function performRMD(scenario, retirementInvestment, age, year) {
     const rmdTable = await queryRMDTable(year); // Query RMD table for the given year
-    const expectedAge = age + year - new Date().getFullYear();
+    const expectedAge = age + year - scenario.startYear; // Calculate expected age based on the current year and the user's birth year
     const rmdFactor = rmdTable.get(expectedAge.toString());
     if (!rmdFactor) {
         throw new Error(`RMD factor for age ${expectedAge} not found in year ${year}.`);
@@ -408,7 +445,7 @@ function runRothConversion(scenario, year) {
     let taxableIncome = calcTaxableIncome(scenario);
 
     // Query federal tax brackets from database using the current year
-    const taxBrackets = queryFederalTaxBrackets(year);
+    const taxBrackets = queryFederalTaxBrackets(scenario, year);
 
     let remainingAmtToConvert = 0;
 
@@ -582,12 +619,12 @@ function pay_nonDiscretionary_helper(scenario, required_payment,year){
 
 async function pay_nonDiscretionaryTaxes(scenario, year) {
     let required_payment = 0;
-    const expenses = scenario.event_series.filter((event) => event.eventType === "expense");
+    const expenses = getExpenses_byYear(scenario, year);
     for (const expense of expenses) {
         if (!expense.isDiscretionary) {
             let adjustedExpense;
             if (expense.inflationAdjustment) {
-                adjustedExpense = inflationAdjusted(expense.initialAmount, scenario.inflation_assumption, year - scenario.birth_year);
+                adjustedExpense = inflationAdjusted(expense.initialAmount, scenario.inflation[year]);
             } else {
                 adjustedExpense = expense.initialAmount;
             }
@@ -595,7 +632,9 @@ async function pay_nonDiscretionaryTaxes(scenario, year) {
         }
     }
     //!! need to addcalcStateTaxes(user,year)     
+    console.log("required_payment:", required_payment);
     required_payment += await calculateFederalTaxes(scenario, year-1)
+    console.log("helper")
     pay_nonDiscretionary_helper(scenario, required_payment,year) 
     required_payment=calculateCapitalGainsTax(scenario, year)
     pay_nonDiscretionary_helper(scenario, required_payment,year)
@@ -630,8 +669,7 @@ function pay_discretionary(scenario, user, year){
     for (const expense of expenses) { 
         let adjustedExpense 
         if (expense.inflationAdjustment) {
-            yearsElapsed = year - new Date().getFullYear();
-            adjustedExpense = inflationAdjusted(expense.initialAmount, expense.inflationAdjustment, yearsElapsed);
+            adjustedExpense = inflationAdjusted(expense.initialAmount, scenario.inflation[year]);
         } else {
             adjustedExpense = expense.initialAmount;
         }    
@@ -702,7 +740,7 @@ function pay_discretionary(scenario, user, year){
 //allocate excess cash for all InvestEvents
 //stop running when there's no excess cash and return  
 //return 0 for success 
-async function runScheduled_investEvent(InvestEvents, scenario){ 
+async function runScheduled_investEvent(InvestEvents, scenario, year){ 
     const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash"); 
     for (const InvestEvent of InvestEvents) {
         let excessCash;
@@ -741,9 +779,9 @@ async function runScheduled_investEvent(InvestEvents, scenario){
                 } 
             }
         }  
-        let startYear = new Date().getFullYear() 
+        let startYear = scenario.startYear; // scenario.startYear is the year the simulation starts
         let endYear = scenario.birth_year+scenario.life_expectancy 
-        let yearsLapsed = scenario.year - startYear  
+        let yearsLapsed = year - startYear // REVIEW scenario.year - startYear  
         for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
             let investment = InvestEvent.initialAllocation[i].investment
             let adjustedPercent = initialAllocation[i].percent  //will account for linear change in glidepath
@@ -755,9 +793,9 @@ async function runScheduled_investEvent(InvestEvents, scenario){
             }    
             if (investment.tax_status === "pre-tax retirement" || investment.tax_status === "after-tax retirement") { 
                 if (investment.tax_status === "pre-tax retirement") {
-                    adjustedAnnualLimit = inflationAdjusted(scenario.init_limit_pretax, scenario.inflationAssumption, yearsLapsed);
+                    adjustedAnnualLimit = inflationAdjusted(scenario.init_limit_pretax, scenario.inflation[year]); // REVIEW: should it be startYear or year?
                 } else {
-                    adjustedAnnualLimit = inflationAdjusted(scenario.init_limit_aftertax, scenario.inflationAssumption, yearsLapsed);
+                    adjustedAnnualLimit = inflationAdjusted(scenario.init_limit_aftertax, scenario.inflation[year]); // REVIEW: should it be startYear or year?
                 }
             }
             let investAmt;
