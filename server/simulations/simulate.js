@@ -34,7 +34,8 @@ const {
     getExpenses_byYear,
     resetEarlyWithdrawalTax,
     getEarlyWithdrawalTax,
-    calculateFederalTaxes
+    calculateFederalTaxes,
+    calculateTotalInvestmentValue
 } = require("./algorithms");
 
 let testScenario = Scenario.findOne({ name: "Test Scenario2" })
@@ -179,8 +180,8 @@ async function runSimulation(scenario, age, username) {
         });
 
         // Used for line chart of probability of success
-        const totalInvestmentValue = scenario.investments.reduce((sum, inv) => sum + Number(inv.value), 0);
-        yearlyInvestments.push({ year, totalInvestmentValue: Number.isFinite(totalInvestmentValue) ? totalInvestmentValue : 0 });
+        const totalInvestmentValue = calculateTotalInvestmentValue(scenario.investments);
+        yearlyInvestments.push({ year, totalInvestmentValue });
 
         // Used for shaded line chart
         const totalExpenses = getExpenses_byYear(scenario, year).reduce((sum, exp) => sum + exp.initialAmount, 0);

@@ -510,7 +510,7 @@ function withdrawal_next(withdrawStrat) {
 //return boolean: if investment is a capital
 function isCapital(investment) {
     //any non retirement that's not cash
-    if (investment.investmentType.name !== "cash" && investment.tax_status === "non-retirement") {
+    if (investment.investmentType.name !== "Cash" && investment.tax_status === "non-retirement") {
         return true;
     } else {
         return false;
@@ -816,6 +816,10 @@ function rebalanceInvestments(scenario, rebalanceEvent) {
     });
 }
 
+function calculateTotalInvestmentValue(investments) {
+    return investments.reduce((sum, investment) => sum + investment.value, 0);
+}
+
 module.exports = {
     checkLifeExpectancy,
     totalIncome_events,
@@ -847,5 +851,6 @@ module.exports = {
     runScheduled_investEvent,
     rebalanceInvestments,
     resetEarlyWithdrawalTax,
-    getEarlyWithdrawalTax
+    getEarlyWithdrawalTax,
+    calculateTotalInvestmentValue
 };
