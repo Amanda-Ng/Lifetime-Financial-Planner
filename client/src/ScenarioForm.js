@@ -31,8 +31,15 @@ function ScenarioForm() {
         withdrawStrat: [] /*list, should load investments dynamically*/,
         roth_conversion_strategy: [],
         rmd_strategy: [],
-        inflation: "",
         pre_contribLimit: "",
+        //inflation  
+        infl_type: "fixed",//fixed, normal, uniform 
+        infl_value: "",
+        infl_mean: "",
+        infl_stdev: "",
+        infl_min: "",
+        infl_max: "",
+
         /*Roth conversion*/
         target_taxBrac: 0 /*load dynamically withh scraped tax brackets */,
         has_rothOptimizer: "",
@@ -343,7 +350,7 @@ function ScenarioForm() {
                 name: scenarioObject.name || "",
                 birthYear: scenarioObject.birth_year || "",
                 birthYear_spouse: scenarioObject.birth_year_spouse || "",
-                financialGoal: scenarioObject.financial_goal?.$numberDecimal || "",
+                financialGoal: scenarioObject.financial_goal ?? "",
                 stateResidence: scenarioObject.state_of_residence || "",
                 maritalStatus: scenarioObject.marital_status || "single",
                 lifeExpectancy_value: scenarioObject.life_expectancy || "",
@@ -357,8 +364,8 @@ function ScenarioForm() {
                 spendingStrat,
                 withdrawStrat,
                 inflation: scenarioObject.inflation_assumption || "",
-                pre_contribLimit: scenarioObject.init_limit_pretax?.$numberDecimal || "",
-                after_contribLimit: scenarioObject.init_limit_aftertax?.$numberDecimal || "",
+                pre_contribLimit: scenarioObject.init_limit_pretax ?? "",
+                after_contribLimit: scenarioObject.init_limit_aftertax ?? "",
                 investmentList,
                 events,
             }));
@@ -575,7 +582,7 @@ function ScenarioForm() {
                         Select Investments
                     </option>
                     {scenario.userInvestments.map((ele, index) =>
-                        <option key={index} value={ele._id}>{ele.investmentType.name}: ${ele.value.$numberDecimal}</option>
+                        <option key={index} value={ele._id}>{ele.investmentType.name}: ${ele.value}</option>
                     )
                     }
                 </select>
@@ -583,7 +590,7 @@ function ScenarioForm() {
                 <ul >
                     {(scenario.investmentList || []).map(inv => (
                         <li key={inv._id} onClick={() => handleRemoveInvestment(inv._id)} >
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                            {inv.investmentType.name}: ${inv.value}
                         </li>
                     ))}
                 </ul>
@@ -647,7 +654,7 @@ function ScenarioForm() {
                     </option>
                     {(scenario.investmentList || []).map(inv => (
                         <option key={inv._id} value={inv._id}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                            {inv.investmentType.name}: ${inv.value}
                         </option>
                     ))}
                 </select>
@@ -655,7 +662,7 @@ function ScenarioForm() {
                 <ul>
                     {(scenario.withdrawStrat || []).map(inv => (
                         <li key={inv._id} onClick={() => handleRemoveWithdrawStrat(inv._id)}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                            {inv.investmentType.name}: ${inv.value}
                         </li>
                     ))}
                 </ul>
@@ -665,7 +672,73 @@ function ScenarioForm() {
                 <label>
                     Inflation<span className="required"> *</span>
                 </label>
-                <input type="number" name="inflation" value={scenario.inflation} onChange={handleChange} placeholder="%" required />
+                <div className="radio-group2">
+                    {/*opt: fixed*/}
+                    <div className="radioOpt">
+                        <label>
+                            <input
+                                className="radioInput"
+                                type="radio"
+                                name="infl_type"
+                                value="fixed"
+                                checked={scenario.infl_type === "fixed"}
+                                onChange={handleChange}
+                            />
+                            Fixed Value
+                        </label>
+                        {scenario.infl_type === "fixed" && (
+                            <>
+                                <input type="number" name="infl_value" value={scenario.infl_value} onChange={handleChange} required />
+                            </>
+                        )}
+                    </div>
+                    {/*opt: normal distribution*/}
+                    <label className="radioInput">
+                        <input
+                            type="radio"
+                            name="infl_type"
+                            value="normal"
+                            checked={scenario.infl_type === "normal"}
+                            onChange={handleChange}
+                        />
+                        Sample from normal distribution
+                    </label>
+                    {scenario.infl_type === "normal" && (
+                        <>
+                            <div className="radioOpt">
+                                <label className="radioInput">Mean</label>
+                                <input type="number" name="infl_mean" value={scenario.infl_mean} onChange={handleChange} required />
+                            </div>
+                            <div className="radioOpt">
+                                <label className="radioInput">Standard Deviation</label>
+                                <input type="number" name="infl_stdev" value={scenario.infl_stdev} onChange={handleChange} required />
+                            </div>
+                        </>
+                    )}
+                    {/*opt: uniform*/}
+                    <label className="radioInput">
+                        <input
+                            type="radio"
+                            name="infl_type"
+                            value="uniform"
+                            checked={scenario.infl_type === "uniform"}
+                            onChange={handleChange}
+                        />
+                        Sample from uniform distribution
+                    </label>
+                    {scenario.infl_type === "uniform" && (
+                        <>
+                            <div className="radioOpt">
+                                <label className="radioInput">Min</label>
+                                <input type="number" name="infl_min" value={scenario.infl_min} onChange={handleChange} required />
+                            </div>
+                            <div className="radioOpt">
+                                <label className="radioInput">Max</label>
+                                <input type="number" name="infl_max" value={scenario.infl_max} onChange={handleChange} required />
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
             {/*pre-tax retirement account contribution limit*/}
             <div>
@@ -741,7 +814,7 @@ function ScenarioForm() {
                                     <option value="" disabled>Select a pre-tax investment</option>
                                     {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
                                         <option key={inv._id} value={inv._id}>
-                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                                            {inv.investmentType.name}: ${inv.value}
                                         </option>
                                     ))}
                                 </select>
@@ -749,7 +822,7 @@ function ScenarioForm() {
                                 <ul>
                                     {(scenario.roth_conversion_strategy || []).map(inv => (
                                         <li key={inv._id} onClick={() => handleRemoveRothConversionStrategy(inv._id)}>
-                                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                                            {inv.investmentType.name}: ${inv.value}
                                         </li>
                                     ))}
                                 </ul>
@@ -765,7 +838,7 @@ function ScenarioForm() {
                     <option value="" disabled>Select a pre-tax investment</option>
                     {(scenario.investmentList || []).filter(inv => inv.tax_status === "pre-tax retirement").map(inv => (
                         <option key={inv._id} value={inv._id}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                            {inv.investmentType.name}: ${inv.value}
                         </option>
                     ))}
                 </select>
@@ -773,7 +846,7 @@ function ScenarioForm() {
                 <ul>
                     {(scenario.rmd_strategy || []).map(inv => (
                         <li key={inv._id} onClick={() => handleRemoveRMDStrategy(inv._id)}>
-                            {inv.investmentType.name}: ${inv.value.$numberDecimal}
+                            {inv.investmentType.name}: ${inv.value}
                         </li>
                     ))}
                 </ul>

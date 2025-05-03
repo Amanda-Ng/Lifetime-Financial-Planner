@@ -15,13 +15,13 @@ describe('Investments Page', () => {
                 {
                     _id: 'investment1',
                     investmentType: { name: 'Stocks' },
-                    value: { $numberDecimal: '10000' },
+                    value: 10000,
                     tax_status: 'pre-tax retirement',
                 },
                 {
                     _id: 'investment2',
                     investmentType: { name: 'Bonds' },
-                    value: { $numberDecimal: '5000' },
+                    value: 5000,
                     tax_status: 'taxable',
                 },
             ],

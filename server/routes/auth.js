@@ -244,7 +244,14 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
 
             investments: req.body.investmentList,
             event_series: req.body.events,
-            inflation_assumption: req.body.inflation,
+            
+            infl_type: req.body.infl_type,
+            infl_value: req.bodyinfl_value,
+            infl_mean: req.body.infl_mean,
+            infl_stdev: req.body.infl_stdev, 
+            infl_min: req.body.infl_min,
+            infl_max:req.body.infl_max,
+
             init_limit_pretax: req.body.pre_contribLimit,
             init_limit_aftertax: req.body.after_contribLimit,
             spending_strategy: req.body.spendingStrat,

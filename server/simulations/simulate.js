@@ -19,18 +19,22 @@ const User = require("../models/User");
 // TP: Generated with Copilot: Prompt: "using the algorithms and the correctly implemented flow from the simulation create a funciton to run the algorithms in the correct order."
 const fs = require("fs");
 const path = require("path");
-const { 
-    runIncomeEvents, 
-    performRMD, 
-    updateInvestments, 
-    runRothConversion, 
-    pay_nonDiscretionaryTaxes, 
-    pay_discretionary, 
-    runScheduled_investEvent, 
+const {
+    runIncomeEvents,
+    performRMD,
+    updateInvestments,
+    runRothConversion,
+    pay_nonDiscretionaryTaxes,
+    pay_discretionary,
+    runScheduled_investEvent,
     rebalanceInvestments,
     setScenarioLifeExpectancy,
     setEventParams,
-    checkLifeExpectancy
+    checkLifeExpectancy,
+    getExpenses_byYear,
+    resetEarlyWithdrawalTax,
+    getEarlyWithdrawalTax,
+    calculateFederalTaxes
 } = require("./algorithms");
 
 let testScenario = Scenario.findOne({ name: "Test Simulation" })
@@ -96,7 +100,10 @@ async function runSimulation(scenario, age, username) {
         setEventParams(event, scenario);
     });
 
-    
+    const yearlyInvestments = [];
+    const yearlyData = [];
+    const yearlyBreakdown = [];
+
     const endYear = Math.max(
         scenario.birth_year + scenario.life_expectancy,
         scenario.birth_year_spouse + scenario.life_expectancy_spouse
@@ -108,6 +115,7 @@ async function runSimulation(scenario, age, username) {
     for (let year = currentYear; year <= endYear; year++) {
         console.log(`Processing year: ${year}`);
         logStream.write(`Year: ${year}\n`);
+        resetEarlyWithdrawalTax();
 
         // Check life expectancy
         const lifeStatus = await checkLifeExpectancy(scenario, year);
@@ -180,6 +188,60 @@ async function runSimulation(scenario, age, username) {
             logStream.write(`Rebalanced investments: ${JSON.stringify(rebalanceEvent)}\n`);
         });
 
+        // Used for line chart of probability of success
+        const totalInvestmentValue = scenario.investments.reduce((sum, inv) => sum + Number(inv.value), 0);
+        yearlyInvestments.push({ year, totalInvestmentValue: Number.isFinite(totalInvestmentValue) ? totalInvestmentValue : 0 });
+
+        // Used for shaded line chart
+        const totalExpenses = getExpenses_byYear(scenario, year).reduce((sum, exp) => sum + exp.initialAmount, 0);
+
+        const earlyWithdrawalTax = getEarlyWithdrawalTax();
+
+        const discretionaryExpenses = getExpenses_byYear(scenario, year).filter(exp => exp.isDiscretionary);
+        const totalInitial = discretionaryExpenses.reduce((sum, exp) => sum + exp.initialAmount, 0);
+        const discretionaryPercentage = totalInitial
+            ? (discretionaryResult / totalInitial) * 100
+            : 0;
+
+        yearlyData.push({
+            year,
+            totalIncome: income,
+            totalExpenses,
+            earlyWithdrawalTax,
+            discretionaryPercentage,
+        });
+
+        // Used for stacked bar chart
+        const federalTaxes = await calculateFederalTaxes(scenario, year);
+
+        const investmentBreakdown = scenario.investments.map((inv) => ({
+            investmentType: inv.investmentType.name,
+            value: inv.value,
+        }));
+
+        const incomeBreakdown = scenario.event_series
+            .filter((event) => event.eventType === "income")
+            .map((event) => ({
+                eventName: event.name,
+                value: inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - event.startYear),
+            }));
+
+        const expenseBreakdown = scenario.event_series
+            .filter((event) => event.eventType === "expense")
+            .map((event) => ({
+                eventName: expense.name,
+                value: expense.initialAmount,
+            }));
+
+        expenseBreakdown.push({ eventName: "Taxes", value: federalTaxes });
+
+        yearlyBreakdown.push({
+            year,
+            investments: investmentBreakdown,
+            income: incomeBreakdown,
+            expenses: expenseBreakdown,
+        });
+
         // Write investment values to CSV
         console.log("Writing investment values to CSV...");
         const investmentValues = scenario.investments.map(inv => Number(inv.value).toFixed(2)).join(",");
@@ -203,6 +265,7 @@ async function runSimulation(scenario, age, username) {
     console.log("Simulation completed.");
     csvStream.end();
     logStream.end();
+    return { yearlyInvestments, yearlyData, yearlyBreakdown };
 }
 
 module.exports = { runSimulation };
