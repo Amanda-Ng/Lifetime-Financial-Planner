@@ -35,7 +35,14 @@ function Simulation() {
     const [useMedianForStacked, setUseMedianForStacked] = useState(true);
     const [aggregationThreshold, setAggregationThreshold] = useState(1000);
     const [stackedChartData, setStackedChartData] = useState(null);
-
+ 
+    //1D charts 
+    const [simulations_1d, setSimulations_1d] = useState(null);
+    const [multiLineCharts_1d, setMultiLineCharts] = useState(null);
+    const [showMultiLineCharts, setShowMultiLineCharts] = useState(false);
+    const [lineCharts_1d, setLineCharts_1d] = useState(null); 
+    const [showLineCharts_1d, setShowLineCharts_1d] = useState(false);
+ 
     useEffect(() => {
         const fetchData = async () => {
             const headers = {
@@ -421,7 +428,7 @@ function Simulation() {
                         </div>
                     </>
                 )}
-
+ 
                 <div className="optionLine" id="genSimLine">
                     <button id="gen_button" onClick={handleGenerate} disabled={!selectedScenarioId || !user}>
                         {isLoading ? "Running..." : "Generate"}
@@ -463,5 +470,5 @@ function Simulation() {
         </div>
     );
 }
-
-export default Simulation;
+ 
+export default Simulation; 
