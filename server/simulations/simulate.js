@@ -29,6 +29,7 @@ const {
     runScheduled_investEvent,
     rebalanceInvestments,
     setInflationRates,
+    inflationAdjusted,
     setScenarioLifeExpectancy,
     setEventParams,
     checkLifeExpectancy,
@@ -100,6 +101,9 @@ async function runSimulation(scenario, age, username) {
     scenario.event_series.forEach((event) => {
         setEventParams(event, scenario);
     });
+    scenario.investments.forEach((investment) => {
+        investment.initialValue = investment.value
+    })
     setInflationRates(scenario);
 
     const yearlyInvestments = [];
@@ -225,14 +229,14 @@ async function runSimulation(scenario, age, username) {
             .filter((event) => event.eventType === "income")
             .map((event) => ({
                 eventName: event.name,
-                value: inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - event.startYear),
+                value: inflationAdjusted(event.initialAmount, scenario.inflation[year]),
             }));
 
         const expenseBreakdown = scenario.event_series
             .filter((event) => event.eventType === "expense")
             .map((event) => ({
-                eventName: expense.name,
-                value: expense.initialAmount,
+                eventName: event.name,
+                value: event.initialAmount,
             }));
 
         expenseBreakdown.push({ eventName: "Taxes", value: federalTaxes });

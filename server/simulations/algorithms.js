@@ -41,7 +41,7 @@ function getEarlyWithdrawalTax() {
     return earlyWithdrawalTaxTotal; // Retrieve the current value of the tax
 }
 
-//run income events series: return total income
+//FIXME This function is not used, there's a new function // run income events series: return total income
 function totalIncome_events(scenario, year) {
     let totalIncome = 0;
     const numYears = year - new Date().getFullYear();
@@ -77,6 +77,7 @@ function parseTaxBrackets(taxBrackets, inflationRate = 0) {
 }
 
 async function queryFederalTaxBrackets(scenario, targetYear) {
+    // console.log(`START YEAR: ${scenario.startYear}`)
     const past_year_taxes = await FederalTaxes.findOne({ year: scenario.startYear - 1 }); // get the tax data for the year that just passed
     const tax_brackets = {};
     // get tax brackets based on the user's marital status
@@ -84,7 +85,7 @@ async function queryFederalTaxBrackets(scenario, targetYear) {
         tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.single_federal_income_tax, scenario.inflation[targetYear]);
         tax_brackets["std"] = past_year_taxes.single_standard_deductions * (1 + scenario.inflation[targetYear] / 100);
         tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.single_capital_gains_tax, scenario.inflation[targetYear]);
-    } else if (marital_status.toLowerCase() === "married") {
+    } else if (scenario.marital_status.toLowerCase() === "married") {
         tax_brackets["fit"] = parseTaxBrackets(past_year_taxes.married_federal_income_tax, scenario.inflation[targetYear]);
         tax_brackets["std"] = past_year_taxes.married_standard_deductions * (1 + scenario.inflation[targetYear] / 100);
         tax_brackets["cgt"] = parseTaxBrackets(past_year_taxes.married_capital_gains_tax, scenario.inflation[targetYear]);
@@ -234,7 +235,7 @@ function setInflationRates(scenario, rng = Math.random) {
 
     scenario.inflation = {}
     for (let i = scenario.startYear; i < scenario.birth_year + scenario.life_expectancy; i++) {
-        scenario.inflation[i] = getRate(scenario);
+        scenario.inflation[i] = scenario.inflation[i-1] * getRate(scenario);
     }
 
     return scenario.inflation;
@@ -325,17 +326,17 @@ function updateInvestments(scenario, rng = Math.random) {
 
 //return amt of capital gains tax that should be paid
 async function calculateCapitalGainsTax(scenario, year) {
-    let tax_brackets = await queryFederalTaxBrackets(year, scenario.marital_status); // get the tax brackets for the current year
-
-    // scenario.capitalsSold = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" && investment.investmentType.name !== "Cash"); // get the capital gains investments that were sold
-    scenario.capitalsSold = {} // initialize capitalsSold for the year
-    scenario.capitalsSold[year] = [] // initialize capitalsSold for the year
+    let tax_brackets = await queryFederalTaxBrackets(scenario, year); // get the tax brackets for the current year
+    let taxable_income = calcTaxableIncome(scenario)
+    // // scenario.capitalsSold = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" && investment.investmentType.name !== "Cash"); // get the capital gains investments that were sold
+    // scenario.capitalsSold = {} // initialize capitalsSold for the year
+    // scenario.capitalsSold[year] = [] // initialize capitalsSold for the year
 
     let netCapitalGain = 0;
     for (const capital of scenario.capitalsSold[year] || []) {
         const expectedValue = capital.withdrawalOrigin.value * capital.percentSold;
-        const invest = await Investment.findById(capital.withdrawalOrigin._id).exec();
-        netCapitalGain = expectedValue - invest.value; // current - initial value
+        // const invest = await Investment.findById(capital.withdrawalOrigin._id).exec();
+        netCapitalGain = expectedValue - capital.withdrawalOrigin.initialValue; // current - initial value
     }
     let total_tax = 0;
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
@@ -611,14 +612,14 @@ function pay_nonDiscretionary_helper(scenario, required_payment, year) {
                     startYear: year,
                     durationType: "fixed",
                     eventType: "expense",
-                    userId: user.googleId,
+                    userId: scenario.userId,
                     initialAmount: required_payment,
                     expectedChangeType: "fixedAmount",
                     expectedChange: 0,
-                    user_spouse_ratio: user.isMarried ? 0.5 : 1
+                    user_spouse_ratio: (scenario.marital_status.toLowerCase() === "married") ? 0.5 : 1 // REVIEW user spouse ratio for non discretionary
                 })
-                scenario.event_series.append(newExpense)
-                return 0
+                scenario.event_series.push(newExpense.toObject())
+                return newExpense.toObject()
             }
             let earlyWithdrawal
             calcAge = year - scenario.birth_year
@@ -793,9 +794,7 @@ function pay_discretionary(scenario, user, year) {
 //allocate excess cash for all InvestEvents
 //stop running when there's no excess cash and return  
 //return 0 for success 
-async function runScheduled_investEvent(InvestEvents, scenario, year){ 
-    const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash"); 
-async function runScheduled_investEvent(InvestEvents, scenario) {
+async function runScheduled_investEvent(InvestEvents, scenario, year) { 
     const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash");
     for (const InvestEvent of InvestEvents) {
         let excessCash;
@@ -837,10 +836,6 @@ async function runScheduled_investEvent(InvestEvents, scenario) {
         let startYear = scenario.startYear; // scenario.startYear is the year the simulation starts
         let endYear = scenario.birth_year+scenario.life_expectancy 
         let yearsLapsed = year - startYear // REVIEW scenario.year - startYear  
-        }
-        let startYear = new Date().getFullYear()
-        let endYear = scenario.birth_year + scenario.life_expectancy
-        let yearsLapsed = scenario.year - startYear
         for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
             let investment = InvestEvent.initialAllocation[i].investment
             let adjustedPercent = initialAllocation[i].percent  //will account for linear change in glidepath
