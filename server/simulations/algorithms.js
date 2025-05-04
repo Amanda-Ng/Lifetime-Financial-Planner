@@ -217,31 +217,31 @@ function capitalize(s) {
 function setInflationRates(scenario, rng = Math.random) {
     function getRate(scenario) {
         switch (scenario.infl_type) {
-                case "fixed":
-                    return scenario["infl_value"];
-                case "normal":
-                    const mean = scenario["infl_mean"];
-                    const std = scenario["infl_stdev"];
-                    return normalSample(mean, std, rng);
-                case "uniform":
-                    const min = scenario["infl_min"];
-                    const max = scenario["infl_max"]
-                    return uniformSample(min, max, rng);
-                default:
-                    // throw new Error(`Unknown distribution type: ${type}`);
-                    return scenario["infl_value"] // Fallback to fixed value
-            }
+            case "fixed":
+                return scenario["infl_value"];
+            case "normal":
+                const mean = scenario["infl_mean"];
+                const std = scenario["infl_stdev"];
+                return normalSample(mean, std, rng);
+            case "uniform":
+                const min = scenario["infl_min"];
+                const max = scenario["infl_max"]
+                return uniformSample(min, max, rng);
+            default:
+                // throw new Error(`Unknown distribution type: ${type}`);
+                return scenario["infl_value"] // Fallback to fixed value
+        }
     }
 
     scenario.inflation = {}
     scenario.inflation[scenario.startYear - 1] = 1; // Set the initial inflation rate for the previous year to 1
     for (let i = scenario.startYear; i < scenario.birth_year + scenario.life_expectancy; i++) {
-        scenario.inflation[i] = scenario.inflation[i-1] * (1 + getRate(scenario) / 100); // Calculate the inflation rate for the current year based on the previous year's rate
+        scenario.inflation[i] = scenario.inflation[i - 1] * (1 + getRate(scenario) / 100); // Calculate the inflation rate for the current year based on the previous year's rate
     }
 
     return scenario.inflation;
-    
-    
+
+
 }
 
 function inflationAdjusted(initialAmount, inflationRate) { //FIXME: Inflation changes per year (yearsElapse = 1)
@@ -282,8 +282,8 @@ function computeInvestmentValue(investmentType, baseValue, type, rng = Math.rand
 function updateInvestments(scenario, rng = Math.random) {
     scenario.investments.forEach((investment) => {
         const investmentType = investment.investmentType;
-        const investmentValue = computeInvestmentValue({expected_annual: investmentType.expected_annual_return, expected_annual_mean: investmentType.expected_annual_return_mean, expected_annual_stdev: investmentType.expected_annual_return_stdev}, investment.value, investmentType.returnType, rng);
-        const incomeValue = computeInvestmentValue({expected_annual: investmentType.expected_annual_income, expected_annual_mean: investmentType.expected_annual_income_mean, expected_annual_stdev: investmentType.expected_annual_income_stdev}, investment.value, investmentType.incomeType, rng);
+        const investmentValue = computeInvestmentValue({ expected_annual: investmentType.expected_annual_return, expected_annual_mean: investmentType.expected_annual_return_mean, expected_annual_stdev: investmentType.expected_annual_return_stdev }, investment.value, investmentType.returnType, rng);
+        const incomeValue = computeInvestmentValue({ expected_annual: investmentType.expected_annual_income, expected_annual_mean: investmentType.expected_annual_income_mean, expected_annual_stdev: investmentType.expected_annual_income_stdev }, investment.value, investmentType.incomeType, rng);
 
         investment["calculatedAnnualReturn"] = investmentValue;
         investment["calculatedAnnualIncome"] = incomeValue;
@@ -584,7 +584,7 @@ function withdrawal_next(withdrawStrat) {
 //return boolean: if investment is a capital
 function isCapital(investment) {
     //any non retirement that's not cash
-    if (investment.investmentType.name !== "cash" && investment.tax_status === "non-retirement") {
+    if (investment.investmentType.name !== "Cash" && investment.tax_status === "non-retirement") {
         return true;
     } else {
         return false;
@@ -682,11 +682,11 @@ async function pay_nonDiscretionaryTaxes(scenario, year) {
     }
     //!! need to addcalcStateTaxes(user,year)     
     console.log("required_payment:", required_payment);
-    required_payment += await calculateFederalTaxes(scenario, year-1)
+    required_payment += await calculateFederalTaxes(scenario, year - 1)
     console.log("helper")
-    pay_nonDiscretionary_helper(scenario, required_payment,year) 
-    required_payment=calculateCapitalGainsTax(scenario, year)
-    pay_nonDiscretionary_helper(scenario, required_payment,year)
+    pay_nonDiscretionary_helper(scenario, required_payment, year)
+    required_payment = calculateCapitalGainsTax(scenario, year)
+    pay_nonDiscretionary_helper(scenario, required_payment, year)
     required_payment += await calculateFederalTaxes(scenario, year - 1)
     pay_nonDiscretionary_helper(scenario, required_payment, year)
     required_payment = calculateCapitalGainsTax(scenario, year)
@@ -798,7 +798,7 @@ function pay_discretionary(scenario, user, year) {
 //allocate excess cash for all InvestEvents
 //stop running when there's no excess cash and return  
 //return 0 for success 
-async function runScheduled_investEvent(InvestEvents, scenario, year) { 
+async function runScheduled_investEvent(InvestEvents, scenario, year) {
     const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash");
     for (const InvestEvent of InvestEvents) {
         let excessCash;
@@ -836,9 +836,9 @@ async function runScheduled_investEvent(InvestEvents, scenario, year) {
                     }
                 }
             }
-        }  
+        }
         let startYear = scenario.startYear; // scenario.startYear is the year the simulation starts
-        let endYear = scenario.birth_year+scenario.life_expectancy 
+        let endYear = scenario.birth_year + scenario.life_expectancy
         let yearsLapsed = year - startYear // REVIEW scenario.year - startYear  
         for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
             let investment = InvestEvent.initialAllocation[i].investment
@@ -895,7 +895,9 @@ function rebalanceInvestments(scenario, rebalanceEvent) {
     });
 }
 
- 
+function calculateTotalInvestmentValue(investments) {
+    return investments.reduce((sum, investment) => sum + investment.value, 0);
+}
 
 module.exports = {
     checkLifeExpectancy,
@@ -929,5 +931,6 @@ module.exports = {
     runScheduled_investEvent,
     rebalanceInvestments,
     resetEarlyWithdrawalTax,
-    getEarlyWithdrawalTax
+    getEarlyWithdrawalTax,
+    calculateTotalInvestmentValue
 };
