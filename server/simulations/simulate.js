@@ -28,6 +28,7 @@ const {
     pay_discretionary,
     runScheduled_investEvent,
     rebalanceInvestments,
+    setInflationRates,
     setScenarioLifeExpectancy,
     setEventParams,
     checkLifeExpectancy,
@@ -99,6 +100,7 @@ async function runSimulation(scenario, age, username) {
     scenario.event_series.forEach((event) => {
         setEventParams(event, scenario);
     });
+    setInflationRates(scenario);
 
     const yearlyInvestments = [];
     const yearlyData = [];

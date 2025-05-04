@@ -77,7 +77,7 @@ function parseTaxBrackets(taxBrackets, inflationRate = 0) {
 }
 
 async function queryFederalTaxBrackets(scenario, targetYear) {
-    const past_year_taxes = await FederalTaxes.findOne({ year: scenario.startYear }); // get the tax data for the year that just passed
+    const past_year_taxes = await FederalTaxes.findOne({ year: scenario.startYear - 1 }); // get the tax data for the year that just passed
     const tax_brackets = {};
     // get tax brackets based on the user's marital status
     if (scenario.marital_status.toLowerCase() === "single") {
@@ -213,6 +213,34 @@ function capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+function setInflationRates(scenario, rng = Math.random) {
+    function getRate(scenario) {
+        switch (scenario.infl_type) {
+                case "fixed":
+                    return scenario["infl_value"];
+                case "normal":
+                    const mean = scenario["infl_mean"];
+                    const std = scenario["infl_stdev"];
+                    return normalSample(mean, std, rng);
+                case "uniform":
+                    const min = scenario["infl_min"];
+                    const max = scenario["infl_max"]
+                    return uniformSample(min, max, rng);
+                default:
+                    // throw new Error(`Unknown distribution type: ${type}`);
+                    return scenario["infl_value"] // Fallback to fixed value
+            }
+    }
+
+    scenario.inflation = {}
+    for (let i = scenario.startYear; i < scenario.birth_year + scenario.life_expectancy; i++) {
+        scenario.inflation[i] = getRate(scenario);
+    }
+
+    return scenario.inflation;
+    
+    
+}
 
 function inflationAdjusted(initialAmount, inflationRate) { //FIXME: Inflation changes per year (yearsElapse = 1)
     return initialAmount * (1 + inflationRate / 100);
@@ -507,6 +535,8 @@ function runRothConversion(scenario, year) {
                 const newAfterTaxAccount = {
                     investmentType: withdrawalOrigin.investmentType,
                     value: amtToConvert,
+                    tax_status: "after-tax retirement",
+                    userId: scenario.userId
                 };
                 scenario.investments.push(newAfterTaxAccount);
             }
@@ -878,6 +908,7 @@ module.exports = {
     uniformSample,
     normalSample,
     capitalize,
+    setInflationRates,
     inflationAdjusted,
     setScenarioLifeExpectancy,
     computeInvestmentValue,
