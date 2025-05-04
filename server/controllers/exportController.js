@@ -196,11 +196,6 @@ exports.exportScenarioToYAML = async (req, res) => {
 
             eventSeries: buildEventSeriesYaml(scenario.event_series, userInvestments),
 
-            inflationAssumption: {
-                type: "fixed",
-                value: scenario.inflation_assumption,
-            },
-
             inflationAssumption: mapDistribution(scenario.infl_type, {
                 value: scenario.infl_value,
                 mean: scenario.infl_mean,
