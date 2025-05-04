@@ -234,9 +234,9 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             birth_year: req.body.birthYear,
             birth_year_spouse: req.body.birthYear_spouse,
 
-            life_expectancy: Number(req.body.lifeExpectancy_value),
-            life_expectancy_mean: Number(req.body.life_expectancy_mean),
-            life_expectancy_stdv: Number(req.body.life_expectancy_stdv),
+            life_expectancy: req.body.lifeExpectancy_value,
+            life_expectancy_mean: req.body.life_expectancy_mean,
+            life_expectancy_stdv: req.body.life_expectancy_stdv,
 
             life_expectancy_spouse: req.body.lifeExpectancy_value_spouse,
             life_expectancy_mean_spouse: req.body.life_expectancy_mean_spouse,
