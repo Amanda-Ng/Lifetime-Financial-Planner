@@ -270,7 +270,7 @@ const InvestmentForm = () => {
 
             {/* Expense Ratio */}
             <label>
-                Expense Ratio(%) <span className="required">*</span>
+                Expense Ratio (0 to 1.0) <span className="required">*</span>
             </label>
             <input type="number" name="expenseRatio" value={investment.expenseRatio} onChange={handleChange} required />
 

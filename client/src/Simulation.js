@@ -35,14 +35,14 @@ function Simulation() {
     const [useMedianForStacked, setUseMedianForStacked] = useState(true);
     const [aggregationThreshold, setAggregationThreshold] = useState(1000);
     const [stackedChartData, setStackedChartData] = useState(null);
- 
+
     //1D charts 
     const [simulations_1d, setSimulations_1d] = useState(null);
     const [multiLineCharts_1d, setMultiLineCharts] = useState(null);
     const [showMultiLineCharts, setShowMultiLineCharts] = useState(false);
-    const [lineCharts_1d, setLineCharts_1d] = useState(null); 
+    const [lineCharts_1d, setLineCharts_1d] = useState(null);
     const [showLineCharts_1d, setShowLineCharts_1d] = useState(false);
- 
+
     useEffect(() => {
         const fetchData = async () => {
             const headers = {
@@ -101,8 +101,7 @@ function Simulation() {
                     useMedian: useMedianForStacked,
                 });
 
-                const data = await response.json();
-                setStackedChartData(data.aggregatedData);
+                setStackedChartData(response.data.aggregatedData);
             }
         } catch (error) {
             console.error("Simulation failed:", error);
@@ -428,7 +427,7 @@ function Simulation() {
                         </div>
                     </>
                 )}
- 
+
                 <div className="optionLine" id="genSimLine">
                     <button id="gen_button" onClick={handleGenerate} disabled={!selectedScenarioId || !user}>
                         {isLoading ? "Running..." : "Generate"}
@@ -439,7 +438,7 @@ function Simulation() {
             <div className="sim2">
                 <div className="subsub_header"><strong>Scenario Output</strong></div>
                 <div className="chart-container">
-                    {result || shadedChartData ? (
+                    {showSuccessChart || showShadedChart || showStackedBarChart ? (
                         <>
                             {showSuccessChart && successChartData && (
                                 <div className="chart-wrapper">
@@ -451,11 +450,11 @@ function Simulation() {
                                     <Line data={shadedChartDataObject} options={shadedChartOptions} />
                                 </div>
                             )}
-                            {!showSuccessChart && !showShadedChart && (
+                            {/* {!showSuccessChart && !showShadedChart && (
                                 <pre style={{ fontSize: "0.9rem", overflowX: "scroll" }}>
                                     {JSON.stringify(result, null, 2)}
                                 </pre>
-                            )}
+                            )} */}
                             {showStackedBarChart && stackedChartData && (
                                 <div className="chart-wrapper">
                                     <Bar data={getStackedBarData(stackedChartData, stackedChartQuantity)} options={stackedBarOptions} />
@@ -470,5 +469,5 @@ function Simulation() {
         </div>
     );
 }
- 
+
 export default Simulation; 

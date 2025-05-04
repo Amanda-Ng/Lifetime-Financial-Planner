@@ -28,16 +28,19 @@ const {
     pay_discretionary,
     runScheduled_investEvent,
     rebalanceInvestments,
+    setInflationRates,
+    inflationAdjusted,
     setScenarioLifeExpectancy,
     setEventParams,
     checkLifeExpectancy,
     getExpenses_byYear,
     resetEarlyWithdrawalTax,
     getEarlyWithdrawalTax,
-    calculateFederalTaxes
+    calculateFederalTaxes,
+    calculateTotalInvestmentValue
 } = require("./algorithms");
 
-let testScenario = Scenario.findOne({ name: "Test Scenario2" })
+let testScenario = Scenario.findOne({ name: "Test Simulation" })
     .populate({
         path: "investments", // Populate investments
         populate: {
@@ -85,22 +88,36 @@ async function runSimulation(scenario, age, username,seed) {
     logStream.write(`Simulation log for user: ${username}\n`);
     logStream.write(`Start time: ${new Date().toISOString()}\n\n`);
 
+    // Log initial investment values
+    console.log("[DEBUG] Initial Investments:");
+    scenario.investments.forEach((investment) => {
+        console.log(`[DEBUG] Investment: Type=${investment.investmentType.name}, Value=${investment.value}`);
+    });
+
     // Step 0: Initialize random scenario/ event parameters
+    const currentYear = new Date().getFullYear();
+    
     console.log("Initializing scenario parameters...");
-    setScenarioLifeExpectancy(scenario,seed);
+    setScenarioLifeExpectancy(scenario, currentYear, seed);
     scenario.event_series.forEach((event) => {
         setEventParams(event, seed);
     });
+    scenario.investments.forEach((investment) => {
+        investment.initialValue = investment.value
+    })
+    setInflationRates(scenario);
 
     const yearlyInvestments = [];
     const yearlyData = [];
     const yearlyBreakdown = [];
 
-    const currentYear = new Date().getFullYear();
     const endYear = Math.max(
         scenario.birth_year + scenario.life_expectancy,
         scenario.birth_year_spouse + scenario.life_expectancy_spouse
     );
+
+    console.log(`Simulation will run from ${currentYear} to ${endYear}.`);
+    logStream.write(`Simulation will run from ${currentYear} to ${endYear}.\n`);
 
     for (let year = currentYear; year <= endYear; year++) {
         console.log(`Processing year: ${year}`);
@@ -165,7 +182,7 @@ async function runSimulation(scenario, age, username,seed) {
         const investEvents = scenario.event_series.filter(
             (event) => event.eventType === "Invest" && event.startYear === year
         );
-        runScheduled_investEvent(investEvents, scenario);
+        runScheduled_investEvent(investEvents, scenario, year);
         logStream.write("Ran scheduled invest events.\n");
 
         // Step 10: Run rebalance events
@@ -179,8 +196,8 @@ async function runSimulation(scenario, age, username,seed) {
         });
 
         // Used for line chart of probability of success
-        const totalInvestmentValue = scenario.investments.reduce((sum, inv) => sum + Number(inv.value), 0);
-        yearlyInvestments.push({ year, totalInvestmentValue: Number.isFinite(totalInvestmentValue) ? totalInvestmentValue : 0 });
+        const totalInvestmentValue = calculateTotalInvestmentValue(scenario.investments);
+        yearlyInvestments.push({ year, totalInvestmentValue });
 
         // Used for shaded line chart
         const totalExpenses = getExpenses_byYear(scenario, year).reduce((sum, exp) => sum + exp.initialAmount, 0);
@@ -213,14 +230,14 @@ async function runSimulation(scenario, age, username,seed) {
             .filter((event) => event.eventType === "income")
             .map((event) => ({
                 eventName: event.name,
-                value: inflationAdjusted(event.initialAmount, scenario.inflation_assumption, year - event.startYear),
+                value: inflationAdjusted(event.initialAmount, scenario.inflation[year]),
             }));
 
         const expenseBreakdown = scenario.event_series
             .filter((event) => event.eventType === "expense")
             .map((event) => ({
-                eventName: expense.name,
-                value: expense.initialAmount,
+                eventName: event.name,
+                value: event.initialAmount,
             }));
 
         expenseBreakdown.push({ eventName: "Taxes", value: federalTaxes });

@@ -33,10 +33,10 @@ const EventSeriesSchema = new Schema(
         // Expected Annual Change
         expectedChangeType: { type: String },
         expectedChange: { type: Number },
-        expectedChangeMean: { type: Number },
-        expectedChangeStDev: { type: Number },
-        expectedChangeMin: { type: Number },
-        expectedChangeMax: { type: Number },
+        meanExpectedChange: { type: Number },
+        stdDevExpectedChange: { type: Number },
+        minExpectedChange: { type: Number },
+        maxExpectedChange: { type: Number },
 
         inflationAdjustment: { type: Boolean },
         isMarried: { type: Boolean },
