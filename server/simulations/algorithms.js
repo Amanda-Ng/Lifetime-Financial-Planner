@@ -31,13 +31,23 @@ async function checkLifeExpectancy(scenario, year) {
     return living;
 }
 
+let earlyWithdrawalTaxTotal = 0; // Global variable to track early withdrawal tax
+
+function resetEarlyWithdrawalTax() {
+    earlyWithdrawalTaxTotal = 0; // Reset the tax at the start of each simulation year
+}
+
+function getEarlyWithdrawalTax() {
+    return earlyWithdrawalTaxTotal; // Retrieve the current value of the tax
+}
+
 //run income events series: return total income
 function totalIncome_events(scenario, year) {
     let totalIncome = 0;
     const numYears = year - new Date().getFullYear();
     scenario.event_series.forEach((event) => {
-        // Check if the event is of type "Income"
-        if (event.eventType === "Income") {
+        // Check if the event is of type "income"
+        if (event.eventType === "income") {
             let eventIncome = event.initialAmount;
             if (event.inflationAdjustment) {
                 for (let i = 1; i <= numYears; i++) {
@@ -91,9 +101,9 @@ async function calculateFederalTaxes(scenario, currentYear) {
     let taxable_income = calcTaxableIncome(scenario); //REVIEW: is this better to calc again instead of read from saved value? cuz it could possibly be undefined// scenario.totalTaxedIncome; // get the total taxable income (done in another function)
     let total_tax = 0;
     let federal_income_tax = 0;
-    
+
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
-    for (const {lower_bound, upper_bound, value} of tax_brackets["fit"]) {
+    for (const { lower_bound, upper_bound, value } of tax_brackets["fit"]) {
         if (taxable_income === 0) {
             // if no more taxable income, break
             break;
@@ -163,7 +173,7 @@ function setEventParams(event, rng = Math.random) {
     event["expectedChange"] = getEventField(event, "expectedChange", event.expectedChangeType, rng);
 
     return {
-        startYear: event.startYear, 
+        startYear: event.startYear,
         duration: event.duration,
         expectedChange: event.expectedChange
     };
@@ -291,18 +301,18 @@ async function calculateCapitalGainsTax(scenario, year) {
     scenario.capitalsSold = {} // initialize capitalsSold for the year
     scenario.capitalsSold[year] = [] // initialize capitalsSold for the year
 
-    let netCapitalGain  = 0;   
+    let netCapitalGain = 0;
     for (const capital of scenario.capitalsSold[year] || []) {
         const expectedValue = capital.withdrawalOrigin.value * capital.percentSold; // value already inflation-adjusted
         const invest = await Investment.findById(capital.withdrawalOrigin._id).exec();
         netCapitalGain = expectedValue - invest.value; // current - initial value
-    }  
-    let total_tax = 0; 
+    }
+    let total_tax = 0;
     // find the federal tax brackets that the user falls under, subtracting them from the total taxable income each time
-    for (const {lower_bound, upper_bound, value} of tax_brackets["cgt"]) {
-        if (netCapitalGain === 0) { 
+    for (const { lower_bound, upper_bound, value } of tax_brackets["cgt"]) {
+        if (netCapitalGain === 0) {
             break;  // if no more taxable gains, break
-        } 
+        }
         if (taxable_income >= lower_bound && taxable_income <= upper_bound) {
             // if remaining taxable gain is between the bounds, then that is all that is left --> taxable gains = 0 afterwards so break
             const tax = netCapitalGain * (value / 100);
@@ -312,16 +322,16 @@ async function calculateCapitalGainsTax(scenario, year) {
         } else if (netCapitalGain > upper_bound) {
             // exceeds upper bound of this bracket --> take the maximum value, calculate and subtract
             const tax = upper_bound * (value / 100);
-            total_tax += tax; 
+            total_tax += tax;
             netCapitalGain -= upper_bound;
         }
-    } 
+    }
     return total_tax;
 }
 
 function runIncomeEvents(scenario, year, rng = Math.random) {
     let totalIncome = 0;
-    const events = scenario.event_series.filter((event) => event.eventType === "Income");
+    const events = scenario.event_series.filter((event) => event.eventType === "income");
 
     for (const event of events) {
         const { startYear, duration, expectedChange } = setEventParams(event, rng);
@@ -391,7 +401,7 @@ async function performRMD(scenario, retirementInvestment, age, year) {
 
 function calcTaxableIncome(scenario) {
     let taxableIncome = 0;
-    const incomeEvents = scenario.event_series.filter((event) => event.eventType === "Income");
+    const incomeEvents = scenario.event_series.filter((event) => event.eventType === "income");
     const taxableInvestments = scenario.investments.filter((investment) => investment.tax_status === "non-retirement" || investment.investmentType.taxability === "taxable");
     taxableInvestments.forEach((investment) => {
         taxableIncome += investment["calculatedAnnualIncome"];
@@ -473,7 +483,7 @@ function runRothConversion(scenario, year) {
             withdrawalOrigin.tax_status = "after-tax retirement";
         }
 
-        
+
     }
 
     return 1; // Successful conversion
@@ -498,19 +508,19 @@ function withdrawal_next(withdrawStrat) {
 }
 
 //return boolean: if investment is a capital
-function isCapital(investment){
+function isCapital(investment) {
     //any non retirement that's not cash
     if (investment.investmentType.name !== "cash" && investment.tax_status === "non-retirement") {
         return true;
     } else {
         return false;
     }
-    
-} 
+
+}
 
 //return 0 if required_payment cannot be paid and an expense is incurred
 //return 1 if successful
-function pay_nonDiscretionary_helper(scenario, required_payment,year){
+function pay_nonDiscretionary_helper(scenario, required_payment, year) {
     if (!scenario.capitalsSold) {
         scenario.capitalsSold = {}; // Initialize capitalsSold if it doesn't exist
     }
@@ -518,45 +528,46 @@ function pay_nonDiscretionary_helper(scenario, required_payment,year){
         scenario.capitalsSold[year] = []; // Initialize capitalsSold for the year
     }
 
-    
-    cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash") 
-    if(cashInvest.value > required_payment){     //enough to pay with cash
-        cashInvest.value -= required_payment   
-    }else{  //need withdrawals 
-        while(required_payment != 0 ){
-            withdrawalOrigin  = withdrawal_next(scenario.expense_withdrawal_strategy)
-            if(withdrawalOrigin == null){       //user cannot pay, incur and create expense  
-                let newExpense  = new EventSeries({
+
+    cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash")
+    if (cashInvest.value > required_payment) {     //enough to pay with cash
+        cashInvest.value -= required_payment
+    } else {  //need withdrawals 
+        while (required_payment != 0) {
+            withdrawalOrigin = withdrawal_next(scenario.expense_withdrawal_strategy)
+            if (withdrawalOrigin == null) {       //user cannot pay, incur and create expense  
+                let newExpense = new EventSeries({
                     name: "Incurred Expense: Non Discretionary: " + year,
-                    startYearType:"fixed",
-                    startYear:year,
-                    durationType:"fixed",
-                    eventType:"expense",
-                    userId:user.googleId,
-                    initialAmount:required_payment,
-                    expectedChangeType:"fixedAmount",
-                    expectedChange:0,
-                    user_spouse_ratio:user.isMarried ? 0.5 : 1
-                })  
+                    startYearType: "fixed",
+                    startYear: year,
+                    durationType: "fixed",
+                    eventType: "expense",
+                    userId: user.googleId,
+                    initialAmount: required_payment,
+                    expectedChangeType: "fixedAmount",
+                    expectedChange: 0,
+                    user_spouse_ratio: user.isMarried ? 0.5 : 1
+                })
                 scenario.event_series.append(newExpense)
                 return 0
             }
             let earlyWithdrawal
-            calcAge = year- scenario.birth_year
-                earlyWithdrawal=false 
-            if ((withdrawalOrigin.tax_status==="pre-tax retirement" ||
-                withdrawalOrigin.tax_status==="after-tax retirement")
-                &&calcAge < 59.5){	//early withdrawal tax
-                    earlyWithdrawal= true 
+            calcAge = year - scenario.birth_year
+            earlyWithdrawal = false
+            if ((withdrawalOrigin.tax_status === "pre-tax retirement" ||
+                withdrawalOrigin.tax_status === "after-tax retirement")
+                && calcAge < 59.5) {	//early withdrawal tax
+                earlyWithdrawal = true
             }
-            if(withdrawalOrigin.value> required_payment){       //enough balance
+            if (withdrawalOrigin.value > required_payment) {       //enough balance
                 if (earlyWithdrawal)
-                    required_payment += required_payment *.1 
+                    required_payment += required_payment * .1
+                earlyWithdrawalTaxTotal += required_payment * .1;
             }
             if (withdrawalOrigin.value > required_payment) {
                 if (isCapital(withdrawalOrigin)) {
                     scenario.capitalsSold[year].push({
-                        withdrawalOrigin: { ...withdrawalOrigin }, 
+                        withdrawalOrigin: { ...withdrawalOrigin },
                         percentSold: required_payment / withdrawalOrigin.value
                     });
                 }
@@ -564,19 +575,20 @@ function pay_nonDiscretionary_helper(scenario, required_payment,year){
                 required_payment = 0;
                 continue;
             }
-            if (earlyWithdrawal){
-                required_payment += withdrawalOrigin.value*.1 
+            if (earlyWithdrawal) {
+                required_payment += withdrawalOrigin.value * .1
+                earlyWithdrawalTaxTotal += withdrawalOrigin.value * .1;
             }
-            if (isCapital(withdrawalOrigin)){                      
+            if (isCapital(withdrawalOrigin)) {
                 scenario.capitalsSold[year].push({
-                    withdrawalOrigin: { ...withdrawalOrigin }, 
+                    withdrawalOrigin: { ...withdrawalOrigin },
                     percentSold: required_payment / withdrawalOrigin.value
                 });
             }
-            required_payment -= withdrawalOrigin.value 
-            withdrawalOrigin.value =0   
+            required_payment -= withdrawalOrigin.value
+            withdrawalOrigin.value = 0
         }
-        return 1 
+        return 1
     }
 }
 
@@ -595,10 +607,10 @@ async function pay_nonDiscretionaryTaxes(scenario, year) {
         }
     }
     //!! need to addcalcStateTaxes(user,year)     
-    required_payment += await calculateFederalTaxes(scenario, year-1)
-    pay_nonDiscretionary_helper(scenario, required_payment,year) 
-    required_payment=calculateCapitalGainsTax(scenario, year)
-    pay_nonDiscretionary_helper(scenario, required_payment,year)
+    required_payment += await calculateFederalTaxes(scenario, year - 1)
+    pay_nonDiscretionary_helper(scenario, required_payment, year)
+    required_payment = calculateCapitalGainsTax(scenario, year)
+    pay_nonDiscretionary_helper(scenario, required_payment, year)
 
 }
 
@@ -607,46 +619,49 @@ function getExpenses_byYear(scenario, year) {
     // copy of expenses
     const expenses = scenario.event_series
         .filter(event => event.eventType === "expense")
-        .map(expense => ({ ...expense })); 
-    let arr = []; 
-    for (const expense of expenses) { 
-        const endYear = expense.startYear + expense.duration; 
+        .map(expense => ({ ...expense }));
+    let arr = [];
+    for (const expense of expenses) {
+        const endYear = expense.startYear + expense.duration;
         if (expense.startYear <= year && endYear >= year) {
             arr.push(expense);
         }
-    } 
+    }
     return arr;
 }
 
 //return -1 if violated financial goal
-//return 0 for success
-function pay_discretionary(scenario, user, year){   
-    let totalInvestmentValue = 0; 
+//return amount of discretionary expenses paid for success
+function pay_discretionary(scenario, user, year) {
+    let totalInvestmentValue = 0;
+    let totalPaid = 0;
+
     for (const investment of scenario.investments) {
         totalInvestmentValue += investment.value;
-    } 
+    }
     const expenses = getExpenses_byYear(scenario, year);
-   
-    for (const expense of expenses) { 
-        let adjustedExpense 
+
+    for (const expense of expenses) {
+        let adjustedExpense
         if (expense.inflationAdjustment) {
             yearsElapsed = year - new Date().getFullYear();
             adjustedExpense = inflationAdjusted(expense.initialAmount, expense.inflationAdjustment, yearsElapsed);
         } else {
             adjustedExpense = expense.initialAmount;
-        }    
+        }
         let cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash")
         let withdrawalOrigin
-        let earlyWithdrawal 
-        while (adjustedExpense != 0){     
+        let earlyWithdrawal
+        while (adjustedExpense != 0) {
             if (totalInvestmentValue - adjustedExpense >= scenario.financial_goal) {
                 if (cashInvest.value >= adjustedExpense) {
                     cashInvest.value -= adjustedExpense;
+                    totalPaid += adjustedExpense;
                 } else {
                     // make withdrawal
                     let withdrawalOrigin = withdrawal_next(scenario.expense_withdrawal_strategy);
                     if (withdrawalOrigin == null) continue; // expense not paid
-            
+
                     let earlyWithdrawal = false;
                     if (
                         (withdrawalOrigin.tax_status === "pre-tax retirement" ||
@@ -655,15 +670,15 @@ function pay_discretionary(scenario, user, year){
                     ) {
                         earlyWithdrawal = true; // early withdrawal tax
                     }
-            
+
                     if (withdrawalOrigin.value > adjustedExpense) {     //enough balance
                         if (earlyWithdrawal) {
-                            pay_nonDiscretionary_helper(scenario, adjustedExpense * 0.1,year);
+                            pay_nonDiscretionary_helper(scenario, adjustedExpense * 0.1, year);
                             totalInvestmentValue -= adjustedExpense * 0.1;
                         }
-            
+
                         if (isCapital(withdrawalOrigin)) {      //consider capital gains  
-                            if (!scenario.capitalsSold[year]) 
+                            if (!scenario.capitalsSold[year])
                                 scenario.capitalsSold[year] = [];
 
                             scenario.capitalsSold[year].push({
@@ -671,42 +686,44 @@ function pay_discretionary(scenario, user, year){
                                 percentSold: adjustedExpense / withdrawalOrigin.value
                             });
                         }
-            
+
                         withdrawalOrigin.value -= adjustedExpense;
                         totalInvestmentValue -= adjustedExpense;
+                        totalPaid += adjustedExpense;
                         adjustedExpense = 0;
                         continue;
-                    }else{						//deplete investment  
+                    } else {						//deplete investment  
                         if (earlyWithdrawal) {
-                            pay_nonDiscretionary_helper(scenario, withdrawalOrigin.value * 0.1,year);
+                            pay_nonDiscretionary_helper(scenario, withdrawalOrigin.value * 0.1, year);
                             totalInvestmentValue -= adjustedExpense * 0.1;
-                        }    
-                        if (isCapital(withdrawalOrigin))  
+                        }
+                        if (isCapital(withdrawalOrigin))
                             scenario.capitalsSold[year].push({
-                                withdrawalOrigin: { ...withdrawalOrigin }, 
+                                withdrawalOrigin: { ...withdrawalOrigin },
                                 percentSold: 1
-                            }); 
+                            });
+                        totalPaid += withdrawalOrigin.value;
                         adjustedExpense -= withdrawalOrigin.value
                         totalInvestmentValue -= withdrawalOrigin.value
-                        withdrawalOrigin.value=0 
-                    } 
+                        withdrawalOrigin.value = 0
+                    }
                 }
-            }else{
+            } else {
                 return -1       //violated financial goal
             }
         }
-    }  
-    return 0    
+    }
+    return totalPaid
 }
 
 //allocate excess cash for all InvestEvents
 //stop running when there's no excess cash and return  
 //return 0 for success 
-async function runScheduled_investEvent(InvestEvents, scenario){ 
-    const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash"); 
+async function runScheduled_investEvent(InvestEvents, scenario,year) {
+    const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash");
     for (const InvestEvent of InvestEvents) {
         let excessCash;
-        if(!InvestEvent.fixedAllocation){   //nothing to reallocate 
+        if (!InvestEvent.fixedAllocation) {   //nothing to reallocate 
             return 0;
         }
         if (cashInvest.value < InvestEvent.maxCash) {
@@ -717,43 +734,43 @@ async function runScheduled_investEvent(InvestEvents, scenario){
         //match percent to investment based on index if not done so 
         //{Investment, percent}
         let userInvestments = await Investment.find({ userId: scenario.userId }).populate("investmentType");
-        if(InvestEvent.fixedAllocation[0].Investment){ 
+        if (InvestEvent.fixedAllocation[0].Investment) {
             //handle assetAllocation: an arr of values, index corresponds to each of the user's investments
             for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
                 if (InvestEvent.fixedAllocation[i] != null) {
                     let percent = InvestEvent.initialAllocation[i];
                     let invest = userInvestments[i]; //find the matching investment 
-            
+
                     invest = scenario.investments.find(inv => inv._id.toString() === invest._id.toString()); //find local copy of the investment  
-                    InvestEvent.initialAllocation[i] = { investment:invest, percent:percent };
+                    InvestEvent.initialAllocation[i] = { investment: invest, percent: percent };
                 }
-            }        
+            }
             //handle assetAllocation2
-            if (InvestEvent.assetAllocationType=="glidepath"){
+            if (InvestEvent.assetAllocationType == "glidepath") {
                 for (let i = 0; i < InvestEvent.finalAllocation.length; i++) {
                     if (InvestEvent.finalAllocation[i] != null) {
                         let percent = InvestEvent.finalAllocation[i];
                         let invest = userInvestments[i]; //find the matching investment 
-                
+
                         invest = scenario.investments.find(inv => inv._id.toString() === invest._id.toString()); //find local copy of the investment  
-                        InvestEvent.finalAllocation[i] = { investment:invest, percent:percent };
+                        InvestEvent.finalAllocation[i] = { investment: invest, percent: percent };
                     }
-                } 
+                }
             }
-        }  
-        let startYear = new Date().getFullYear() 
-        let endYear = scenario.birth_year+scenario.life_expectancy 
-        let yearsLapsed = scenario.year - startYear  
+        }
+        let startYear = new Date().getFullYear()
+        let endYear = scenario.birth_year + scenario.life_expectancy
+        let yearsLapsed = scenario.year - startYear
         for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
             let investment = InvestEvent.initialAllocation[i].investment
             let adjustedPercent = initialAllocation[i].percent  //will account for linear change in glidepath
             //adjust inflation investment value elsewhere
-            let adjustedAnnualLimit = null 
-            if (InvestEvent.assetAllocationType=="glidepath"){   
-                let endPercent= InvestEvent.finalAllocation[i].percent 
+            let adjustedAnnualLimit = null
+            if (InvestEvent.assetAllocationType == "glidepath") {
+                let endPercent = InvestEvent.finalAllocation[i].percent
                 adjustedPercent = adjustedPercent + ((endPercent - adjustedPercent) * yearsLapsed) / (endYear - startYear);
-            }    
-            if (investment.tax_status === "pre-tax retirement" || investment.tax_status === "after-tax retirement") { 
+            }
+            if (investment.tax_status === "pre-tax retirement" || investment.tax_status === "after-tax retirement") {
                 if (investment.tax_status === "pre-tax retirement") {
                     adjustedAnnualLimit = inflationAdjusted(scenario.init_limit_pretax, scenario.inflationAssumption, yearsLapsed);
                 } else {
@@ -764,9 +781,9 @@ async function runScheduled_investEvent(InvestEvents, scenario){
             if (adjustedAnnualLimit != null && (excessCash * adjustedPercent) < adjustedAnnualLimit) {
                 investAmt = excessCash * adjustedPercent;
             } else {
-                investAmt = excessCash*adjustedPercent;
+                investAmt = excessCash * adjustedPercent;
             }
-            investment.value += investAmt;      
+            investment.value += investAmt;
         }
     }
     return 0
@@ -799,6 +816,8 @@ function rebalanceInvestments(scenario, rebalanceEvent) {
     });
 }
 
+ 
+
 module.exports = {
     checkLifeExpectancy,
     totalIncome_events,
@@ -829,4 +848,6 @@ module.exports = {
     pay_discretionary,
     runScheduled_investEvent,
     rebalanceInvestments,
+    resetEarlyWithdrawalTax,
+    getEarlyWithdrawalTax
 };

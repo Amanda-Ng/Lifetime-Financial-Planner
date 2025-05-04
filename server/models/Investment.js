@@ -6,7 +6,7 @@ const InvestmentSchema = new Schema(
     {
         // Renamed to "investmentType" from "type" in 9. Persistence on Design Docs
         investmentType: { type: mongoose.Schema.Types.ObjectId, ref: "InvestmentType", required: true },
-        value: { type: mongoose.Schema.Types.Decimal128, required: true },
+        value: { type: Number, required: true },
         tax_status: { type: String, required: true },       //non-retirement,pre-tax retirement,after-tax retirement
         userId: { type: String, required: true },
     },

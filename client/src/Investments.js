@@ -38,7 +38,7 @@ function Investments() {
                     <div>
                         <span className="subsub_header">💲{investment.investmentType.name}</span>
                         <div className="investment-details">
-                            <span>Value: ${investment.value.$numberDecimal}</span>
+                            <span>Value: ${investment.value}</span>
                             <span>Tax Status: {investment.tax_status}</span>
                         </div>
                     </div>

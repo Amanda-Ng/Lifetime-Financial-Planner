@@ -22,7 +22,7 @@ import PrivateRoute from "./PrivateRoute.jsx";
 // End TP
 
 function App() {
-    const {username, handleUserUpdate} = useApp();
+    const { username, handleUserUpdate } = useApp();
     // const [username, setUsername] = useState(() => {
     //     return localStorage.getItem("username") || undefined;
     // });
@@ -128,7 +128,7 @@ function App() {
                     </Routes>
                 </div>
             </div>
-        </Router>
+        </Router >
     );
 }
 

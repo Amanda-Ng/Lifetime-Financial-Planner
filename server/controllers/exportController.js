@@ -29,6 +29,22 @@ exports.exportScenarioToYAML = async (req, res) => {
         const user_id = req.user.userId;
         const userInvestments = await Investment.find({ userId: user_id }).populate("investmentType");
 
+        const mapDistribution = (type, obj) => {
+            if (type.includes("fixed")) {
+                return { type: "fixed", value: obj };
+            } else if (type.includes("normal") || type.includes("random")) {
+                return { type: "normal", mean: obj.mean, stdev: obj.std };
+            } else if (type.includes("uniform")) {
+                return { type: "uniform", lower: obj.min, upper: obj.max };
+            } else if (type.includes("sameAsAnotherEvent")) {
+                return { type: "startWith", eventSeries: obj.anotherEventSeries };
+            } else if (type.includes("yearAfterAnotherEvent")) {
+                return { type: "startAfter", eventSeries: obj.anotherEventSeries };
+            } else {
+                return { type: "fixed", value: 0 };
+            }
+        };
+
         // Extract unique investment types from the populated investments
         const investmentTypesSet = new Map();
         scenario.investments.forEach(inv => {
@@ -42,23 +58,23 @@ exports.exportScenarioToYAML = async (req, res) => {
             const returnDist = it.expected_annual_return_mean && it.expected_annual_return_stdev
                 ? {
                     type: "normal",
-                    mean: parseFloat(it.expected_annual_return_mean.toString()),
-                    stdev: parseFloat(it.expected_annual_return_stdev.toString()),
+                    mean: it.expected_annual_return_mean,
+                    stdev: it.expected_annual_return_stdev,
                 }
                 : {
                     type: "fixed",
-                    value: parseFloat(it.expected_annual_return?.toString() ?? 0),
+                    value: it.expected_annual_return ?? 0,
                 };
 
             const incomeDist = it.expected_annual_income_mean && it.expected_annual_income_stdev
                 ? {
                     type: "normal",
-                    mean: parseFloat(it.expected_annual_income_mean.toString()),
-                    stdev: parseFloat(it.expected_annual_income_stdev.toString()),
+                    mean: it.expected_annual_income_mean,
+                    stdev: it.expected_annual_income_stdev,
                 }
                 : {
                     type: "fixed",
-                    value: parseFloat(it.expected_annual_income?.toString() ?? 0),
+                    value: it.expected_annual_income ?? 0,
                 };
 
             return {
@@ -66,7 +82,7 @@ exports.exportScenarioToYAML = async (req, res) => {
                 description: it.description ?? "",
                 returnAmtOrPct: it.returnType?.includes("Percent") ? "percent" : "amount",
                 returnDistribution: returnDist,
-                expenseRatio: parseFloat(it.expense_ratio.toString()),
+                expenseRatio: it.expense_ratio,
                 incomeAmtOrPct: it.incomeType?.includes("Percent") ? "percent" : "amount",
                 incomeDistribution: incomeDist,
                 taxability: it.taxability === "taxable",
@@ -76,7 +92,7 @@ exports.exportScenarioToYAML = async (req, res) => {
         // Format Investments
         const investments = scenario.investments.map(inv => ({
             investmentType: inv.investmentType.name,
-            value: parseFloat(inv.value.toString()),
+            value: inv.value,
             taxStatus: inv.tax_status,
             id: inv._id.toString()
         }));
@@ -85,22 +101,6 @@ exports.exportScenarioToYAML = async (req, res) => {
         const buildEventSeriesYaml = (eventSeriesList, userInvestments) => {
             // Build a map from investment index to name
             const investmentIdToName = (inv) => inv.investmentType?.name || "Unnamed Investment";
-
-            const mapDistribution = (type, obj) => {
-                if (type.includes("fixed")) {
-                    return { type: "fixed", value: obj };
-                } else if (type.includes("normal") || type.includes("random")) {
-                    return { type: "normal", mean: obj.mean, stdev: obj.std };
-                } else if (type.includes("uniform")) {
-                    return { type: "uniform", lower: obj.min, upper: obj.max };
-                } else if (type.includes("sameAsAnotherEvent")) {
-                    return { type: "startWith", eventSeries: obj.anotherEventSeries };
-                } else if (type.includes("yearAfterAnotherEvent")) {
-                    return { type: "startAfter", eventSeries: obj.anotherEventSeries };
-                } else {
-                    return { type: "fixed", value: 0 };
-                }
-            };
 
             const buildAllocationMap = (allocationArray) => {
                 const result = {};
@@ -200,7 +200,16 @@ exports.exportScenarioToYAML = async (req, res) => {
                 type: "fixed",
                 value: scenario.inflation_assumption,
             },
-            afterTaxContributionLimit: parseFloat(scenario.init_limit_aftertax.toString()),
+
+            inflationAssumption: mapDistribution(scenario.infl_type, {
+                value: scenario.infl_value,
+                mean: scenario.infl_mean,
+                std: scenario.infl_stdev,
+                min: scenario.infl_min,
+                max: scenario.infl_max,
+            }),
+
+            afterTaxContributionLimit: scenario.init_limit_aftertax,
 
             spendingStrategy: Array.isArray(scenario.spending_strategy)
                 ? scenario.spending_strategy.map(ev => ev.name)
@@ -224,7 +233,7 @@ exports.exportScenarioToYAML = async (req, res) => {
                 ? scenario.roth_conversion_strategy.map(inv => inv._id.toString())
                 : [],
 
-            financialGoal: parseFloat(scenario.financial_goal.toString()),
+            financialGoal: scenario.financial_goal,
             residenceState: scenario.state_of_residence,
         };
 

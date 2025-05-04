@@ -31,6 +31,7 @@ app.use(
 app.use(express.json());
 app.use(morgan("dev"));
 app.use("/api/scenarios", require("./routes/scenario.js"));
+app.use("/api", require("./routes/simulation"));
 
 // const mongodb = "mongodb://127.0.0.1:27017/citrifi-db";
 // mongoose.connect(mongodb);

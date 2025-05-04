@@ -1,6 +1,6 @@
 #profileContainer {
     display: grid;
-    width: 90vh;
+    width: 80%;
     margin: 10px;
     margin-bottom: 40px;
 
@@ -89,7 +89,7 @@
     align-items: center;
     margin-top: 15px;
     margin-left: 10px;
-    border-bottom: 2px solid #D9D9D9;
+    border-bottom: 2px solid #919191;
     width: 100%;
 }
 

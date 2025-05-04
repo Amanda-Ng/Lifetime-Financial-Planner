@@ -87,7 +87,9 @@ function ProfilePage() {
                 </form>
                 {status && <p>{status}</p>}
                 {/* !!Add action to text above */}
-                <div><a onClick={logout} href="/login" className="logout-button"> Logout </a></div>
+                <div className="profile_lower">
+                    <div><a onClick={logout} href="/login" className="logout-button"> Logout </a></div>
+                </div>
             </div>
             <div className="profile2">
                 <div className="section_header">Personal Profile Info</div>
