@@ -1,19 +1,10 @@
-html,
-body,
-#root,
-.App {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-
 .sidebar {
   width: 200px;
   height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
-  background-color: #f5e29d;
+  background-color: #282c34;
   margin-top: 70px;
 }
 
@@ -27,16 +18,14 @@ body,
 }
 
 .sidebar ul li a {
-  color: black;
+  color: white;
   text-decoration: none;
   display: block;
   padding-left: 20px;
-  font-weight: bold;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
 }
 
 .sidebar ul li:hover {
-  background-color: #3A7D44;
+  background-color: #444;
 }
 
 .App {
@@ -48,7 +37,6 @@ body,
   /* Push content right */
   padding: 20px;
   width: auto;
-  min-height: 100vh;
 }
 
 .main-content {
@@ -58,7 +46,7 @@ body,
   justify-content: center;
   /* This will ensure content starts after the header */
   margin-top: 70px;
-  background-color: #f7f7f7;
+  background-color: #D9D9D9;
   /* This will ensure content starts after the sidebar */
   margin-left: 200px;
   padding: 20px;
@@ -66,7 +54,7 @@ body,
   /* Ensures that the content fills the remaining width */
   box-sizing: border-box;
   /* Ensures padding does not affect the width calculation */
-  /* height: 100%; */
+  height: 100%;
   overflow-x: auto;
 }
 
