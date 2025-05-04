@@ -87,9 +87,9 @@ async function runSimulation(scenario, age, username,seed) {
 
     // Step 0: Initialize random scenario/ event parameters
     console.log("Initializing scenario parameters...");
-    setScenarioLifeExpectancy(scenario);
+    setScenarioLifeExpectancy(scenario,seed);
     scenario.event_series.forEach((event) => {
-        setEventParams(event, scenario);
+        setEventParams(event, seed);
     });
 
     const yearlyInvestments = [];
@@ -119,7 +119,7 @@ async function runSimulation(scenario, age, username,seed) {
 
         // Step 1: Run income events
         console.log("Running income events...");
-        const income = runIncomeEvents(scenario, year);
+        const income = runIncomeEvents(scenario, year,seed);
         logStream.write(`Income: ${income}\n`);
 
         // Step 2: Perform RMD for the previous year
@@ -135,7 +135,7 @@ async function runSimulation(scenario, age, username,seed) {
 
         // Step 5: Update investment values
         console.log("Updating investment values...");
-        updateInvestments(scenario);
+        updateInvestments(scenario,seed);
         logStream.write("Updated investment values.\n");
 
         // Step 6: Run Roth conversion optimizer
