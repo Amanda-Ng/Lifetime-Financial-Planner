@@ -519,7 +519,7 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
                 }  
             } else{
                 const userInvests = await Investment.find({ userId: req.user.userId }).populate("investmentType");
-                console.log("IuserInvests:", userInvests);
+                console.log("userInvests:", userInvests);
                 const investmentTypeNames = userInvests.map(inv => inv.investmentType.name).filter(Boolean);
                 
                 console.log("Investment Type Names:", investmentTypeNames);
@@ -542,10 +542,10 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
                 }
                 if(event.glidePath == true){
                     path = "glidepath"
-                    fixedAllocation=allocArr1
-                }else{
-                    path = "fixed"
                     initialAllocation=allocArr1
+                }else{
+                    path = "fixed" 
+                    fixedAllocation=allocArr1
                 }
             }
 
@@ -574,7 +574,7 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
                 eventType:event.type,
                 userId:req.user.userId,
 
-                initialAmount:event.initialAmount?? null, 
+                initialAmount:event.initialAmount?? null,  
 
                 expectedChangeType:expectedChangeType?? null,
                 expectedChange: event.changeDistribution?.value?.value?? null,
@@ -677,6 +677,15 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
                 data.RothConversionStart,
                 data.RothConversionEnd,
             ],
+
+            //inflation 
+            infl_type: data.inflationAssumption.type ?? null,
+            infl_value: data.inflationAssumption.value ?? null,
+            infl_mean: data.inflationAssumption.mean ?? null,
+            infl_stdev: data.inflationAssumption.stdev ?? null,
+            infl_min: data.inflationAssumption.lower ?? null,
+            infl_max: data.inflationAssumption.upper ?? null,
+
             sharing_settings: new Map(),        //sharing isn't inherited
             financial_goal: data.financialGoal,
             state_of_residence: data.residenceState,
