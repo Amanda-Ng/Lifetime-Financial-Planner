@@ -63,7 +63,7 @@ let testScenario = Scenario.findOne({ name: "Test Scenario2" })
         console.error("Error finding scenario:", err);
     });
 
-async function runSimulation(scenario, age, username) {
+async function runSimulation(scenario, age, username,seed) {
     console.log("Simulation started.");
 
     const currentDatetime = new Date().toISOString().replace(/[:.]/g, "-");
@@ -258,4 +258,110 @@ async function runSimulation(scenario, age, username) {
     return { yearlyInvestments, yearlyData, yearlyBreakdown };
 }
 
-module.exports = { runSimulation };
+function values_byStep(min, max, step) {
+    const values = [];
+    for (let i = min; i <= max; i += step) {
+        values.push(i);
+    }
+    return values;
+}
+
+//modifies the specified parameter in scenario
+//returns -1 for failure, 0 for success
+async function modifyScenario(paramType, scenario, value, eventName){
+    //find event
+    const event =scenario.event_series.find(event => event.name === eventName)
+    //change event value and set ty[e to fixed]
+    switch (paramType) {
+        case "eventStart": 
+            event.startYearType="fixed"
+            event.startYear = value;
+            break;
+    
+        case "eventDuration":
+            event.durationType="fixed"
+            event.duration = value;
+            break;
+    
+        case "initAmt_income":
+            event.initialAmount = value;
+            break;
+    
+        case "initAmt_expense":
+            event.initialAmount = value;
+            break;
+    
+        case "assetPercent":
+            const asset2Percent = 1-value 
+            let assets = event.assetAllocationType === "fixed"
+                ? event.fixedAllocation
+                : event.initialAllocation;
+            event.assetAllocationType = "fixed";
+            const userInvests = await Investment.find({ userId:scenario.userId }); 
+            // get indices for both assets (non null percents)
+            const indices = assets.reduce((arr, val, idx) => {
+                if (val !== null) arr.push(idx);
+                return arr;
+              }, []);  
+            assets[indices[0]] = value;
+            assets[indices[1]] = asset2Percent;
+            break;
+    
+        default:
+            console.log("modifyScenario: Unknown event " + eventName);
+            return -1;
+    }
+    return 0;
+    
+}
+
+//numSim: number of simulations to run for each value  
+//paramType: enableRoth , eventStart, eventDuration, initAmt_income, initAmt_expense?, assetPercent
+    //for assetPercent: frontend should restrict options to only allow events with 2 assets 
+//values: arr of values for the parameter
+//return -1 for invalid parameters(e.g enableRoth when the scenario doesn't consider it) 
+function scenarioExploration_1D(scenario, age, username, numSim, paramType, enableRoth=null, eventName=null, min=null, max=null, stepSize=null ){
+    seed = Math.random; 
+    const simSets = []; //index i correspond to the set of sims ran for value[i]
+    if (paramType==="enableRoth"){
+        if(!scenario.roth_conversion_optimizer_settings[0]){
+            print("Enabling roth conversion failed.");
+            return -1;
+        }
+        //run with roth optimizer on or off 
+        const scenarioCopy = structuredClone(scenario)
+        if(enableRoth==false){
+            scenarioCopy.roth_conversion_optimizer_settings[0]=0
+        }
+        const simSet = [];
+        for (let i = 0; i < numSim; i++) {
+            simSet.push(runSimulation(scenario, age, username,seed));
+        }
+        simSets.push(simSet);
+        return simSets
+    } 
+    //other options should be numeric
+    if(eventName==null || min==null || max==null || stepSize==null){
+        print(paramType + " has null numeric parameters or event.")
+        return -1;
+    }
+    const values = values_byStep(min, max, step)
+    //for each value, run simulation numSim times 
+    for (const value of values) {
+        //modify value in scenario
+        const scenarioCopy = structuredClone(scenario)  
+        if (modifyScenario(paramType, scenarioCopy, value, eventName) ==-1){
+            return -1
+        }
+        const simSet = [];
+        for (let i = 0; i < numSim; i++) {
+            simSet.push(runSimulation(scenario, age, username,seed));
+        }
+        simSets.push(simSet);  
+    } 
+    return simSets 
+}        
+
+ 
+
+module.exports = { runSimulation,scenarioExploration_1D };

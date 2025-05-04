@@ -719,7 +719,7 @@ function pay_discretionary(scenario, user, year) {
 //allocate excess cash for all InvestEvents
 //stop running when there's no excess cash and return  
 //return 0 for success 
-async function runScheduled_investEvent(InvestEvents, scenario) {
+async function runScheduled_investEvent(InvestEvents, scenario,year) {
     const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash");
     for (const InvestEvent of InvestEvents) {
         let excessCash;
@@ -815,6 +815,8 @@ function rebalanceInvestments(scenario, rebalanceEvent) {
         }
     });
 }
+
+ 
 
 module.exports = {
     checkLifeExpectancy,
