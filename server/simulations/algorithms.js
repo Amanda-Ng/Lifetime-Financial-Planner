@@ -234,8 +234,9 @@ function setInflationRates(scenario, rng = Math.random) {
     }
 
     scenario.inflation = {}
+    scenario.inflation[scenario.startYear - 1] = 1; // Set the initial inflation rate for the previous year to 1
     for (let i = scenario.startYear; i < scenario.birth_year + scenario.life_expectancy; i++) {
-        scenario.inflation[i] = scenario.inflation[i-1] * getRate(scenario);
+        scenario.inflation[i] = scenario.inflation[i-1] * (1 + getRate(scenario) / 100); // Calculate the inflation rate for the current year based on the previous year's rate
     }
 
     return scenario.inflation;
@@ -244,7 +245,7 @@ function setInflationRates(scenario, rng = Math.random) {
 }
 
 function inflationAdjusted(initialAmount, inflationRate) { //FIXME: Inflation changes per year (yearsElapse = 1)
-    return initialAmount * (1 + inflationRate / 100);
+    return initialAmount * inflationRate; // Adjust the amount based on the inflation rate
 }
 
 function setScenarioLifeExpectancy(scenario, currentYear, rng = Math.random) {
@@ -403,14 +404,17 @@ function runIncomeEvents(scenario, year, rng = Math.random) {
 
     for (const event of events) {
         const { startYear, duration, expectedChange } = setEventParams(event, rng);
+        console.log(`Start Year: ${event.startYear}, Duration: ${event.duration}, Expected Change: ${event.expectedChange}`);
+        console.log(`startYear: ${startYear}, duration: ${duration}, expectedChange: ${expectedChange}`);
         if (year >= startYear && year < startYear + duration) {
             const inflationAdjustedAmount = inflationAdjusted(event.initialAmount, scenario.inflation[year]);
+            console.log(`scenario.inflation[year]: ${scenario.inflation[year]} event.initialAmount: ${event.initialAmount} inflationAdjustedAmount: ${inflationAdjustedAmount}`);
             totalIncome += inflationAdjustedAmount + expectedChange;
         }
     }
 
     scenario.investments.find((investment) => investment.investmentType.name === "Cash").value += totalIncome;
-
+    console.log(`Total Income for year ${year}: ${totalIncome}`);
     return totalIncome;
 }
 
