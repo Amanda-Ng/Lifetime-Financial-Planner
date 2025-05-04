@@ -234,20 +234,20 @@ const EventForm = () => {
                     eventData.expectedChange = event.expectedChangePercentage;
                     break;
                 case "randomAmount":
-                    eventData.expectedChangeMean = event.meanChange;
-                    eventData.expectedChangeStDev = event.stdDevChange;
+                    eventData.meanExpectedChange = event.meanChange;
+                    eventData.stdDevExpectedChange = event.stdDevChange;
                     break;
                 case "uniformAmount":
-                    eventData.expectedChangeMin = event.minChange;
-                    eventData.expectedChangeMax = event.maxChange;
+                    eventData.minExpectedChange = event.minChange;
+                    eventData.maxExpectedChange = event.maxChange;
                     break;
                 case "randomPercentage":
-                    eventData.expectedChangeMean = event.meanChange;
-                    eventData.expectedChangeStDev = event.stdDevChange;
+                    eventData.meanExpectedChange = event.meanChange;
+                    eventData.stdDevExpectedChange = event.stdDevChange;
                     break;
                 case "uniformPercentage":
-                    eventData.expectedChangeMin = event.minChange;
-                    eventData.expectedChangeMax = event.maxChange;
+                    eventData.minExpectedChange = event.minChange;
+                    eventData.maxExpectedChange = event.maxChange;
                     break;
                 default:
                     console.error("Invalid expectedChangeType");

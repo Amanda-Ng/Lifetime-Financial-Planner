@@ -137,10 +137,10 @@ exports.exportScenarioToYAML = async (req, res) => {
                     base.changeAmtOrPct = e.expectedChangeType.includes("amount") ? "amount" : "percent";
                     base.changeDistribution = mapDistribution(e.expectedChangeType, {
                         value: e.expectedChange,
-                        mean: e.expectedChangeMean,
-                        stdev: e.expectedChangeStDev,
-                        min: e.expectedChangeMin,
-                        max: e.expectedChangeMax,
+                        mean: e.meanExpectedChange,
+                        stdev: e.stdDevExpectedChange,
+                        min: e.minExpectedChange,
+                        max: e.maxExpectedChange,
                     });
                     base.inflationAdjusted = e.inflationAdjustment || false;
                     base.userFraction = e.userPercentage || 1.0;
