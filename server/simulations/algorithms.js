@@ -171,7 +171,7 @@ function setEventParams(event, rng = Math.random) {
     if (event["startYear"] == null || event["duration"] == null || event["expectedChange"] == null) {
         event["startYear"] = getEventField(event, "startYear", event.startYearType, rng);
         event["duration"] = getEventField(event, "duration", event.durationType, rng);
-        event["expectedChange"] = getEventField(event, "expectedChange", event.expectedChangeType, rng);
+        event["expectedChange"] = computeRandomValue({ expected_annual: event.expectedChange, expected_annual_mean: event.meanExpectedChange, expected_annual_stdev: event.stdDevExpectedChange }, event.initialAmount, event.expectedChangeType, rng);
     }
 
     return {
@@ -264,16 +264,16 @@ function setScenarioLifeExpectancy(scenario, currentYear, rng = Math.random) {
     };
 }
 
-function computeInvestmentValue(investmentType, baseValue, type, rng = Math.random) {
+function computeRandomValue(values, baseValue, type, rng = Math.random) {
     switch (type) {
         case "fixedAmount":
-            return parseFloat(investmentType.expected_annual);
+            return parseFloat(values.expected_annual);
         case "fixedPercentage":
-            return (parseFloat(investmentType.expected_annual) / 100) * baseValue;
+            return (parseFloat(values.expected_annual) / 100) * baseValue;
         case "randomAmount":
-            return normalSample(investmentType.expected_annual_mean, investmentType.expected_annual_stdev, rng);
+            return normalSample(values.expected_annual_mean, values.expected_annual_stdev, rng);
         case "randomPercentage":
-            return (normalSample(investmentType.expected_annual_mean, investmentType.expected_annual_stdev, rng) / 100) * baseValue;
+            return (normalSample(values.expected_annual_mean, values.expected_annual_stdev, rng) / 100) * baseValue;
         default:
             throw new Error(`Unknown value type: ${type}`);
     }
@@ -282,8 +282,8 @@ function computeInvestmentValue(investmentType, baseValue, type, rng = Math.rand
 function updateInvestments(scenario, rng = Math.random) {
     scenario.investments.forEach((investment) => {
         const investmentType = investment.investmentType;
-        const investmentValue = computeInvestmentValue({ expected_annual: investmentType.expected_annual_return, expected_annual_mean: investmentType.expected_annual_return_mean, expected_annual_stdev: investmentType.expected_annual_return_stdev }, investment.value, investmentType.returnType, rng);
-        const incomeValue = computeInvestmentValue({ expected_annual: investmentType.expected_annual_income, expected_annual_mean: investmentType.expected_annual_income_mean, expected_annual_stdev: investmentType.expected_annual_income_stdev }, investment.value, investmentType.incomeType, rng);
+        const investmentValue = computeRandomValue({ expected_annual: investmentType.expected_annual_return, expected_annual_mean: investmentType.expected_annual_return_mean, expected_annual_stdev: investmentType.expected_annual_return_stdev }, investment.value, investmentType.returnType, rng);
+        const incomeValue = computeRandomValue({ expected_annual: investmentType.expected_annual_income, expected_annual_mean: investmentType.expected_annual_income_mean, expected_annual_stdev: investmentType.expected_annual_income_stdev }, investment.value, investmentType.incomeType, rng);
 
         investment["calculatedAnnualReturn"] = investmentValue;
         investment["calculatedAnnualIncome"] = incomeValue;
@@ -293,6 +293,15 @@ function updateInvestments(scenario, rng = Math.random) {
         investment.value = endValueBeforeExpenses - expenses;
     });
     return scenario.investments;
+}
+
+function updateEventsExpectedChange(scenario, rng = Math.random) {
+    scenario.event_series.forEach((event) => {
+        if (event.eventType === "income" || event.eventType === "expense") {
+            event["expectedChange"] = computeRandomValue({ expected_annual: event.expectedChange, expected_annual_mean: event.meanExpectedChange, expected_annual_stdev: event.stdDevExpectedChange }, event.initialAmount, event.expectedChangeType, rng);
+        }
+    });
+    return scenario.event_series;
 }
 
 // Does not account for percentage from the value of investment at beginning of year
@@ -914,7 +923,8 @@ module.exports = {
     setInflationRates,
     inflationAdjusted,
     setScenarioLifeExpectancy,
-    computeInvestmentValue,
+    computeRandomValue,
+    updateEventsExpectedChange,
     updateInvestments,
     calculateCapitalGainsTax,
     runIncomeEvents,

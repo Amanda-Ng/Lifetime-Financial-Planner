@@ -22,6 +22,7 @@ const path = require("path");
 const {
     runIncomeEvents,
     performRMD,
+    updateEventsExpectedChange,
     updateInvestments,
     runRothConversion,
     pay_nonDiscretionaryTaxes,
@@ -133,6 +134,12 @@ async function runSimulation(scenario, age, username,seed) {
             logStream.write("Both user and spouse are deceased. Ending simulation.\n");
             break;
         }
+
+
+        // Step 0.5: Update expected change for events
+        console.log("Updating expected change for events...");
+        updateEventsExpectedChange(scenario, year, seed);
+
 
         // Step 1: Run income events
         console.log("Running income events...");
