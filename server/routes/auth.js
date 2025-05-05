@@ -246,7 +246,7 @@ router.post("/api/scenarioForm", verifyToken, async (req, res) => {
             event_series: req.body.events,
 
             infl_type: req.body.infl_type,
-            infl_value: req.bodyinfl_value,
+            infl_value: req.body.infl_value,
             infl_mean: req.body.infl_mean,
             infl_stdev: req.body.infl_stdev,
             infl_min: req.body.infl_min,
@@ -445,27 +445,31 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
             console.log(newType)
             await newType.save()
         }
-        //check if investments are valid 
+        //create new investments  
         let newInvests = [];
+        let investMap=[]    //(name, id, oldId )
         for (const inv of data.investments || []) {
             //check id
-            const exists = await Investment.exists({ _id: inv.id });
-            if (!exists) {
-                error.message = "Investment with ID with type: ${inv.investmentType} and value: ${inv.value} not found.";
-                console.log(error.message)
-                res.status(400).json({ message: error.message });
-                return
-            }
+            // const exists = await Investment.exists({ _id: inv.id });
+            // if (!exists) {
+            //     error.message = `Investment with ID ${inv.id}, type: ${inv.investmentType} and value: ${inv.value} not found.`; 
+            //     console.log(error.message)
+            //     res.status(400).json({ message: error.message });
+            //     return
+            // }  
+
+
             //replace investmentType name with id
             const invType = await InvestmentType.findOne({ name: inv.investmentType });
             inv.investmentType = invType._id
             //save invest 
             const newInv = new Investment({
-                ...inv,
+                ...inv, 
                 tax_status: inv.taxStatus,
                 userId: req.user.userId
             });
             newInvests.push(newInv._id)
+            investMap.push({name:invType.name, id:newInv._id, oldId: inv.id})
             await newInv.save()
         }
 
@@ -628,21 +632,22 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
             }
         }
         //expenseWithdrawalStrategy: find investments 
+        //investMap stores: (name, id, oldId )
         let expenseWithdrawalStrategy = []
         for (const id of data.expenseWithdrawalStrategy || []) {
-            const inv = await Investment.findById(id);
-            if (inv) {
-                expenseWithdrawalStrategy.push(inv._id);
-            } else {
+            const matchedInv = investMap.find(inv => inv.oldId === id) || null;
+            if (matchedInv !== null) {
+                expenseWithdrawalStrategy.push(matchedInv._id);
+            }else {
                 return res.status(400).json({ message: `Expense Withdrawal Strategy: investment not found.` });
             }
         }
         //RMDStrategy:find investments 
         let RMDStrategy = []
         for (const id of data.RMDStrategy || []) {
-            const inv = await Investment.findById(id);
-            if (inv) {
-                RMDStrategy.push(inv._id);
+            const matchedInv = investMap.find(inv => inv.oldId === id) || null;
+            if (matchedInv !== null) {
+                RMDStrategy.push(matchedInv._id);
             } else {
                 return res.status(400).json({ message: `RMD Strategy: investment not found.` });
             }
@@ -650,13 +655,13 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
         //RothConversionStrategy: find investments 
         let RothConversionStrategy = []
         for (const id of data.RothConversionStrategy || []) {
-            const inv = await Investment.findById(id);
-            if (inv) {
-                RothConversionStrategy.push(inv._id);
+            const matchedInv = investMap.find(inv => inv.oldId === id) || null;
+            if (matchedInv !== null) { 
+                RothConversionStrategy.push(matchedInv._id);
             } else {
                 return res.status(400).json({ message: `Roth Conversion Strategy: investment not found.` });
             }
-        }
+        } 
 
         const scenario = new Scenario({
             name: data.name,
@@ -689,11 +694,11 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
 
             //inflation 
             infl_type: data.inflationAssumption.type ?? null,
-            infl_value: data.inflationAssumption.value ?? null,
-            infl_mean: data.inflationAssumption.mean ?? null,
-            infl_stdev: data.inflationAssumption.stdev ?? null,
-            infl_min: data.inflationAssumption.lower ?? null,
-            infl_max: data.inflationAssumption.upper ?? null,
+            infl_value: data.inflationAssumption.value.value ?? null,
+            infl_mean: data.inflationAssumption.value.mean ?? null,
+            infl_stdev: data.inflationAssumption.value.stdev ?? null,
+            infl_min: data.inflationAssumption.value.min ?? null,
+            infl_max: data.inflationAssumption.value.max ?? null,
 
             sharing_settings: new Map(),        //sharing isn't inherited
             financial_goal: data.financialGoal,
