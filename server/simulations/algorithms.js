@@ -302,7 +302,7 @@ function updateInvestments(scenario, rng = Math.random) {
 function updateEventsExpectedChange(scenario, rng = Math.random) {
     scenario.event_series.forEach((event) => {
         if (event.eventType === "income" || event.eventType === "expense") {
-            event["expectedChange"] = computeRandomValue({ expected_annual: event.expectedChange, expected_annual_mean: event.meanExpectedChange, expected_annual_stdev: event.stdDevExpectedChange, minExpectedChange: event.minExpectedChange, maxExpectedChange: event.maxExpectedChange}, event.initialAmount, event.expectedChangeType, rng);
+            event["expectedChange"] = computeRandomValue({ expected_annual: event.expectedChange, expected_annual_mean: event.meanExpectedChange, expected_annual_stdev: event.stdDevExpectedChange, minExpectedChange: event.minExpectedChange, maxExpectedChange: event.maxExpectedChange }, event.initialAmount, event.expectedChangeType, rng);
         }
     });
     return scenario.event_series;
@@ -416,7 +416,7 @@ function runIncomeEvents(scenario, year, rng = Math.random) {
     const events = scenario.event_series.filter((event) => event.eventType === "income");
 
     for (const event of events) {
-        const { startYear, duration, expectedChange } = setEventParams(event, rng);
+        const { startYear, duration, expectedChange } = event;
         console.log(`Start Year: ${event.startYear}, Duration: ${event.duration}, Expected Change: ${event.expectedChange}`);
         console.log(`startYear: ${startYear}, duration: ${duration}, expectedChange: ${expectedChange}`);
         if (year >= startYear && year < startYear + duration) {
