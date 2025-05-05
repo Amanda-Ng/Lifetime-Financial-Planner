@@ -22,7 +22,7 @@ function Simulation() {
     const [readOnlyScenarios, setReadOnlyScenarios] = useState([]);
     const [selectedScenarioId, setSelectedScenarioId] = useState("");
     const [user, setUser] = useState(null);
-    const [result, setResult] = useState(null);
+    const [successProbabilityData, setSuccessProbabilityData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [numSimulations, setNumSimulations] = useState(1);
     const [showSuccessChart, setShowSuccessChart] = useState(false);
@@ -65,42 +65,74 @@ function Simulation() {
         fetchData();
     }, []);
 
+    // const handleGenerate = async () => {
+    //     if (!selectedScenarioId || !user || !numSimulations) return;
+    //     setIsLoading(true);
+
+    //     try {
+    //         let response;
+    //         if (showShadedChart) {
+    //             // Shaded chart simulation
+    //             response = await axios.post("http://localhost:8000/api/runSimulationWithRanges", {
+    //                 scenarioId: selectedScenarioId,
+    //                 username: user.username,
+    //                 numSimulations,
+    //             });
+    //             setShadedChartData(response.data);
+    //         }
+    //         if (showSuccessChart) {
+    //             // Success probability simulation
+    //             response = await axios.post("http://localhost:8000/api/runSimulation", {
+    //                 scenarioId: selectedScenarioId,
+    //                 username: user.username,
+    //                 numSimulations,
+    //             });
+    //             setResult(response.data);
+    //         }
+    //         if (showStackedBarChart) {
+    //             // Stacked bar chart simulation
+    //             response = await axios.post("http://localhost:8000/api/runStackedBarChart", {
+    //                 scenarioId: selectedScenarioId,
+    //                 username: user.username,
+    //                 numSimulations,
+    //                 selectedQuantity: stackedChartQuantity,
+    //                 aggregationThreshold,
+    //                 useMedian: useMedianForStacked,
+    //             });
+
+    //             setStackedChartData(response.data.aggregatedData);
+    //         }
+    //     } catch (error) {
+    //         console.error("Simulation failed:", error);
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
+
     const handleGenerate = async () => {
         if (!selectedScenarioId || !user || !numSimulations) return;
         setIsLoading(true);
 
         try {
-            let response;
-            if (showShadedChart) {
-                // Shaded chart simulation
-                response = await axios.post("http://localhost:8000/api/runSimulationWithRanges", {
-                    scenarioId: selectedScenarioId,
-                    username: user.username,
-                    numSimulations,
-                });
-                setShadedChartData(response.data);
-            }
+            const response = await axios.post("http://localhost:8000/api/runAllSimulations", {
+                scenarioId: selectedScenarioId,
+                username: user.username,
+                numSimulations,
+                stackedChartQuantity,
+                aggregationThreshold,
+                useMedian: useMedianForStacked,
+            });
+
+            const { successProbability, shadedChartData, stackedChartData } = response.data;
+
             if (showSuccessChart) {
-                // Success probability simulation
-                response = await axios.post("http://localhost:8000/api/runSimulation", {
-                    scenarioId: selectedScenarioId,
-                    username: user.username,
-                    numSimulations,
-                });
-                setResult(response.data);
+                setSuccessProbabilityData(successProbability);
+            }
+            if (showShadedChart) {
+                setShadedChartData(shadedChartData);
             }
             if (showStackedBarChart) {
-                // Stacked bar chart simulation
-                response = await axios.post("http://localhost:8000/api/runStackedBarChart", {
-                    scenarioId: selectedScenarioId,
-                    username: user.username,
-                    numSimulations,
-                    selectedQuantity: stackedChartQuantity,
-                    aggregationThreshold,
-                    useMedian: useMedianForStacked,
-                });
-
-                setStackedChartData(response.data.aggregatedData);
+                setStackedChartData(stackedChartData);
             }
         } catch (error) {
             console.error("Simulation failed:", error);
@@ -109,20 +141,19 @@ function Simulation() {
         }
     };
 
-    const successChartData = result?.successProbability
-        ? {
-            labels: result.successProbability.map((d) => d.year),
-            datasets: [
-                {
-                    label: "Probability of Success",
-                    data: result.successProbability.map((d) => d.probability),
-                    borderColor: "rgba(75, 192, 192, 1)",
-                    backgroundColor: "rgba(75, 192, 192, 0.2)",
-                    tension: 0.4,
-                    fill: true,
-                },
-            ],
-        }
+    const successChartData = successProbabilityData ? {
+        labels: successProbabilityData.map((d) => d.year),
+        datasets: [
+            {
+                label: "Probability of Success",
+                data: successProbabilityData.map((d) => d.probability),
+                borderColor: "rgba(75, 192, 192, 1)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                tension: 0.4,
+                fill: true,
+            },
+        ],
+    }
         : null;
 
     const successChartOptions = {
@@ -456,7 +487,7 @@ function Simulation() {
                             )}
                             {/* {!showSuccessChart && !showShadedChart && (
                                 <pre style={{ fontSize: "0.9rem", overflowX: "scroll" }}>
-                                    {JSON.stringify(result, null, 2)}
+                                    {JSON.stringify(successProbabilityData, null, 2)}
                                 </pre>
                             )} */}
                             {showStackedBarChart && stackedChartData && (
