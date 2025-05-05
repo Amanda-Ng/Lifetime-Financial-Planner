@@ -8,9 +8,10 @@ const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 router.post("/", upload.single("stateTaxYaml"), (req, res) => {
+    const state = req.body.state;
     const filePath = path.resolve(req.file.path);
 
-    const parseProcess = spawn("node", ["parse_state_yaml_file.js", filePath]);
+    const parseProcess = spawn("node", ["parse_state_yaml_file.js", filePath, state]);
 
     parseProcess.stdout.on("data", (data) => {
         console.log(`Parser Output: ${data}`);
