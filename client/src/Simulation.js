@@ -202,6 +202,7 @@ function Simulation() {
         ? {
             labels: selectedData.map((d) => d.year),
             datasets: [
+                // Median Line
                 {
                     label: "Median",
                     data: selectedData.map((d) => d.median),
@@ -209,29 +210,57 @@ function Simulation() {
                     borderWidth: 2,
                     fill: false,
                 },
+                // 10% - 90%
                 {
-                    label: "10%-90%",
+                    label: "10%",
+                    data: selectedData.map((d) => d?.ranges?.["10-90"]?.[0] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.1)",
+                    borderColor: "rgba(0, 0, 255, 0.1)",
+                },
+                {
+                    label: "90%",
                     data: selectedData.map((d) => d?.ranges?.["10-90"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.1)",
-                    fill: "-1",
+                    borderColor: "rgba(0, 0, 255, 0.1)",
+                },
+                // 20% - 80%
+                {
+                    label: "20%",
+                    data: selectedData.map((d) => d?.ranges?.["20-80"]?.[0] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.2)",
+                    borderColor: "rgba(0, 0, 255, 0.2)",
                 },
                 {
-                    label: "20%-80%",
+                    label: "80%",
                     data: selectedData.map((d) => d?.ranges?.["20-80"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.2)",
-                    fill: "-1",
+                    borderColor: "rgba(0, 0, 255, 0.2)",
+                },
+                // 30% - 70%
+                {
+                    label: "30%",
+                    data: selectedData.map((d) => d?.ranges?.["30-70"]?.[0] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.3)",
+                    borderColor: "rgba(0, 0, 255, 0.3)",
                 },
                 {
-                    label: "30%-70%",
+                    label: "70%",
                     data: selectedData.map((d) => d?.ranges?.["30-70"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.3)",
-                    fill: "-1",
+                    borderColor: "rgba(0, 0, 255, 0.3)",
+                },
+                // 40% - 60%
+                {
+                    label: "40%",
+                    data: selectedData.map((d) => d?.ranges?.["40-60"]?.[0] ?? null),
+                    backgroundColor: "rgba(0, 0, 255, 0.4)",
+                    borderColor: "rgba(0, 0, 255, 0.4)",
                 },
                 {
-                    label: "40%-60%",
+                    label: "60%",
                     data: selectedData.map((d) => d?.ranges?.["40-60"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.4)",
-                    fill: "-1",
+                    borderColor: "rgba(0, 0, 255, 0.4)",
                 },
                 ...(selectedQuantity === "totalInvestments" && financialGoal !== null
                     ? [{
@@ -247,6 +276,7 @@ function Simulation() {
             ],
         }
         : null;
+
 
     const shadedChartOptions = {
         responsive: true,
