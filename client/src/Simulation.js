@@ -38,10 +38,31 @@ function Simulation() {
 
     //1D charts 
     const [simulations_1d, setSimulations_1d] = useState(null);
+    const [scenarioEvents, setScenarioEvents] = useState([]);
+    const [scenarioInvests, setScenarioInvests] = useState([]);
+    
     const [multiLineCharts_1d, setMultiLineCharts] = useState(null);
     const [showMultiLineCharts, setShowMultiLineCharts] = useState(false);
+    const [MCParamType_1d, setMCParamType_1d] = useState([]);
+    {/*options: enableRoth , eventStart, eventDuration, initAmt_income, initAmt_expense?, assetPercent*/}
+    const [MC_enableRoth, setMCEnableRoth] = useState(false); 
+    {/*params: {objId, min, max, step}*/}
+    const [MC_eventStartParams, setMCEventStartParams] = useState(null);  
+    const [MC_eventDurationParams, setMCEventDurationParams] = useState(null); 
+    const [MC_initAmt_incomeParams, setMCInitAmt_incomeParams] = useState(null); 
+    const [MC_initAmt_expenseParams, setMCInitAmt_expenseParams] = useState(null); 
+    const [MC_assetPercentParams, setMCAssetPercentParams] = useState(null);       
+
     const [lineCharts_1d, setLineCharts_1d] = useState(null);
     const [showLineCharts_1d, setShowLineCharts_1d] = useState(false);
+    const [LCParamType, setLCParamType] = useState("");
+
+    const [LC_enableRoth, setLCEnableRoth] = useState(false); 
+    const [LC_eventStartParams, setLCEventStartParams] = useState(null);  
+    const [LC_eventDurationParams, setLCEventDurationParams] = useState(null); 
+    const [LC_initAmt_incomeParams, setLCInitAmt_incomeParams] = useState(null); 
+    const [LC_initAmt_expenseParams, setLCInitAmt_expenseParams] = useState(null); 
+    const [LC_assetPercentParams, setLCAssetPercentParams] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -64,6 +85,26 @@ function Simulation() {
 
         fetchData();
     }, []);
+
+    //get scenario events and investments 
+    useEffect(() => {
+        const getScenarioEventsInvests = async () => {
+            if (!selectedScenarioId) return;
+            //get scenario by id
+            const allScenarios = [...editableScenarios, ...readOnlyScenarios];
+            const selectedScenario = allScenarios.find(s => s._id === selectedScenarioId);
+            if (selectedScenario) {
+                setScenarioInvests(selectedScenario.investments || []);
+                setScenarioEvents(selectedScenario.event_series || []);
+            } else {
+                setScenarioInvests([]);
+                setScenarioEvents([]);
+            }
+        };
+        getScenarioEventsInvests();
+    }, [selectedScenarioId]);
+
+
 
     // const handleGenerate = async () => {
     //     if (!selectedScenarioId || !user || !numSimulations) return;
@@ -140,6 +181,8 @@ function Simulation() {
             setIsLoading(false);
         }
     };
+
+
 
     const successChartData = successProbabilityData ? {
         labels: successProbabilityData.map((d) => d.year),
@@ -491,8 +534,777 @@ function Simulation() {
                             />
                         </div>
                     </>
+                )} 
+                <h3>One-dimensional scenario exploration</h3>
+                {/*Multi-line chart*/}
+                <div className="optionLine" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <input
+                        id="showMultiLineCharts"
+                        type="checkbox"
+                        checked={showMultiLineCharts}  
+                        onChange={(e) => setShowMultiLineCharts(e.target.checked)}
+                        style={{ margin: 0 }}
+                    />
+                    <label htmlFor="showMultiLineCharts" style={{ margin: 0 }}>
+                        Show Multi-line chart
+                    </label>
+                </div>
+                
+                {/*options: enableRoth , eventStart, eventDuration, initAmt_income, initAmt_expense?, assetPercent*/} 
+                {showMultiLineCharts && (
+                    <div>
+                        <label>Select parameters:</label>
+                        {[
+                            { label: "Enable Roth Optimizer", value: "enableRoth" },
+                            { label: "Event Start", value: "eventStart" },
+                            { label: "Event Duration", value: "eventDuration" },
+                            { label: "Income Event: Initial Amount", value: "initAmt_income" },
+                            { label: "Expense Event: Initial Amount", value: "initAmt_expense" },
+                            { label: "Asset Allocation Percent", value: "assetPercent" },
+                        ].map((option) => (
+                            <div key={option.value} className="optionLine" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <label>
+                                <input
+                                    type="checkbox"
+                                    value={option.value}
+                                    checked={MCParamType_1d.includes(option.value)}
+                                    style={{ marginLeft: "2rem", marginRight:0 }}
+                                    onChange={(e) => {
+                                    if (e.target.checked) {
+                                        setMCParamType_1d([...MCParamType_1d, option.value]);
+                                    } else {
+                                        setMCParamType_1d(
+                                        MCParamType_1d.filter((v) => v !== option.value)
+                                        );
+                                    }
+                                    }}
+                                />
+                                {option.label}
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+                )}
+     
+                {MCParamType_1d.includes("enableRoth") && (
+                    <div className="optionLine2">
+                        <label htmlFor="enableRothSelect">Roth Optimizer:</label>
+                        <select
+                        id="enableRothSelect"
+                        value={MC_enableRoth ? "enable" : "disable"}
+                        onChange={(e) => setMCEnableRoth(e.target.value === "enable")}
+                        >
+                        <option value="enable">Enable</option>
+                        <option value="disable">Disable</option>
+                        </select>
+                    </div>
+                )} 
+                {MCParamType_1d.includes("eventStart") && (
+                    <div className="optionLine2" >
+                        <label>Event Start Parameters:</label>
+                        <div >
+                            <div >
+                                <label htmlFor="eventStartObj">Event:</label>
+                                <select
+                                    id="eventStartObj"
+                                    value={MC_eventStartParams?.obj || ""}
+                                    onChange={(e) => {
+                                        const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        setMCEventStartParams(prev => ({ ...prev, obj: selectedObj }));
+                                    }}
+                                >
+                                    <option value="">Select</option>
+                                    {scenarioEvents.map((event) => (
+                                        <option key={event._id} value={event._id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                    {/* Add other options as needed */}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventStartMin">Min:</label>
+                                <input
+                                    id="eventStartMin"
+                                    type="number"
+                                    value={MC_eventStartParams?.min ?? ""}
+                                    onChange={(e) =>
+                                        setMCEventStartParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventStartMax">Max:</label>
+                                <input
+                                    id="eventStartMax"
+                                    type="number"
+                                    value={MC_eventStartParams?.max ?? ""}
+                                    onChange={(e) =>
+                                        setMCEventStartParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventStartStep">Step:</label>
+                                <input
+                                    id="eventStartStep"
+                                    type="number"
+                                    value={MC_eventStartParams?.step ?? ""}
+                                    onChange={(e) =>
+                                        setMCEventStartParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )} 
+                {MCParamType_1d.includes("eventDuration") && (
+                    <div className="optionLine2">
+                        <label>Event Duration Parameters:</label>
+                        <div>
+                            <div>
+                                <label htmlFor="eventDurationObj">Event:</label>
+                                <select
+                                id="eventDurationObj"
+                                value={MC_eventDurationParams?.obj?._id || ""}
+                                onChange={(e) => {
+                                    const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                    setMCEventDurationParams(prev => ({ ...prev, obj: selectedObj }));
+                                }}
+                                >
+                                <option value="">Select</option>
+                                {scenarioEvents.map((event) => (
+                                    <option key={event._id} value={event._id}>
+                                    {event.name}
+                                    </option>
+                                ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventDurationMin">Min:</label>
+                                <input
+                                id="eventDurationMin"
+                                type="number"
+                                value={MC_eventDurationParams?.min ?? ""}
+                                onChange={(e) =>
+                                    setMCEventDurationParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventDurationMax">Max:</label>
+                                <input
+                                id="eventDurationMax"
+                                type="number"
+                                value={MC_eventDurationParams?.max ?? ""}
+                                onChange={(e) =>
+                                    setMCEventDurationParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventDurationStep">Step:</label>
+                                <input
+                                id="eventDurationStep"
+                                type="number"
+                                value={MC_eventDurationParams?.step ?? ""}
+                                onChange={(e) =>
+                                    setMCEventDurationParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {MCParamType_1d.includes("initAmt_income") && (
+                    <div className="optionLine2">
+                        <label>Income Event: Initial Amount Parameters:</label>      
+                        <div>
+                            <div>
+                                <label htmlFor="initAmtIncomeObj">Event:</label>
+                                <select
+                                id="initAmtIncomeObj"
+                                value={MC_initAmt_incomeParams?.obj?._id || ""}
+                                onChange={(e) => {
+                                    const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                    setMCInitAmt_incomeParams(prev => ({ ...prev, obj: selectedObj }));
+                                }}
+                                >
+                                <option value="">Select</option>
+                                {scenarioEvents
+                                    .filter(event => event.eventType === "income")
+                                    .map((event) => (
+                                    <option key={event._id} value={event._id}>
+                                        {event.name}
+                                    </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtIncomeMin">Min:</label>
+                                <input
+                                id="initAmtIncomeMin"
+                                type="number"
+                                value={MC_initAmt_incomeParams?.min ?? ""}
+                                onChange={(e) =>
+                                    setMCInitAmt_incomeParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtIncomeMax">Max:</label>
+                                <input
+                                id="initAmtIncomeMax"
+                                type="number"
+                                value={MC_initAmt_incomeParams?.max ?? ""}
+                                onChange={(e) =>
+                                    setMCInitAmt_incomeParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtIncomeStep">Step:</label>
+                                <input
+                                id="initAmtIncomeStep"
+                                type="number"
+                                value={MC_initAmt_incomeParams?.step ?? ""}
+                                onChange={(e) =>
+                                    setMCInitAmt_incomeParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {MCParamType_1d.includes("initAmt_expense") && (
+                    <div className="optionLine2">
+                        <label>Expense Event: Initial Amount Parameters:</label>
+                        <div>  
+                            <div> 
+                                <label htmlFor="initAmtExpenseObj">Event:</label> 
+                                <select
+                                    id="initAmtExpenseObj"
+                                    value={MC_initAmt_expenseParams?.obj?._id || ""}
+                                    onChange={(e) => {
+                                        const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        setMCInitAmt_expenseParams(prev => ({ ...prev, obj: selectedObj }));
+                                    }}
+                                >
+                                <option value="">Select</option>
+                                {scenarioEvents
+                                    .filter(event => event.eventType === "expense")
+                                    .map((event) => (
+                                    <option key={event._id} value={event._id}>
+                                        {event.name}
+                                    </option>
+                                    ))}
+                                </select>
+                            </div> 
+                            <div>
+                                <label htmlFor="initAmtExpenseMin">Min:</label>
+                                <input
+                                id="initAmtExpenseMin"
+                                type="number"
+                                value={MC_initAmt_expenseParams?.min ?? ""}
+                                onChange={(e) =>
+                                    setMCInitAmt_expenseParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtExpenseMax">Max:</label>
+                                <input
+                                id="initAmtExpenseMax"
+                                type="number"
+                                value={MC_initAmt_expenseParams?.max ?? ""}
+                                onChange={(e) =>
+                                    setMCInitAmt_expenseParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtExpenseStep">Step:</label>
+                                <input
+                                id="initAmtExpenseStep"
+                                type="number"
+                                value={MC_initAmt_expenseParams?.step ?? ""}
+                                onChange={(e) =>
+                                    setMCInitAmt_expenseParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                }
+                                />
+                            </div>
+                        </div>
+                    </div>
                 )}
 
+                {MCParamType_1d.includes("assetPercent") && (
+                    <div className="optionLine2">
+                        <label>Asset Allocation Percent Parameters:</label>      
+                        <div>
+                            <div>
+                                <label htmlFor="assetPercentObj">Event:</label>
+                                <select
+                                    id="assetPercentObj"
+                                    value={MC_assetPercentParams?.obj?._id || ""}
+                                    onChange={(e) => {
+                                        console.log("adding id ",e.target.value)
+                                         
+                                        const selectedObj = scenarioEvents.find(inv => inv._id === e.target.value); 
+                                        setMCAssetPercentParams(prev => ({ ...prev, obj: selectedObj })); 
+                                    }}
+                                >
+                                    <option value="">Select</option>
+                                    {scenarioEvents
+                                        .filter(event => 
+                                            event.eventType === "invest" && 
+                                            (
+                                                (event.assetAllocationType === "glidepath" && (event.initialAllocation.filter(val => val !== 0).length === 2)) || 
+                                                (event.assetAllocationType !== "glidepath" && event.fixedAllocation.filter(val => val !== 0).length === 2)
+                                            )
+                                        )
+                                        .map((event) => (
+                                        <option key={event._id} value={event._id}>
+                                            {event.name}
+                                    </option>
+                                    ))} 
+                                </select>
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                <label htmlFor="assetPercentMin">Min:</label>
+                                <input
+                                    id="assetPercentMin"
+                                    type="number"
+                                    value={MC_assetPercentParams?.min ?? ""}
+                                    onChange={(e) =>
+                                        setMCAssetPercentParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                <label htmlFor="assetPercentMax">Max:</label>
+                                <input
+                                    id="assetPercentMax"
+                                    type="number"
+                                    value={MC_assetPercentParams?.max ?? ""}
+                                    onChange={(e) =>
+                                        setMCAssetPercentParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                <label htmlFor="assetPercentStep">Step:</label>
+                                <input
+                                    id="assetPercentStep"
+                                    type="number"
+                                    value={MC_assetPercentParams?.step ?? ""}
+                                    onChange={(e) =>
+                                        setMCAssetPercentParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Line chart */}
+                <div className="optionLine" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <input
+                        id="showLineCharts_1d"
+                        type="checkbox"
+                        checked={showLineCharts_1d}
+                        onChange={(e) => setShowLineCharts_1d(e.target.checked)}
+                        style={{ margin: 0 }}
+                    />
+                    <label htmlFor="showLineCharts_1d" style={{ margin: 0 }}>
+                        Show Line chart
+                    </label>
+                </div>
+
+                {/* Parameter selectors */}
+                {showLineCharts_1d && (
+                    <div>
+                        <label>Select parameters:</label>
+                        {[
+                            { label: "Enable Roth Optimizer", value: "enableRoth" },
+                            { label: "Event Start", value: "eventStart" },
+                            { label: "Event Duration", value: "eventDuration" },
+                            { label: "Income Event: Initial Amount", value: "initAmt_income" },
+                            { label: "Expense Event: Initial Amount", value: "initAmt_expense" },
+                            { label: "Asset Allocation Percent", value: "assetPercent" },
+                        ].map((option) => (
+                            <div key={option.value} className="optionLine" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        value={option.value}
+                                        checked={LCParamType.includes(option.value)}
+                                        style={{ marginLeft: "2rem", marginRight: 0 }}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setLCParamType([...LCParamType, option.value]);
+                                            } else {
+                                                setLCParamType(LCParamType.filter((v) => v !== option.value));
+                                            }
+                                        }}
+                                    />
+                                    {option.label}
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {LCParamType.includes("enableRoth") && (
+                    <div className="optionLine2">
+                        <label htmlFor="enableRothSelect">Roth Optimizer:</label>
+                        <select
+                            id="enableRothSelect"
+                            value={LC_enableRoth ? "enable" : "disable"}
+                            onChange={(e) => setLCEnableRoth(e.target.value === "enable")}
+                        >
+                            <option value="enable">Enable</option>
+                            <option value="disable">Disable</option>
+                        </select>
+                    </div>
+                )}
+
+                {LCParamType.includes("eventStart") && (
+                    <div className="optionLine2">
+                        <label>Event Start Parameters:</label>
+                        <div>
+                            <div>
+                                <label htmlFor="eventStartObj">Event:</label>
+                                <select
+                                    id="eventStartObj"
+                                    value={LC_eventStartParams?.obj?._id || ""}
+                                    onChange={(e) => {
+                                        const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        setLCEventStartParams(prev => ({ ...prev, obj: selectedObj }));
+                                    }}
+                                >
+                                    <option value="">Select</option>
+                                    {scenarioEvents.map((event) => (
+                                        <option key={event._id} value={event._id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventStartMin">Min:</label>
+                                <input
+                                    id="eventStartMin"
+                                    type="number"
+                                    value={LC_eventStartParams?.min ?? ""}
+                                    onChange={(e) =>
+                                        setLCEventStartParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventStartMax">Max:</label>
+                                <input
+                                    id="eventStartMax"
+                                    type="number"
+                                    value={LC_eventStartParams?.max ?? ""}
+                                    onChange={(e) =>
+                                        setLCEventStartParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventStartStep">Step:</label>
+                                <input
+                                    id="eventStartStep"
+                                    type="number"
+                                    value={LC_eventStartParams?.step ?? ""}
+                                    onChange={(e) =>
+                                        setLCEventStartParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {LCParamType.includes("eventDuration") && (
+                    <div className="optionLine2">
+                        <label>Event Duration Parameters:</label>
+                        <div>
+                            <div>
+                                <label htmlFor="eventDurationObj">Event:</label>
+                                <select
+                                    id="eventDurationObj"
+                                    value={LC_eventDurationParams?.obj?._id || ""}
+                                    onChange={(e) => {
+                                        const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        setLCEventDurationParams(prev => ({ ...prev, obj: selectedObj }));
+                                    }}
+                                >
+                                    <option value="">Select</option>
+                                    {scenarioEvents.map((event) => (
+                                        <option key={event._id} value={event._id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventDurationMin">Min:</label>
+                                <input
+                                    id="eventDurationMin"
+                                    type="number"
+                                    value={LC_eventDurationParams?.min ?? ""}
+                                    onChange={(e) =>
+                                        setLCEventDurationParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventDurationMax">Max:</label>
+                                <input
+                                    id="eventDurationMax"
+                                    type="number"
+                                    value={LC_eventDurationParams?.max ?? ""}
+                                    onChange={(e) =>
+                                        setLCEventDurationParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="eventDurationStep">Step:</label>
+                                <input
+                                    id="eventDurationStep"
+                                    type="number"
+                                    value={LC_eventDurationParams?.step ?? ""}
+                                    onChange={(e) =>
+                                        setLCEventDurationParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {LCParamType.includes("initAmt_income") && (
+                    <div className="optionLine2">
+                        <label>Income Event: Initial Amount Parameters:</label>
+                        <div>
+                            <div>
+                                <label htmlFor="initAmtIncomeObj">Event:</label>
+                                <select
+                                    id="initAmtIncomeObj"
+                                    value={LC_initAmt_incomeParams?.obj?._id || ""}
+                                    onChange={(e) => {
+                                        const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        setLCInitAmt_incomeParams(prev => ({ ...prev, obj: selectedObj }));
+                                    }}
+                                >
+                                    <option value="">Select</option>
+                                    {scenarioEvents.filter(event => event.eventType === "income").map((event) => (
+                                        <option key={event._id} value={event._id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtIncomeMin">Min:</label>
+                                <input
+                                    id="initAmtIncomeMin"
+                                    type="number"
+                                    value={LC_initAmt_incomeParams?.min ?? ""}
+                                    onChange={(e) =>
+                                        setLCInitAmt_incomeParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtIncomeMax">Max:</label>
+                                <input
+                                    id="initAmtIncomeMax"
+                                    type="number"
+                                    value={LC_initAmt_incomeParams?.max ?? ""}
+                                    onChange={(e) =>
+                                        setLCInitAmt_incomeParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtIncomeStep">Step:</label>
+                                <input
+                                    id="initAmtIncomeStep"
+                                    type="number"
+                                    value={LC_initAmt_incomeParams?.step ?? ""}
+                                    onChange={(e) =>
+                                        setLCInitAmt_incomeParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {LCParamType.includes("initAmt_expense") && (
+                    <div className="optionLine2">
+                        <label>Expense Event: Initial Amount Parameters:</label>
+                        <div>
+                            <div>
+                                <label htmlFor="initAmtExpenseObj">Event:</label>
+                                <select
+                                    id="initAmtExpenseObj"
+                                    value={LC_initAmt_expenseParams?.obj?._id || ""}
+                                    onChange={(e) => {
+                                        const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        setLCInitAmt_expenseParams(prev => ({ ...prev, obj: selectedObj }));
+                                    }}
+                                >
+                                    <option value="">Select</option>
+                                    {scenarioEvents.filter(event => event.eventType === "expense").map((event) => (
+                                        <option key={event._id} value={event._id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtExpenseMin">Min:</label>
+                                <input
+                                    id="initAmtExpenseMin"
+                                    type="number"
+                                    value={LC_initAmt_expenseParams?.min ?? ""}
+                                    onChange={(e) =>
+                                        setLCInitAmt_expenseParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtExpenseMax">Max:</label>
+                                <input
+                                    id="initAmtExpenseMax"
+                                    type="number"
+                                    value={LC_initAmt_expenseParams?.max ?? ""}
+                                    onChange={(e) =>
+                                        setLCInitAmt_expenseParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="initAmtExpenseStep">Step:</label>
+                                <input
+                                    id="initAmtExpenseStep"
+                                    type="number"
+                                    value={LC_initAmt_expenseParams?.step ?? ""}
+                                    onChange={(e) =>
+                                        setLCInitAmt_expenseParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {LCParamType.includes("assetPercent") && (
+                    <div className="optionLine2">
+                        <label>Asset Allocation Percent Parameters:</label>
+                        <div>
+                            <div>
+                                <label htmlFor="assetPercentObj">Event:</label>
+                                <select
+                                    id="assetPercentObj"
+                                    value={LC_assetPercentParams?.obj?._id || ""}
+                                    onChange={(e) => {
+                                        const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        setLCAssetPercentParams(prev => ({ ...prev, obj: selectedObj }));
+                                    }}
+                                >
+                                    <option value="">Select</option>
+                                    {scenarioEvents.filter(event =>
+                                        event.eventType === "invest" &&
+                                        (
+                                            (event.assetAllocationType === "glidepath" && (event.initialAllocation.filter(val => val !== 0).length === 2)) ||
+                                            (event.assetAllocationType !== "glidepath" && event.fixedAllocation.filter(val => val !== 0).length === 2)
+                                        )
+                                    ).map((event) => (
+                                        <option key={event._id} value={event._id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="assetPercentMin">Min:</label>
+                                <input
+                                    id="assetPercentMin"
+                                    type="number"
+                                    value={LC_assetPercentParams?.min ?? ""}
+                                    onChange={(e) =>
+                                        setLCAssetPercentParams(prev => ({ ...prev, min: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="assetPercentMax">Max:</label>
+                                <input
+                                    id="assetPercentMax"
+                                    type="number"
+                                    value={LC_assetPercentParams?.max ?? ""}
+                                    onChange={(e) =>
+                                        setLCAssetPercentParams(prev => ({ ...prev, max: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="assetPercentStep">Step:</label>
+                                <input
+                                    id="assetPercentStep"
+                                    type="number"
+                                    value={LC_assetPercentParams?.step ?? ""}
+                                    onChange={(e) =>
+                                        setLCAssetPercentParams(prev => ({ ...prev, step: parseFloat(e.target.value) }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                
+
+                
+
+                
+
+                {/*Generate button*/}
                 <div className="optionLine" id="genSimLine">
                     <button id="gen_button" onClick={handleGenerate} disabled={!selectedScenarioId || !user}>
                         {isLoading ? "Running..." : "Generate"}
