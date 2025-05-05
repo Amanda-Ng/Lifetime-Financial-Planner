@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import "./Simulation.css";
 import axios from "axios";
 import { axiosClient } from "./services/apiClient";
@@ -77,9 +77,8 @@ function Simulation() {
                     scenarioId: selectedScenarioId,
                     username: user.username,
                     numSimulations,
-                    selectedQuantity,
                 });
-                setShadedChartData(response.data.aggregatedData);
+                setShadedChartData(response.data);
             }
             if (showSuccessChart) {
                 // Success probability simulation
@@ -163,45 +162,50 @@ function Simulation() {
         },
     };
 
-    const shadedChartDataObject = shadedChartData
+    const selectedData = useMemo(() => {
+        if (!shadedChartData || !shadedChartData[selectedQuantity]) return [];
+        return shadedChartData[selectedQuantity];
+    }, [shadedChartData, selectedQuantity]);
+
+    const shadedChartDataObject = selectedData.length
         ? {
-            labels: shadedChartData.map((d) => d.year),
+            labels: selectedData.map((d) => d.year),
             datasets: [
                 {
                     label: "Median",
-                    data: shadedChartData.map((d) => d.median),
+                    data: selectedData.map((d) => d.median),
                     borderColor: "blue",
                     borderWidth: 2,
                     fill: false,
                 },
                 {
                     label: "10%-90%",
-                    data: shadedChartData.map((d) => d?.ranges?.["10-90"]?.[1] ?? null),
+                    data: selectedData.map((d) => d?.ranges?.["10-90"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.1)",
                     fill: "-1",
                 },
                 {
                     label: "20%-80%",
-                    data: shadedChartData.map((d) => d?.ranges?.["20-80"]?.[1] ?? null),
+                    data: selectedData.map((d) => d?.ranges?.["20-80"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.2)",
                     fill: "-1",
                 },
                 {
                     label: "30%-70%",
-                    data: shadedChartData.map((d) => d?.ranges?.["30-70"]?.[1] ?? null),
+                    data: selectedData.map((d) => d?.ranges?.["30-70"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.3)",
                     fill: "-1",
                 },
                 {
                     label: "40%-60%",
-                    data: shadedChartData.map((d) => d?.ranges?.["40-60"]?.[1] ?? null),
+                    data: selectedData.map((d) => d?.ranges?.["40-60"]?.[1] ?? null),
                     backgroundColor: "rgba(0, 0, 255, 0.4)",
                     fill: "-1",
                 },
                 ...(selectedQuantity === "totalInvestments" && financialGoal !== null
                     ? [{
                         label: "Financial Goal",
-                        data: shadedChartData.map(() => financialGoal),
+                        data: selectedData.map(() => financialGoal),
                         borderColor: "red",
                         borderDash: [5, 5],
                         borderWidth: 2,
