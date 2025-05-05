@@ -83,7 +83,7 @@ router.post("/runSimulation", async (req, res) => {
 });
 
 router.post("/runSimulationWithRanges", async (req, res) => {
-    const { scenarioId, username, numSimulations, selectedQuantity } = req.body;
+    const { scenarioId, username, numSimulations } = req.body;
 
     try {
         const scenario = await Scenario.findById(scenarioId)
@@ -114,27 +114,38 @@ router.post("/runSimulationWithRanges", async (req, res) => {
 
         const results = await Promise.all(workers);
 
-        // Aggregate results for yearlyInvestments
-        const yearlySuccess = {};
-        results.forEach(({ yearlyInvestments }) => {
+        const aggregatedMaps = {
+            totalInvestments: {},
+            totalIncome: {},
+            totalExpenses: {},
+            earlyWithdrawalTax: {},
+            discretionaryPercentage: {},
+        };
+
+        // results.forEach((result, index) => {
+        //     console.log("simulation result:", index + 1);
+        //     console.log("yearlyInvestments:", JSON.stringify(result.yearlyInvestments, null, 2));
+        //     console.log("yearlyData:", JSON.stringify(result.yearlyData, null, 2));
+        // });
+
+        results.forEach(({ yearlyInvestments, yearlyData }) => {
             yearlyInvestments.forEach(({ year, totalInvestmentValue }) => {
-                if (!yearlySuccess[year]) yearlySuccess[year] = { successCount: 0, totalCount: 0 };
-                if (totalInvestmentValue >= scenario.financial_goal) yearlySuccess[year].successCount++;
-                yearlySuccess[year].totalCount++;
+                if (!aggregatedMaps.totalInvestments[year]) aggregatedMaps.totalInvestments[year] = [];
+                aggregatedMaps.totalInvestments[year].push(totalInvestmentValue);
             });
-        });
 
-        const successProbability = Object.entries(yearlySuccess).map(([year, { successCount, totalCount }]) => ({
-            year: parseInt(year, 10),
-            probability: (successCount / totalCount) * 100,
-        }));
-
-        // Aggregate results for yearlyData
-        const yearlyDataAggregated = {};
-        results.forEach(({ yearlyData }) => {
             yearlyData.forEach((data) => {
-                if (!yearlyDataAggregated[data.year]) yearlyDataAggregated[data.year] = [];
-                yearlyDataAggregated[data.year].push(data[selectedQuantity]);
+                const { year, totalIncome, totalExpenses, earlyWithdrawalTax, discretionaryPercentage } = data;
+
+                if (!aggregatedMaps.totalIncome[year]) aggregatedMaps.totalIncome[year] = [];
+                if (!aggregatedMaps.totalExpenses[year]) aggregatedMaps.totalExpenses[year] = [];
+                if (!aggregatedMaps.earlyWithdrawalTax[year]) aggregatedMaps.earlyWithdrawalTax[year] = [];
+                if (!aggregatedMaps.discretionaryPercentage[year]) aggregatedMaps.discretionaryPercentage[year] = [];
+
+                aggregatedMaps.totalIncome[year].push(totalIncome);
+                aggregatedMaps.totalExpenses[year].push(totalExpenses);
+                aggregatedMaps.earlyWithdrawalTax[year].push(earlyWithdrawalTax);
+                aggregatedMaps.discretionaryPercentage[year].push(discretionaryPercentage);
             });
         });
 
@@ -144,21 +155,29 @@ router.post("/runSimulationWithRanges", async (req, res) => {
             return percentiles.map((p) => values[Math.floor((p / 100) * values.length)]);
         };
 
-        const aggregatedData = Object.entries(yearlyDataAggregated).map(([year, values]) => {
-            const percentiles = calculatePercentiles(values, [10, 20, 30, 40, 50, 60, 70, 80, 90]);
-            return {
-                year: parseInt(year, 10),
-                median: percentiles[4],
-                ranges: {
-                    "10-90": [percentiles[0], percentiles[8]],
-                    "20-80": [percentiles[1], percentiles[7]],
-                    "30-70": [percentiles[2], percentiles[6]],
-                    "40-60": [percentiles[3], percentiles[5]],
-                },
-            };
+        const computeAggregatedData = (dataMap) =>
+            Object.entries(dataMap).map(([year, values]) => {
+                const percentiles = calculatePercentiles(values, [10, 20, 30, 40, 50, 60, 70, 80, 90]);
+                return {
+                    year: parseInt(year, 10),
+                    median: percentiles[4],
+                    ranges: {
+                        "10-90": [percentiles[0], percentiles[8]],
+                        "20-80": [percentiles[1], percentiles[7]],
+                        "30-70": [percentiles[2], percentiles[6]],
+                        "40-60": [percentiles[3], percentiles[5]],
+                    },
+                };
+            });
+
+        return res.status(200).json({
+            totalInvestments: computeAggregatedData(aggregatedMaps.totalInvestments),
+            totalIncome: computeAggregatedData(aggregatedMaps.totalIncome),
+            totalExpenses: computeAggregatedData(aggregatedMaps.totalExpenses),
+            earlyWithdrawalTax: computeAggregatedData(aggregatedMaps.earlyWithdrawalTax),
+            discretionaryExpensePercentage: computeAggregatedData(aggregatedMaps.discretionaryPercentage),
         });
 
-        return res.status(200).json({ successProbability, aggregatedData });
     } catch (error) {
         console.error("Simulation error:", error);
         res.status(500).send("Simulation failed");
