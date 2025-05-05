@@ -274,6 +274,10 @@ function computeRandomValue(values, baseValue, type, rng = Math.random) {
             return normalSample(values.expected_annual_mean, values.expected_annual_stdev, rng);
         case "randomPercentage":
             return (normalSample(values.expected_annual_mean, values.expected_annual_stdev, rng) / 100) * baseValue;
+        case "uniformAmount":
+            return uniformSample(values.minExpectedChange, values.maxExpectedChange, rng);
+        case "uniformPercentage":
+            return (uniformSample(values.minExpectedChange, values.maxExpectedChange, rng) / 100) * baseValue;
         default:
             throw new Error(`Unknown value type: ${type}`);
     }
@@ -298,7 +302,7 @@ function updateInvestments(scenario, rng = Math.random) {
 function updateEventsExpectedChange(scenario, rng = Math.random) {
     scenario.event_series.forEach((event) => {
         if (event.eventType === "income" || event.eventType === "expense") {
-            event["expectedChange"] = computeRandomValue({ expected_annual: event.expectedChange, expected_annual_mean: event.meanExpectedChange, expected_annual_stdev: event.stdDevExpectedChange }, event.initialAmount, event.expectedChangeType, rng);
+            event["expectedChange"] = computeRandomValue({ expected_annual: event.expectedChange, expected_annual_mean: event.meanExpectedChange, expected_annual_stdev: event.stdDevExpectedChange, minExpectedChange: event.minExpectedChange, maxExpectedChange: event.maxExpectedChange}, event.initialAmount, event.expectedChangeType, rng);
         }
     });
     return scenario.event_series;
