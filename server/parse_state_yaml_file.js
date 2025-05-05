@@ -20,16 +20,14 @@ async function read_tax_data_from_yaml(filePath) {
 
         const parsedData = {};
         // parse data into JSON format
-        for (const state in taxData) {
-            parsedData[state] = {};
-            for (const status in taxData[state]) {
-                parsedData[state][status] = taxData[state][status].brackets.map((bracket) => ({
-                    range: bracket.range, // tax bracket range
-                    rate: bracket.rate, // tax rate percentage
-                    adjustment: bracket.adjustment || 0, // if no adjustment is provided, default to 0
-                    excess_over: bracket.excess_over || 0, // excess amount to be converted with tax percentage - defaults to 0
-                }));
-            }
+        for (const status in taxData) {
+            parsedData[status] = {};
+            parsedData[status] = taxData[status].brackets.map((bracket) => ({
+                range: bracket.range,
+                rate: Number(bracket.rate),
+                adjustment: Number(bracket.adjustment) || 0,
+                excess_over: Number(bracket.excess_over) || 0,
+            }));
         }
 
         return parsedData;
@@ -39,30 +37,32 @@ async function read_tax_data_from_yaml(filePath) {
     }
 }
 
-async function store_tax_data(data) {
+async function store_tax_data(data, state) {
     const parsed_data = JSON.parse(data);
-    for (const state in parsed_data) {
-        const filing_statuses = parsed_data[state];
-        const state_taxes = new StateTaxes({
-            year: 2024,
-            state: state,
-            single_tax_brackets: filing_statuses["single"] || null,
-            married_tax_brackets: filing_statuses["married"] || null,
-        });
-        await state_taxes.save();
-    }
+    const state_taxes = new StateTaxes({
+        year: 2024,
+        state: state,
+        single_tax_brackets: parsed_data["single"] || null,
+        married_tax_brackets: parsed_data["married"] || null,
+    });
+    await state_taxes.save();
 }
 
-async function parse_and_store_yaml_data(filePath) {
+async function parse_and_store_yaml_data(filePath, state) {
+    const stateTaxDataExists = await StateTaxes.exists({ year: 2024, state: state });
+    if (stateTaxDataExists) {
+        return; // if state tax data is already stored in the database --> don't store again
+    }
     const taxData = await read_tax_data_from_yaml(filePath);
     if (taxData) {
-        await store_tax_data(JSON.stringify(taxData, null, 2));
+        await store_tax_data(JSON.stringify(taxData, null, 2), state);
     }
     if (db) db.close();
 }
 
 const filePath = process.argv[2] || "yaml/init.yaml";
-parse_and_store_yaml_data(filePath).catch((error) => {
+const state = process.argv[3];
+parse_and_store_yaml_data(filePath, state).catch((error) => {
     console.error("ERROR: " + error);
     if (db) db.close();
 });

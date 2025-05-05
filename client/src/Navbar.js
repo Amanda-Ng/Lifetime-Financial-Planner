@@ -12,8 +12,10 @@ function Navbar({ username }) {
 
     return (
         <nav className="navbar">
-            <img src="headerIcon.png" alt="headerIcon" id="headerIcon" />
-            <p>CitriFi</p>
+            <img src="headerIcon.png" alt="headerIcon" id="headerIcon" onClick={() => navigate("/")} style={{ cursor: "pointer" }} />
+            <p onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+                CitriFi
+            </p>
             <button onClick={() => navigate("/profile")}>
                 <img src="userPfp.png" alt="headerPfp" className="userPfp_small" />
                 <span>{username || "Guest"}</span>

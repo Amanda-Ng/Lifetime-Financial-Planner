@@ -59,18 +59,6 @@ taxScraperProcess.on("close", (code) => {
     console.log(`tax_scraper.js process exited with code ${code}`);
 });
 
-// spawn parse_state_yaml_file.js as separate process
-const parseStateYamlProcess = spawn("node", ["parse_state_yaml_file.js"]);
-parseStateYamlProcess.stdout.on("data", (data) => {
-    console.log(`parse_state_yaml_file.js: ${data}`);
-});
-parseStateYamlProcess.stderr.on("data", (data) => {
-    console.error(`parse_state_yaml_file.js error: ${data}`);
-});
-parseStateYamlProcess.on("close", (code) => {
-    console.log(`parse_state_yaml_file.js process exited with code ${code}`);
-});
-
 const uploadStateTaxYaml = require("./routes/uploadStateTaxYaml");
 app.use("/api/uploadStateTaxYaml", uploadStateTaxYaml);
 
