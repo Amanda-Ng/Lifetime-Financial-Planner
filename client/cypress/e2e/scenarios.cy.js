@@ -1,4 +1,4 @@
-// TP Copilot Prompt: "Can you create tests for the scenaios page?"
+// TP Copilot Prompt: "Can you create tests for the scenarios page?"
 
 describe('Scenarios Page', () => {
     beforeEach(() => {
