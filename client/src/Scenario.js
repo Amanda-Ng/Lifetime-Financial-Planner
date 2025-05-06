@@ -91,6 +91,16 @@ function Scenario() {
         }
     };
 
+    const deleteScenario = async (scenarioId) => {
+        if (!window.confirm("Are you sure you want to delete this scenario?")) return;
+
+        try {
+            await axios.delete(`http://localhost:8000/api/deleteScenario/${scenarioId}`);
+            setEditableScenarios(prev => prev.filter(s => s._id !== scenarioId));
+        } catch (error) {
+            console.error("Failed to delete scenario:", error);
+        }
+    };
 
     return (
         <div id="scenario-container" >
@@ -129,6 +139,12 @@ function Scenario() {
                                 onClick={() => handleExportScenario(scenario)}
                             >
                                 📤 Export
+                            </button>
+                            <button
+                                className="delete-button"
+                                onClick={() => deleteScenario(scenario._id)}
+                            >
+                                Delete
                             </button>
                         </div>
                     </div>

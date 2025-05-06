@@ -12,6 +12,9 @@ dotenv.config();
 const { spawn } = require("child_process"); // Import child_process
 
 const FederalTaxes = require("./models/FederalTaxes.js");
+const EventSeries = require("./models/EventSeries");
+const Investment = require("./models/Investment");
+const Scenario = require("./models/Scenario");
 
 const app = express();
 const PORT = configs.serverPort;
@@ -97,6 +100,57 @@ app.get("/api/federalTaxes", async (req, res) => {
         });
     } catch (error) {
         return res.status(500).json({ message: "Failed to fetch tax data", error });
+    }
+});
+
+app.delete("/api/deleteEvent/:id", async (req, res) => {
+    try {
+        const eventId = req.params.id;
+
+        const deleted = await EventSeries.findOneAndDelete({ _id: eventId });
+
+        if (!deleted) {
+            return res.status(404).json({ error: "Event not found or not authorized." });
+        }
+
+        res.status(200).json({ message: "Event deleted successfully." });
+    } catch (err) {
+        console.error("Error deleting event:", err);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+
+app.delete("/api/deleteInvestment/:id", async (req, res) => {
+    try {
+        const investmentId = req.params.id;
+
+        const deleted = await Investment.findOneAndDelete({ _id: investmentId });
+
+        if (!deleted) {
+            return res.status(404).json({ error: "Investment not found." });
+        }
+
+        res.status(200).json({ message: "Investment deleted successfully." });
+    } catch (err) {
+        console.error("Error deleting investment:", err);
+        res.status(500).json({ error: "Internal server error." });
+    }
+});
+
+app.delete("/api/deleteScenario/:id", async (req, res) => {
+    try {
+        const scenarioId = req.params.id;
+
+        const deleted = await Scenario.findOneAndDelete({ _id: scenarioId });
+
+        if (!deleted) {
+            return res.status(404).json({ error: "Scenario not found." });
+        }
+
+        res.status(200).json({ message: "Scenario deleted successfully." });
+    } catch (err) {
+        console.error("Error deleting scenario:", err);
+        res.status(500).json({ error: "Internal server error." });
     }
 });
 
