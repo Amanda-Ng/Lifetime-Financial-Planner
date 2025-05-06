@@ -112,10 +112,13 @@ async function runSimulation(scenario, age, username, seed) {
     const yearlyData = [];
     const yearlyBreakdown = [];
 
-    const endYear = Math.max(
-        scenario.birth_year + scenario.life_expectancy,
-        scenario.birth_year_spouse + scenario.life_expectancy_spouse
-    );
+    const personEndYear = scenario.birth_year && scenario.life_expectancy
+        ? scenario.birth_year + scenario.life_expectancy
+        : 0;
+    const spouseEndYear = scenario.birth_year_spouse && scenario.life_expectancy_spouse
+        ? scenario.birth_year_spouse + scenario.life_expectancy_spouse
+        : 0;
+    const endYear = Math.max(personEndYear, spouseEndYear);
 
     console.log(`Simulation will run from ${currentYear} to ${endYear}.`);
     logStream.write(`Simulation will run from ${currentYear} to ${endYear}.\n`);
