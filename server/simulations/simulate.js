@@ -158,7 +158,7 @@ async function runSimulation(scenario, age, username, seed) {
                     totalPreTaxRetirementValue += investment.value;
                 }
             }
-            
+
             const rmd = await performRMD(scenario, totalPreTaxRetirementValue, age, year - 1);
             logStream.write(`RMD: ${rmd} from total pre-tax retirement value ${totalPreTaxRetirementValue} \n`);
         }
@@ -317,8 +317,8 @@ function values_byStep(min, max, step) {
 //returns -1 for failure, 0 for success
 async function modifyScenario(paramType, scenario, value, eventName) {
     //find event
-    const event = scenario.event_series.find(event => event.name === eventName) 
-    if(!event){
+    const event = scenario.event_series.find(event => event.name === eventName)
+    if (!event) {
         console.log("event not found: ", eventName)
         console.log("scenario ", scenario)
     }
@@ -368,7 +368,7 @@ async function modifyScenario(paramType, scenario, value, eventName) {
 
 //return a deep copy of scenario 
 //only events are populated 
-function cloneScenario(scenario){ 
+function cloneScenario(scenario) {
     let clone = scenario.toObject({ depopulate: true, getters: false });
     clone = JSON.parse(JSON.stringify(clone));
     const originalEvents = scenario.event_series || [];
@@ -376,14 +376,14 @@ function cloneScenario(scenario){
     const clonedEvents = [];
     for (const e of originalEvents) {
         let newEvent;
-        if (e.toObject) { 
-            newEvent = JSON.parse(JSON.stringify(e.toObject())); 
-        } else { 
+        if (e.toObject) {
+            newEvent = JSON.parse(JSON.stringify(e.toObject()));
+        } else {
             newEvent = JSON.parse(JSON.stringify(e));
-        } 
-        clonedEvents.push(newEvent);  
+        }
+        clonedEvents.push(newEvent);
     }
-    clone.event_series = clonedEvents; 
+    clone.event_series = clonedEvents;
     // Clone investments
     const originalInvestments = scenario.investments || [];
     const clonedInvestments = [];
@@ -401,8 +401,8 @@ function cloneScenario(scenario){
         clonedInvestments.push(newInvestment);
     }
     clone.investments = clonedInvestments;
-    console.log("original:  ",scenario)
-    console.log("cloned:  ",clone)
+    console.log("original:  ", scenario)
+    console.log("cloned:  ", clone)
     return clone
 }
 
@@ -414,14 +414,14 @@ function cloneScenario(scenario){
 async function scenarioExploration_1D(scenario, age, username, numSim, paramType, enableRoth = null, eventName = null, min = null, max = null, stepSize = null) {
     seed = Math.random;
     scenario = await Scenario.findById(scenario._id)
-            .populate('event_series')  // needed to clone 
-            .populate({
-                path: 'investments', 
-                populate: {
-                    path: 'investmentType' 
-                }
-            })
-            .exec();
+        .populate('event_series')  // needed to clone 
+        .populate({
+            path: 'investments',
+            populate: {
+                path: 'investmentType'
+            }
+        })
+        .exec();
     const simSets = []; //index i correspond to the set of sims ran for value[i]
     if (paramType === "enableRoth") {
         if (!scenario.roth_conversion_optimizer_settings[0]) {
@@ -444,7 +444,7 @@ async function scenarioExploration_1D(scenario, age, username, numSim, paramType
     if (eventName == null || min == null || max == null || stepSize == null) {
         console.log(paramType + " has null numeric parameters or event.")
         return -1;
-    } 
+    }
     const values = values_byStep(min, max, stepSize)
     //for each value, run simulation numSim times 
     for (const value of values) {
@@ -457,12 +457,72 @@ async function scenarioExploration_1D(scenario, age, username, numSim, paramType
         for (let i = 0; i < numSim; i++) {
             simSet.push(await runSimulation(scenario, age, username, seed));
         }
-        simSets.push(simSet); 
+        simSets.push(simSet);
     }
     console.log("scenarioExploration_1D done ", simSets)
     return simSets
 }
 
+// Two-dimensional scenario exploration
+async function scenarioExploration_2D(
+    scenario,
+    age,
+    username,
+    numSim,
+    param1,
+    param2,
+    event1Name,
+    event2Name,
+    min1,
+    max1,
+    step1,
+    min2,
+    max2,
+    step2
+) {
+    const values1 = values_byStep(min1, max1, step1);
+    const values2 = values_byStep(min2, max2, step2);
 
+    scenario = await Scenario.findById(scenario._id)
+        .populate('event_series')
+        .populate({
+            path: 'investments',
+            populate: { path: 'investmentType' }
+        })
+        .exec();
+
+    const resultsGrid = [];
+
+    for (const val1 of values1) {
+        const rowResults = [];
+        for (const val2 of values2) {
+            const scenarioCopy = cloneScenario(scenario);
+
+            const mod1 = await modifyScenario(param1, scenarioCopy, val1, event1Name);
+            const mod2 = await modifyScenario(param2, scenarioCopy, val2, event2Name);
+
+            if (mod1 === -1 || mod2 === -1) {
+                console.log(`Error modifying scenario for (${val1}, ${val2})`);
+                rowResults.push(null); // Placeholder for failure
+                continue;
+            }
+
+            const simSet = [];
+            const seed = Math.random; // Re-seed PRNG per cell
+            for (let i = 0; i < numSim; i++) {
+                simSet.push(await runSimulation(scenarioCopy, age, username, seed));
+            }
+
+            rowResults.push(simSet);
+        }
+        resultsGrid.push(rowResults);
+    }
+
+    return {
+        param1_values: values1,
+        param2_values: values2,
+        simulations: resultsGrid // 2D array: [param1][param2]
+    };
+}
 
 module.exports = { runSimulation, scenarioExploration_1D };
