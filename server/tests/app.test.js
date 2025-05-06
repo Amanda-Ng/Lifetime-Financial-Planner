@@ -37,7 +37,7 @@ describe("POST /api/investmentTypes", () => {
                 name: "Stocks",
                 description: "Equity investments",
                 returnType: "fixedAmount",
-                incomeType: "randomAmount",
+                incomeType: "fixedAmount",
                 expected_annual_return: 5.4,
                 expected_annual_income: 10.2,
                 expense_ratio: 0.1,
