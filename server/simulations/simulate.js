@@ -112,10 +112,13 @@ async function runSimulation(scenario, age, username, seed) {
     const yearlyData = [];
     const yearlyBreakdown = [];
 
-    const endYear = Math.max(
-        scenario.birth_year + scenario.life_expectancy,
-        scenario.birth_year_spouse + scenario.life_expectancy_spouse
-    );
+    const personEndYear = scenario.birth_year && scenario.life_expectancy
+        ? scenario.birth_year + scenario.life_expectancy
+        : 0;
+    const spouseEndYear = scenario.birth_year_spouse && scenario.life_expectancy_spouse
+        ? scenario.birth_year_spouse + scenario.life_expectancy_spouse
+        : 0;
+    const endYear = Math.max(personEndYear, spouseEndYear);
 
     console.log(`Simulation will run from ${currentYear} to ${endYear}.`);
     logStream.write(`Simulation will run from ${currentYear} to ${endYear}.\n`);
@@ -149,12 +152,15 @@ async function runSimulation(scenario, age, username, seed) {
         // Step 2: Perform RMD for the previous year
         if (year > currentYear) {
             console.log("Performing RMD for the previous year...");
+            let totalPreTaxRetirementValue = 0;
             for (const investment of scenario.investments) {
                 if (investment.tax_status === "pre-tax retirement") {
-                    const rmd = await performRMD(scenario, investment, age, year - 1);
-                    logStream.write(`RMD: ${rmd} from ${investment.investmentType.name}\n`);
+                    totalPreTaxRetirementValue += investment.value;
                 }
             }
+            
+            const rmd = await performRMD(scenario, totalPreTaxRetirementValue, age, year - 1);
+            logStream.write(`RMD: ${rmd} from total pre-tax retirement value ${totalPreTaxRetirementValue} \n`);
         }
 
         // Step 5: Update investment values

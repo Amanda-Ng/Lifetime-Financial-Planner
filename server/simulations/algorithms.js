@@ -444,7 +444,7 @@ async function queryRMDTable(year) {
     return rmdData.distributions;
 }
 
-async function performRMD(scenario, retirementInvestment, age, year) {
+async function performRMD(scenario, totalPreTaxRetirementValue, age, year) {
     const rmdTable = await queryRMDTable(year); // Query RMD table for the given year
     const expectedAge = age + year - scenario.startYear; // Calculate expected age based on the current year and the user's birth year
 
@@ -457,7 +457,7 @@ async function performRMD(scenario, retirementInvestment, age, year) {
         throw new Error(`RMD factor for age ${expectedAge} not found in year ${year}.`);
     }
 
-    const rmd = retirementInvestment.value / rmdFactor;
+    const rmd = totalPreTaxRetirementValue / rmdFactor;
     let transferredInvestment = scenario.rmd_strategy.shift();
 
     if (transferredInvestment.tax_status === "non-retirement") {
