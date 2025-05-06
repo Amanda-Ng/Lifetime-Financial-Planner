@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { axiosClient } from "./services/apiClient";
+import axios from "axios";
 import "./Events.css";
 
 function Events() {
@@ -37,6 +38,18 @@ function Events() {
         }
     };
 
+    const deleteEvent = async (eventId) => {
+        if (!window.confirm("Are you sure you want to delete this event?")) return;
+
+        try {
+            await axios.delete(`http://localhost:8000/api/deleteEvent/${eventId}`);
+
+            setEventSeries(prev => prev.filter(event => event._id !== eventId));
+        } catch (error) {
+            console.error("Failed to delete event:", error);
+        }
+    };
+
     return (
         <div id="events-container">
             <div className="events-header">
@@ -48,10 +61,15 @@ function Events() {
             {eventSeries.map((event) => (
                 <div key={event._id} className="event-card">
                     <div>
-                        <span className="subsub_header">{getEventEmoji(event.eventType)} {event.name}</span>
+                        <span className="subsub_header">
+                            {getEventEmoji(event.eventType)} {event.name}
+                        </span>
                         <div className="event-details">
                             <span>Event Type: {event.eventType}</span>
                         </div>
+                        <button className="delete-button" onClick={() => deleteEvent(event._id)}>
+                            Delete
+                        </button>
                     </div>
                 </div>
             ))}

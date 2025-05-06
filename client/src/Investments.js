@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { axiosClient } from "./services/apiClient";
+import axios from "axios";
 import { Link } from "react-router-dom";
 import "./Investments.css";
 
@@ -23,6 +24,17 @@ function Investments() {
         fetchInvestments();
     }, []);
 
+    const deleteInvestment = async (investmentId) => {
+        if (!window.confirm("Are you sure you want to delete this investment?")) return;
+
+        try {
+            await axios.delete(`http://localhost:8000/api/deleteInvestment/${investmentId}`);
+            setInvestments(prev => prev.filter(inv => inv._id !== investmentId));
+        } catch (error) {
+            console.error("Failed to delete investment:", error);
+        }
+    };
+
     return (
         <div id="investment-container">
             <div className="investment-footer">
@@ -42,6 +54,9 @@ function Investments() {
                             <span>Tax Status: {investment.tax_status}</span>
                         </div>
                     </div>
+                    <button onClick={() => deleteInvestment(investment._id)} className="delete-button">
+                        Delete
+                    </button>
                 </div>
             ))}
         </div>
