@@ -694,11 +694,11 @@ router.post("/api/importScenario", verifyToken, upload.single("file"), async (re
 
             //inflation 
             infl_type: data.inflationAssumption.type ?? null,
-            infl_value: data.inflationAssumption.value.value ?? null,
-            infl_mean: data.inflationAssumption.value.mean ?? null,
-            infl_stdev: data.inflationAssumption.value.stdev ?? null,
-            infl_min: data.inflationAssumption.value.min ?? null,
-            infl_max: data.inflationAssumption.value.max ?? null,
+            infl_value: data.inflationAssumption.value ?? null,
+            infl_mean: data.inflationAssumption.mean ?? null,
+            infl_stdev: data.inflationAssumption.stdev ?? null,
+            infl_min: data.inflationAssumption.min ?? null,
+            infl_max: data.inflationAssumption.max ?? null,
 
             sharing_settings: new Map(),        //sharing isn't inherited
             financial_goal: data.financialGoal,
