@@ -36,7 +36,7 @@ async function scrapeRMDs() {
         while (index < rows.length && !rows[index].innerText.toLowerCase().includes("distribution period")) {
             index++;
         }
-        rows = rows.slice(index + 1, rows.length - 1);
+        rows = rows.slice(index + 1, rows.length);
 
         let elements = {};
         rows.forEach((row) => {
