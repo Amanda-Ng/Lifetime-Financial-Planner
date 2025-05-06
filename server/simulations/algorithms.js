@@ -815,8 +815,12 @@ async function runScheduled_investEvent(InvestEvents, scenario, year) {
     const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash");
     for (const InvestEvent of InvestEvents) {
         let excessCash;
-        if (!InvestEvent.fixedAllocation) {   //nothing to reallocate 
+        if(InvestEvent.assetAllocationType=="glidepath" && !InvestEvent.initialAllocation){
             return 0;
+        }
+        else{
+            if(!InvestEvent.fixedAllocation)    //nothing to reallocate 
+                return 0;
         }
         if (cashInvest.value < InvestEvent.maxCash) {
             return 0; // no excess cash to invest
@@ -829,7 +833,7 @@ async function runScheduled_investEvent(InvestEvents, scenario, year) {
         if (InvestEvent.fixedAllocation[0].Investment) {
             //handle assetAllocation: an arr of values, index corresponds to each of the user's investments
             for (let i = 0; i < InvestEvent.initialAllocation.length; i++) {
-                if (InvestEvent.fixedAllocation[i] != null) {
+                if (InvestEvent.fixedAllocation[i]) {
                     let percent = InvestEvent.initialAllocation[i];
                     let invest = userInvestments[i]; //find the matching investment 
 
@@ -840,7 +844,7 @@ async function runScheduled_investEvent(InvestEvents, scenario, year) {
             //handle assetAllocation2
             if (InvestEvent.assetAllocationType == "glidepath") {
                 for (let i = 0; i < InvestEvent.finalAllocation.length; i++) {
-                    if (InvestEvent.finalAllocation[i] != null) {
+                    if (InvestEvent.finalAllocation[i]) {
                         let percent = InvestEvent.finalAllocation[i];
                         let invest = userInvestments[i]; //find the matching investment 
 

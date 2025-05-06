@@ -805,7 +805,16 @@ router.get("/api/scenarios/editable", verifyToken, async (req, res) => {
 
         const editableScenarios = await Scenario.find({
             $or: [{ userId: user_id }, { read_write: user_email }],
-        });
+          })
+          .populate({
+            path: "investments",
+            populate: { path: "investmentType" }
+          })
+          .populate("event_series")
+          .populate("spending_strategy")
+          .populate("expense_withdrawal_strategy")
+          .populate("roth_conversion_strategy")
+          .populate("rmd_strategy");
 
         res.json(editableScenarios);
     } catch (error) {
@@ -824,7 +833,16 @@ router.get("/api/scenarios/readonly", verifyToken, async (req, res) => {
         const readOnlyScenarios = await Scenario.find({
             userId: { $ne: user_id },
             read_only: user_email,
-        });
+        }).populate({
+            path: "investments",
+            populate: { path: "investmentType" }
+          })
+          .populate("event_series")
+          .populate("spending_strategy")
+          .populate("expense_withdrawal_strategy")
+          .populate("roth_conversion_strategy")
+          .populate("rmd_strategy");
+        
 
         res.json(readOnlyScenarios);
     } catch (error) {
