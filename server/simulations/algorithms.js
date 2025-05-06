@@ -445,7 +445,7 @@ async function queryRMDTable(year) {
 }
 
 async function performRMD(scenario, totalPreTaxRetirementValue, age, year) {
-    const rmdTable = await queryRMDTable(scenario.startYear); // Query RMD table for the given year
+    const rmdTable = await queryRMDTable(scenario.startYear - 1); // Query RMD table for the given year
     const expectedAge = age + year - scenario.startYear; // Calculate expected age based on the current year and the user's birth year
 
     if (expectedAge < 73) {
