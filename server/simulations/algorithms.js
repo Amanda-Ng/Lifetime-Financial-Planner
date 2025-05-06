@@ -458,6 +458,10 @@ async function performRMD(scenario, totalPreTaxRetirementValue, age, year) {
     }
 
     const rmd = totalPreTaxRetirementValue / rmdFactor;
+    
+    if (scenario.rmd_strategy.length === 0) {
+        return rmd; // No RMD strategy available, return the calculated RMD
+    }
     let transferredInvestment = scenario.rmd_strategy.shift();
 
     if (transferredInvestment.tax_status === "non-retirement") {
