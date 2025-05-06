@@ -149,12 +149,15 @@ async function runSimulation(scenario, age, username, seed) {
         // Step 2: Perform RMD for the previous year
         if (year > currentYear) {
             console.log("Performing RMD for the previous year...");
+            let totalPreTaxRetirementValue = 0;
             for (const investment of scenario.investments) {
                 if (investment.tax_status === "pre-tax retirement") {
-                    const rmd = await performRMD(scenario, investment, age, year - 1);
-                    logStream.write(`RMD: ${rmd} from ${investment.investmentType.name}\n`);
+                    totalPreTaxRetirementValue += investment.value;
                 }
             }
+            
+            const rmd = await performRMD(scenario, totalPreTaxRetirementValue, age, year - 1);
+            logStream.write(`RMD: ${rmd} from total pre-tax retirement value ${totalPreTaxRetirementValue} \n`);
         }
 
         // Step 5: Update investment values
