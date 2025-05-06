@@ -41,31 +41,31 @@ const {
     calculateTotalInvestmentValue
 } = require("./algorithms");
 
-let testScenario = Scenario.findOne({ name: "Test Simulation" })
-    .populate({
-        path: "investments", // Populate investments
-        populate: {
-            path: "investmentType", // Populate investmentType within investments
-        },
-    })
-    .populate("event_series") // Populate event series
-    .populate("spending_strategy") // Populate spending strategy
-    .populate("expense_withdrawal_strategy") // Populate expense withdrawal strategy
-    .populate("roth_conversion_strategy") // Populate Roth conversion strategy
-    .populate("rmd_strategy") // Populate RMD strategy
-    .populate("sharedUser") // Populate shared users
-    .then((scenario) => {
-        if (!scenario) {
-            console.error("Scenario not found in the database.");
-            return null;
-        } else {
-            console.log("Scenario found. Starting simulation...");
-            runSimulation(scenario, 30, "testUser");
-        }
-    })
-    .catch((err) => {
-        console.error("Error finding scenario:", err);
-    });
+// let testScenario = Scenario.findOne({ name: "Test Simulation" })
+//     .populate({
+//         path: "investments", // Populate investments
+//         populate: {
+//             path: "investmentType", // Populate investmentType within investments
+//         },
+//     })
+//     .populate("event_series") // Populate event series
+//     .populate("spending_strategy") // Populate spending strategy
+//     .populate("expense_withdrawal_strategy") // Populate expense withdrawal strategy
+//     .populate("roth_conversion_strategy") // Populate Roth conversion strategy
+//     .populate("rmd_strategy") // Populate RMD strategy
+//     .populate("sharedUser") // Populate shared users
+//     .then((scenario) => {
+//         if (!scenario) {
+//             console.error("Scenario not found in the database.");
+//             return null;
+//         } else {
+//             console.log("Scenario found. Starting simulation...");
+//             runSimulation(scenario, 30, "testUser");
+//         }
+//     })
+//     .catch((err) => {
+//         console.error("Error finding scenario:", err);
+//     });
 
 async function runSimulation(scenario, age, username, seed) {
     console.log("Simulation started.");
@@ -317,7 +317,11 @@ function values_byStep(min, max, step) {
 //returns -1 for failure, 0 for success
 async function modifyScenario(paramType, scenario, value, eventName) {
     //find event
-    const event = scenario.event_series.find(event => event.name === eventName)
+    const event = scenario.event_series.find(event => event.name === eventName) 
+    if(!event){
+        console.log("event not found: ", eventName)
+        console.log("scenario ", scenario)
+    }
     //change event value and set ty[e to fixed]
     switch (paramType) {
         case "eventStart":
@@ -362,50 +366,100 @@ async function modifyScenario(paramType, scenario, value, eventName) {
 
 }
 
+//return a deep copy of scenario 
+//only events are populated 
+function cloneScenario(scenario){ 
+    let clone = scenario.toObject({ depopulate: true, getters: false });
+    clone = JSON.parse(JSON.stringify(clone));
+    const originalEvents = scenario.event_series || [];
+    //clone events
+    const clonedEvents = [];
+    for (const e of originalEvents) {
+        let newEvent;
+        if (e.toObject) { 
+            newEvent = JSON.parse(JSON.stringify(e.toObject())); 
+        } else { 
+            newEvent = JSON.parse(JSON.stringify(e));
+        } 
+        clonedEvents.push(newEvent);  
+    }
+    clone.event_series = clonedEvents; 
+    // Clone investments
+    const originalInvestments = scenario.investments || [];
+    const clonedInvestments = [];
+    for (const investment of originalInvestments) {
+        let newInvestment = JSON.parse(JSON.stringify(investment)); // Clone the investment object
+
+        // Clone the investmentType associated with the investment
+        if (investment.investmentType) {
+            let newInvestmentType = JSON.parse(JSON.stringify(investment.investmentType)); // Deep copy investmentType
+            delete newInvestmentType._id;  // Remove _id if not needed
+            newInvestment.investmentType = newInvestmentType;  // Assign the cloned investmentType to the investment
+        }
+
+        // Push the cloned investment to the clonedInvestments array
+        clonedInvestments.push(newInvestment);
+    }
+    clone.investments = clonedInvestments;
+    console.log("original:  ",scenario)
+    console.log("cloned:  ",clone)
+    return clone
+}
+
 //numSim: number of simulations to run for each value  
 //paramType: enableRoth , eventStart, eventDuration, initAmt_income, initAmt_expense?, assetPercent
 //for assetPercent: frontend should restrict options to only allow events with 2 assets 
 //values: arr of values for the parameter
 //return -1 for invalid parameters(e.g enableRoth when the scenario doesn't consider it) 
-function scenarioExploration_1D(scenario, age, username, numSim, paramType, enableRoth = null, eventName = null, min = null, max = null, stepSize = null) {
+async function scenarioExploration_1D(scenario, age, username, numSim, paramType, enableRoth = null, eventName = null, min = null, max = null, stepSize = null) {
     seed = Math.random;
+    scenario = await Scenario.findById(scenario._id)
+            .populate('event_series')  // needed to clone 
+            .populate({
+                path: 'investments', 
+                populate: {
+                    path: 'investmentType' 
+                }
+            })
+            .exec();
     const simSets = []; //index i correspond to the set of sims ran for value[i]
     if (paramType === "enableRoth") {
         if (!scenario.roth_conversion_optimizer_settings[0]) {
-            print("Enabling roth conversion failed.");
+            console.log("Enabling roth conversion failed.");
             return -1;
         }
         //run with roth optimizer on or off 
-        const scenarioCopy = structuredClone(scenario)
+        const scenarioCopy = cloneScenario(scenario)
         if (enableRoth == false) {
             scenarioCopy.roth_conversion_optimizer_settings[0] = 0
         }
         const simSet = [];
         for (let i = 0; i < numSim; i++) {
-            simSet.push(runSimulation(scenario, age, username, seed));
+            simSet.push(await runSimulation(scenario, age, username, seed));
         }
         simSets.push(simSet);
         return simSets
     }
     //other options should be numeric
     if (eventName == null || min == null || max == null || stepSize == null) {
-        print(paramType + " has null numeric parameters or event.")
+        console.log(paramType + " has null numeric parameters or event.")
         return -1;
-    }
-    const values = values_byStep(min, max, step)
+    } 
+    const values = values_byStep(min, max, stepSize)
     //for each value, run simulation numSim times 
     for (const value of values) {
         //modify value in scenario
-        const scenarioCopy = structuredClone(scenario)
+        const scenarioCopy = cloneScenario(scenario)
         if (modifyScenario(paramType, scenarioCopy, value, eventName) == -1) {
             return -1
         }
         const simSet = [];
         for (let i = 0; i < numSim; i++) {
-            simSet.push(runSimulation(scenario, age, username, seed));
+            simSet.push(await runSimulation(scenario, age, username, seed));
         }
-        simSets.push(simSet);
+        simSets.push(simSet); 
     }
+    console.log("scenarioExploration_1D done ", simSets)
     return simSets
 }
 

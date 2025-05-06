@@ -898,25 +898,68 @@ async function runScheduled_investEvent(InvestEvents, scenario, year) {
 function rebalanceInvestments(scenario, rebalanceEvent) {
     const totalValue = scenario.investments.reduce((sum, investment) => sum + investment.value, 0);
 
-    rebalanceEvent.assetAllocation.forEach(({ investmentType, targetPercentage }) => {
-        const targetValue = totalValue * (targetPercentage / 100);
-        const investment = scenario.investments.find((inv) => inv.investmentType.name === investmentType.name);
-
-        if (investment) {
-            const difference = targetValue - investment.value;
-
-            if (difference > 0) {
-                // Buy more of this investment
-                const cashInvestment = scenario.investments.find((inv) => inv.investmentType.name === "Cash");
-                if (cashInvestment.value >= difference) {
-                    cashInvestment.value -= difference;
-                    investment.value += difference;
+    // Match investments to initialAllocation
+    if (rebalanceEvent.initialAllocation[0]?.investment === undefined) {
+        const userInvestments = scenario.investments;
+        for (let i = 0; i < rebalanceEvent.initialAllocation.length; i++) {
+            if (rebalanceEvent.initialAllocation[i]) {
+                const percent = rebalanceEvent.initialAllocation[i];
+                const investment = userInvestments[i];
+                rebalanceEvent.initialAllocation[i] = { investment, percent };
+            }
+        }
+        if (rebalanceEvent.assetAllocationType === "glidepath") {
+            for (let i = 0; i < rebalanceEvent.finalAllocation.length; i++) {
+                if (rebalanceEvent.finalAllocation[i]) {
+                    const percent = rebalanceEvent.finalAllocation[i];
+                    const investment = userInvestments[i];
+                    rebalanceEvent.finalAllocation[i] = { investment, percent };
                 }
-            } else if (difference < 0) {
-                // Sell excess of this investment
-                investment.value += difference; // difference is negative
-                const cashInvestment = scenario.investments.find((inv) => inv.investmentType.name === "Cash");
-                cashInvestment.value -= difference; // add the sold amount to cash
+            }
+        }
+    }
+
+    const startYear = scenario.startYear;
+    const endYear = scenario.birth_year + scenario.life_expectancy;
+    const yearsLapsed = scenario.startYear - startYear;
+
+    rebalanceEvent.initialAllocation.forEach(({ investment, percent }, index) => {
+        let adjustedPercent = percent;
+
+        if (rebalanceEvent.assetAllocationType === "glidepath") {
+            const finalPercent = rebalanceEvent.finalAllocation[index]?.percent || percent;
+            adjustedPercent = percent + ((finalPercent - percent) * yearsLapsed) / (endYear - startYear);
+        }
+
+        const targetValue = totalValue * (adjustedPercent / 100);
+        const difference = targetValue - investment.value;
+
+        if (difference > 0) {
+            // Buy more of this investment
+            const cashInvestment = scenario.investments.find((inv) => inv.investmentType.name === "Cash");
+            if (cashInvestment && cashInvestment.value >= difference) {
+                cashInvestment.value -= difference;
+                investment.value += difference;
+            }
+        } else if (difference < 0) {
+            // Sell excess of this investment
+            const sellAmount = Math.abs(difference);
+
+            if (investment.tax_status === "non-retirement") {
+                // Calculate capital gains for non-retirement investments
+                const capitalGain = sellAmount - investment.initialValue * (sellAmount / investment.value);
+                scenario.capitalsSold[scenario.startYear] = scenario.capitalsSold[scenario.startYear] || [];
+                scenario.capitalsSold[scenario.startYear].push({
+                    withdrawalOrigin: { ...investment },
+                    percentSold: sellAmount / investment.value,
+                    capitalGain,
+                });
+            }
+
+            investment.value -= sellAmount;
+            const cashInvestment = scenario.investments.find((inv) => inv.investmentType.name === "Cash");
+            if (cashInvestment) {
+                cashInvestment.value += sellAmount;
             }
         }
     });
