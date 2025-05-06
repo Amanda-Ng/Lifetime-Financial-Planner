@@ -4,9 +4,9 @@
   position: fixed;
   left: 0;
   top: 0;
-  /* background-color: #282c34; */
-  background-color: #f5e29d;
-  margin-top: 70px;
+  background-color: #F5DB7E; /* rgb(237,241,171); */
+  /* background-color: #f5e29d; */
+  margin-top: 57px;
 }
 
 .sidebar ul {
@@ -26,7 +26,7 @@
 }
 
 .sidebar ul li:hover {
-  background-color: #3A7D44;
+  background-color: #f8bb4a;
 }
 
 .App {
