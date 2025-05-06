@@ -31,7 +31,7 @@ exports.exportScenarioToYAML = async (req, res) => {
 
         const mapDistribution = (type, obj) => {
             if (type.includes("fixed")) {
-                return { type: "fixed", value: obj };
+                return { type: "fixed", value: obj.value };
             } else if (type.includes("normal") || type.includes("random")) {
                 return { type: "normal", mean: obj.mean, stdev: obj.std };
             } else if (type.includes("uniform")) {
