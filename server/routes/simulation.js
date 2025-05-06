@@ -2,7 +2,7 @@ const express = require("express");
 const { Worker } = require("worker_threads");
 const path = require("path");
 const router = express.Router();
-const { runSimulation } = require("../simulations/simulate");
+const { runSimulation,scenarioExploration_1D } = require("../simulations/simulate");
 const Scenario = require("../models/Scenario");
 const User = require("../models/User");
 
@@ -295,6 +295,172 @@ router.post("/runStackedBarChart", async (req, res) => {
         res.status(500).send("Failed to generate stacked bar chart data");
     }
 });
+
+router.post("/run1DSimulations", async (req, res) => { 
+    console.log("run1DSimulations...")
+    console.log(req.body) 
+    //multi line
+
+        //for each param type
+            //run sims scenarioExploration_1D(scenario, age, username, numSim, paramType, enableRoth = null, eventName = null, min = null, max = null, stepSize = null) 
+            //store in chart arr
+            
+    //line chart 
+        //for each param type
+            //run sims 
+            //store in chart arr
+    try {
+        const {
+            scenarioId,
+            username,
+            numSimulations,
+            MCParamType_1d,
+            MC_enableRoth,
+            MC_eventStartParams,
+            MC_eventDurationParams,
+            MC_initAmt_incomeParams,
+            MC_initAmt_expenseParams,
+            MC_assetPercentParams,
+            LCParamType,
+            LC_enableRoth,
+            LC_eventStartParams,
+            LC_eventDurationParams,
+            LC_initAmt_incomeParams,
+            LC_initAmt_expenseParams,
+            LC_assetPercentParams
+        } = req.body;
+        const user = await User.findOne({ username }).lean();
+        if (!user) return res.status(404).json({ message: "User not found" }); 
+        const scenario = await Scenario.findById(scenarioId);
+        if (!scenario) {
+            return res.status(404).json({ error: "Scenario not found" });
+        } 
+        const currentYear = new Date().getFullYear();
+        const age = currentYear - scenario.birth_year;    
+
+        const multilineCharts = [];
+        const lineCharts = []; 
+        let enableRoth = null;
+        let eventName = null;
+        let min = null;
+        let max = null;
+        let stepSize = null;
+
+        //get simulation results
+        //multi line
+        for (const paramType of MCParamType_1d) {
+            // For each paramType, run simulations and store results  
+            let paramVar = null;
+            enableRoth=null;
+            if (paramType === "enableRoth") {
+                enableRoth = MC_enableRoth; 
+            } else {        //have numeric vars  
+                switch (paramType) { 
+                    case "eventStart":
+                        paramVar = MC_eventStartParams;
+                        break;
+                    case "eventDuration":
+                        paramVar = MC_eventDurationParams;
+                        break;
+                    case "initAmt_income":
+                        paramVar = MC_initAmt_incomeParams;
+                        break;
+                    case "initAmt_expense":
+                        paramVar = MC_initAmt_expenseParams;
+                        break;
+                    case "assetPercent":
+                        paramVar = MC_assetPercentParams;
+                        break;
+                    default:
+                        console.log("Unknown MCParamType_1d: ", paramType)
+                }
+                console.log("Param ", paramVar)
+                eventName = paramVar.obj?.name; 
+                min = paramVar.min;
+                max = paramVar.max;
+                stepSize = paramVar.step
+            }                                   
+            const simResult = await scenarioExploration_1D(scenario, age, username, numSimulations, paramType, enableRoth, eventName, min, max, stepSize) 
+            if (simResult === -1) {
+                return res.status(500).json({ error: "Simulation failed." });
+            }
+            multilineCharts.push(simResult); 
+            enableRoth = null;
+            eventName = null;    
+            min = null; 
+            max = null;
+            stepSize = null;
+        }
+
+        //line chart simulation  
+        for (const paramType of LCParamType) {
+            enableRoth = null;
+            eventName = null;    
+            min = null;
+            max = null;
+            stepSize = null;
+
+            if (paramType === "enableRoth") {   
+                enableRoth = LC_enableRoth;
+            } else {
+                let paramVar = null; 
+                switch (paramType) {
+                    case "eventStart":
+                        paramVar = LC_eventStartParams;
+                        break;
+                    case "eventDuration":
+                        paramVar = LC_eventDurationParams;
+                        break;
+                    case "initAmt_income":
+                        paramVar = LC_initAmt_incomeParams;
+                        break;
+                    case "initAmt_expense":
+                        paramVar = LC_initAmt_expenseParams;
+                        break;
+                    case "assetPercent":
+                        paramVar = LC_assetPercentParams;
+                        break;
+                    default:
+                        console.log("Unknown LCParamType: ", paramType)
+                } 
+                if (paramVar) {
+                    eventName = paramVar.obj?.name || null;
+                    min = paramVar.min;
+                    max = paramVar.max;
+                    stepSize = paramVar.step;
+                }
+            }
+
+            const lineChartResult = await scenarioExploration_1D(
+                scenario,
+                age,
+                username,
+                numSimulations,
+                LCParamType,
+                enableRoth,
+                eventName,
+                min,
+                max,
+                stepSize
+            ); 
+            if (lineChartResult === -1) {
+                return res.status(500).json({ error: "Line chart simulation failed." });
+            } 
+            lineCharts.push(lineChartResult);  
+            console.log("multilineCharts: ", multilineCharts)
+            console.log("lineCharts: ",lineCharts)
+            return res.status(200).json({
+                message: "1D Simulations complete",
+                multilineCharts,
+                lineCharts 
+            });
+        }
+    } catch (err) {
+        console.error("Error in /run1DSimulations:", err);
+        res.status(500).json({ error: "Simulation failed." });
+    } 
+});
+
 
 router.post("/runAllSimulations", async (req, res) => {
     const { scenarioId, username, numSimulations, stackedChartQuantity, aggregationThreshold, useMedian } = req.body;
