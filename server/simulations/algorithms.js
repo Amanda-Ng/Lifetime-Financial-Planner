@@ -285,16 +285,21 @@ function computeRandomValue(values, baseValue, type, rng = Math.random) {
 
 function updateInvestments(scenario, rng = Math.random) {
     scenario.investments.forEach((investment) => {
-        const investmentType = investment.investmentType;
-        const investmentValue = computeRandomValue({ expected_annual: investmentType.expected_annual_return, expected_annual_mean: investmentType.expected_annual_return_mean, expected_annual_stdev: investmentType.expected_annual_return_stdev }, investment.value, investmentType.returnType, rng);
-        const incomeValue = computeRandomValue({ expected_annual: investmentType.expected_annual_income, expected_annual_mean: investmentType.expected_annual_income_mean, expected_annual_stdev: investmentType.expected_annual_income_stdev }, investment.value, investmentType.incomeType, rng);
+        if (
+            investment.tax_status === 'non-retirement' &&
+            investment.investmentType?.taxability === 'taxable'
+        ) {
+            const investmentType = investment.investmentType;
+            const investmentValue = computeRandomValue({ expected_annual: investmentType.expected_annual_return, expected_annual_mean: investmentType.expected_annual_return_mean, expected_annual_stdev: investmentType.expected_annual_return_stdev }, investment.value, investmentType.returnType, rng);
+            const incomeValue = computeRandomValue({ expected_annual: investmentType.expected_annual_income, expected_annual_mean: investmentType.expected_annual_income_mean, expected_annual_stdev: investmentType.expected_annual_income_stdev }, investment.value, investmentType.incomeType, rng);
 
-        investment["calculatedAnnualReturn"] = investmentValue;
-        investment["calculatedAnnualIncome"] = incomeValue;
-        // Update the value of the investment
-        endValueBeforeExpenses = investment.value + investmentValue + incomeValue;
-        expenses = (investmentType.expense_ratio * (endValueBeforeExpenses + investment.value)) / 2; // Average of beginning and end value
-        investment.value = endValueBeforeExpenses - expenses;
+            investment["calculatedAnnualReturn"] = investmentValue;
+            investment["calculatedAnnualIncome"] = incomeValue;
+            // Update the value of the investment
+            endValueBeforeExpenses = investment.value + investmentValue + incomeValue;
+            expenses = (investmentType.expense_ratio * (endValueBeforeExpenses + investment.value)) / 2; // Average of beginning and end value
+            investment.value = endValueBeforeExpenses - expenses;
+        }
     });
     return scenario.investments;
 }
@@ -442,6 +447,11 @@ async function queryRMDTable(year) {
 async function performRMD(scenario, retirementInvestment, age, year) {
     const rmdTable = await queryRMDTable(year); // Query RMD table for the given year
     const expectedAge = age + year - scenario.startYear; // Calculate expected age based on the current year and the user's birth year
+
+    if (expectedAge < 73) {
+        return 0;
+    }
+
     const rmdFactor = rmdTable.get(expectedAge.toString());
     if (!rmdFactor) {
         throw new Error(`RMD factor for age ${expectedAge} not found in year ${year}.`);
@@ -815,11 +825,11 @@ async function runScheduled_investEvent(InvestEvents, scenario, year) {
     const cashInvest = scenario.investments.find(investment => investment.investmentType.name === "Cash");
     for (const InvestEvent of InvestEvents) {
         let excessCash;
-        if(InvestEvent.assetAllocationType=="glidepath" && !InvestEvent.initialAllocation){
+        if (InvestEvent.assetAllocationType == "glidepath" && !InvestEvent.initialAllocation) {
             return 0;
         }
-        else{
-            if(!InvestEvent.fixedAllocation)    //nothing to reallocate 
+        else {
+            if (!InvestEvent.fixedAllocation)    //nothing to reallocate 
                 return 0;
         }
         if (cashInvest.value < InvestEvent.maxCash) {
