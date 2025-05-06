@@ -966,7 +966,7 @@ function Simulation() {
                     <div>
                         <label>Select parameters:</label>
                         {[
-                            { label: "Enable Roth Optimizer", value: "enableRoth" },
+                            //{ label: "Enable Roth Optimizer", value: "enableRoth" },
                             { label: "Event Start", value: "eventStart" },
                             { label: "Event Duration", value: "eventDuration" },
                             { label: "Income Event: Initial Amount", value: "initAmt_income" },
