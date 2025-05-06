@@ -175,6 +175,34 @@ function Simulation() {
             if (showStackedBarChart) {
                 setStackedChartData(stackedChartData);
             }
+            console.log("checking 1d")
+            //1d chart generation 
+            if((showMultiLineCharts && MCParamType_1d!=[]) ||
+                (showLineCharts_1d && LCParamType!=[])
+            ){
+                console.log("running 1d")
+                const response2 = await axios.post("http://localhost:8000/api/run1DSimulations", {
+                    scenarioId: selectedScenarioId,
+                    username: user.username,
+                    numSimulations, 
+                    MCParamType_1d, 
+                    MC_enableRoth,
+                    MC_eventStartParams,
+                    MC_eventDurationParams,
+                    MC_initAmt_incomeParams,
+                    MC_initAmt_expenseParams,
+                    MC_assetPercentParams,
+
+                    LCParamType,
+                    LC_enableRoth,
+                    LC_eventStartParams,
+                    LC_eventDurationParams,
+                    LC_initAmt_incomeParams,
+                    LC_initAmt_expenseParams,
+                    LC_assetPercentParams
+                });
+                console.log(response2.data)
+            } 
         } catch (error) {
             console.error("Simulation failed:", error);
         } finally {
@@ -586,7 +614,7 @@ function Simulation() {
                     </div>
                 )}
      
-                {MCParamType_1d.includes("enableRoth") && (
+                {showMultiLineCharts && MCParamType_1d.includes("enableRoth") && (
                     <div className="optionLine2">
                         <label htmlFor="enableRothSelect">Roth Optimizer:</label>
                         <select
@@ -599,7 +627,7 @@ function Simulation() {
                         </select>
                     </div>
                 )} 
-                {MCParamType_1d.includes("eventStart") && (
+                {showMultiLineCharts && MCParamType_1d.includes("eventStart") && (
                     <div className="optionLine2" >
                         <label>Event Start Parameters:</label>
                         <div >
@@ -607,9 +635,11 @@ function Simulation() {
                                 <label htmlFor="eventStartObj">Event:</label>
                                 <select
                                     id="eventStartObj"
-                                    value={MC_eventStartParams?.obj || ""}
+                                    value={MC_eventStartParams?.obj?._id || ""}
                                     onChange={(e) => {
+                                        console.log("found id ",e.target.value )
                                         const selectedObj = scenarioEvents.find(event => event._id === e.target.value);
+                                        console.log("found obj ",selectedObj )
                                         setMCEventStartParams(prev => ({ ...prev, obj: selectedObj }));
                                     }}
                                 >
@@ -618,8 +648,7 @@ function Simulation() {
                                         <option key={event._id} value={event._id}>
                                             {event.name}
                                         </option>
-                                    ))}
-                                    {/* Add other options as needed */}
+                                    ))} 
                                 </select>
                             </div>
 
@@ -661,7 +690,7 @@ function Simulation() {
                         </div>
                     </div>
                 )} 
-                {MCParamType_1d.includes("eventDuration") && (
+                {showMultiLineCharts && MCParamType_1d.includes("eventDuration") && (
                     <div className="optionLine2">
                         <label>Event Duration Parameters:</label>
                         <div>
@@ -722,7 +751,7 @@ function Simulation() {
                         </div>
                     </div>
                 )}
-                {MCParamType_1d.includes("initAmt_income") && (
+                {showMultiLineCharts && MCParamType_1d.includes("initAmt_income") && (
                     <div className="optionLine2">
                         <label>Income Event: Initial Amount Parameters:</label>      
                         <div>
@@ -785,7 +814,7 @@ function Simulation() {
                         </div>
                     </div>
                 )}
-                {MCParamType_1d.includes("initAmt_expense") && (
+                {showMultiLineCharts && MCParamType_1d.includes("initAmt_expense") && (
                     <div className="optionLine2">
                         <label>Expense Event: Initial Amount Parameters:</label>
                         <div>  
@@ -848,7 +877,7 @@ function Simulation() {
                     </div>
                 )}
 
-                {MCParamType_1d.includes("assetPercent") && (
+                {showMultiLineCharts && MCParamType_1d.includes("assetPercent") && (
                     <div className="optionLine2">
                         <label>Asset Allocation Percent Parameters:</label>      
                         <div>
@@ -857,9 +886,7 @@ function Simulation() {
                                 <select
                                     id="assetPercentObj"
                                     value={MC_assetPercentParams?.obj?._id || ""}
-                                    onChange={(e) => {
-                                        console.log("adding id ",e.target.value)
-                                         
+                                    onChange={(e) => {  
                                         const selectedObj = scenarioEvents.find(inv => inv._id === e.target.value); 
                                         setMCAssetPercentParams(prev => ({ ...prev, obj: selectedObj })); 
                                     }}
@@ -935,7 +962,7 @@ function Simulation() {
                 </div>
 
                 {/* Parameter selectors */}
-                {showLineCharts_1d && (
+                {showLineCharts_1d && showLineCharts_1d && (
                     <div>
                         <label>Select parameters:</label>
                         {[
@@ -968,7 +995,7 @@ function Simulation() {
                     </div>
                 )}
 
-                {LCParamType.includes("enableRoth") && (
+                {showLineCharts_1d && LCParamType.includes("enableRoth") && (
                     <div className="optionLine2">
                         <label htmlFor="enableRothSelect">Roth Optimizer:</label>
                         <select
@@ -982,7 +1009,7 @@ function Simulation() {
                     </div>
                 )}
 
-                {LCParamType.includes("eventStart") && (
+                {showLineCharts_1d && LCParamType.includes("eventStart") && (
                     <div className="optionLine2">
                         <label>Event Start Parameters:</label>
                         <div>
@@ -1044,7 +1071,7 @@ function Simulation() {
                     </div>
                 )}
 
-                {LCParamType.includes("eventDuration") && (
+                {showLineCharts_1d && LCParamType.includes("eventDuration") && (
                     <div className="optionLine2">
                         <label>Event Duration Parameters:</label>
                         <div>
@@ -1106,7 +1133,7 @@ function Simulation() {
                     </div>
                 )}
 
-                {LCParamType.includes("initAmt_income") && (
+                {showLineCharts_1d && LCParamType.includes("initAmt_income") && (
                     <div className="optionLine2">
                         <label>Income Event: Initial Amount Parameters:</label>
                         <div>
@@ -1168,7 +1195,7 @@ function Simulation() {
                     </div>
                 )}
 
-                {LCParamType.includes("initAmt_expense") && (
+                {showLineCharts_1d && LCParamType.includes("initAmt_expense") && (
                     <div className="optionLine2">
                         <label>Expense Event: Initial Amount Parameters:</label>
                         <div>
@@ -1230,7 +1257,7 @@ function Simulation() {
                     </div>
                 )}
 
-                {LCParamType.includes("assetPercent") && (
+                {showLineCharts_1d && LCParamType.includes("assetPercent") && (
                     <div className="optionLine2">
                         <label>Asset Allocation Percent Parameters:</label>
                         <div>
@@ -1297,18 +1324,12 @@ function Simulation() {
                         </div>
                     </div>
                 )}
-
-                
-
-                
-
-                
-
+ 
                 {/*Generate button*/}
                 <div className="optionLine" id="genSimLine">
                     <button id="gen_button" onClick={handleGenerate} disabled={!selectedScenarioId || !user}>
                         {isLoading ? "Running..." : "Generate"}
-                    </button>
+                    </button> 
                 </div>
             </div>
 
