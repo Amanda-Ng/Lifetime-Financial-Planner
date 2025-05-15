@@ -193,7 +193,7 @@ async function runSimulation(scenario, age, username, seed) {
         // Step 9: Run scheduled invest events
         console.log("Running scheduled invest events...");
         const investEvents = scenario.event_series.filter(
-            (event) => event.eventType === "Invest" && event.startYear === year
+            (event) => event.eventType === "invest" && event.startYear === year
         );
         runScheduled_investEvent(investEvents, scenario, year);
         logStream.write("Ran scheduled invest events.\n");
@@ -201,7 +201,7 @@ async function runSimulation(scenario, age, username, seed) {
         // Step 10: Run rebalance events
         console.log("Running rebalance events...");
         const rebalanceEvents = scenario.event_series.filter(
-            (event) => event.eventType === "Rebalance" && event.startYear === year
+            (event) => event.eventType === "rebalance" && event.startYear === year
         );
         rebalanceEvents.forEach((rebalanceEvent) => {
             rebalanceInvestments(scenario, rebalanceEvent);
